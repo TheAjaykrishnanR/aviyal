@@ -18,7 +18,7 @@ class _
 	static int dt = (int)(1000 / fps); // milliseconds
 	static int frames = (int)(((float)duration / 1000) * fps);
 
-	static int zoom = 100;
+	static int zoom = 50;
 	static async Task Main()
 	{
 		Console.Write("hWnd: ");
