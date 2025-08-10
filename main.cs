@@ -17,7 +17,7 @@ class _
 
 	const int SWP_NOACTIVATE = 0x0010;
 
-	static int duration = 250; // milliseconds
+	static int duration = 200; // milliseconds
 	static int fps = 60;
 	static int dt = (int)(1000 / fps); // milliseconds
 	static int frames = (int)(((float)duration / 1000) * fps);
@@ -34,10 +34,10 @@ class _
 		GetWindowRect(hWnd, out start);
 		end = new()
 		{
-			left = start.left - zoom,
-			top = start.top - zoom,
-			right = start.right + zoom,
-			bottom = start.bottom + zoom
+			left = start.left,
+			top = start.top,
+			right = start.right + 1000,
+			bottom = start.bottom
 		};
 		Stopwatch sw = new();
 		sw.Start();
