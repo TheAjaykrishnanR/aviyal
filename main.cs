@@ -14,7 +14,6 @@ class _
 	static extern int InvalidateRect(nint hWnd, nint rect, bool erase);
 	[DllImport("user32.dll")]
 	static extern int GetWindowRect(nint hWnd, out RECT rect);
-	[DllImport("user32.dll")]
 
 	const int SWP_NOACTIVATE = 0x0010;
 
