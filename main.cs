@@ -12,15 +12,17 @@ class _
 	[DllImport("user32.dll")]
 	static extern int GetWindowRect(nint hWnd, out RECT rect);
 
-	static int duration = 1000; // milliseconds
+	static int duration = 250; // milliseconds
 	static int fps = 60;
 	static int dt = (int)(1000 / fps); // milliseconds
-	static int frames = (int)(duration / fps);
+	static int frames = (int)(((float)duration / 1000) * fps);
 
 	static void Main()
 	{
 		Console.Write("hWnd: ");
 		nint hWnd = (nint)Convert.ToInt64(Console.ReadLine(), 16);
+
+		Console.WriteLine($"dt: {dt} ms, frames: {frames}");
 
 		RECT start, end;
 		GetWindowRect(hWnd, out start);
@@ -36,9 +38,13 @@ class _
 			RECT frameRect = GetRect(start, end, i);
 			int cx = frameRect.right - frameRect.left;
 			int cy = frameRect.bottom - frameRect.top;
+			Stopwatch sw = Stopwatch.StartNew();
 			MoveWindow(hWnd, frameRect.left, frameRect.top, cx, cy, false);
+			sw.Stop();
+			int elapsed = (int)sw.ElapsedMilliseconds;
+			Console.WriteLine($"MoveWindow(): {elapsed} ms");
 			InvalidateRect(hWnd, 0, false);
-			Thread.Sleep(dt);
+			Thread.Sleep(dt - elapsed < 0 ? 0 : dt - elapsed);
 		}
 	}
 
