@@ -17,7 +17,7 @@ class _
 
 	const int SWP_NOACTIVATE = 0x0010;
 
-	static int duration = 200; // milliseconds
+	static int duration = 1000; // milliseconds
 	static int fps = 60;
 	static int dt = (int)(1000 / fps); // milliseconds
 	static int frames = (int)(((float)duration / 1000) * fps);
@@ -34,10 +34,10 @@ class _
 		GetWindowRect(hWnd, out start);
 		end = new()
 		{
-			left = start.left,
-			top = start.top,
-			right = start.right + 1000,
-			bottom = start.bottom
+			left = start.left - zoom,
+			top = start.top - zoom,
+			right = start.right + zoom,
+			bottom = start.bottom + zoom
 		};
 		Stopwatch sw = new();
 		sw.Start();
@@ -58,7 +58,10 @@ class _
 
 	static RECT GetRect(RECT start, RECT end, int frame)
 	{
-		float progress = (float)frame / frames;
+		double progress = (double)frame / frames;
+		// easeInSine
+		progress = EaseInOutQuint(progress);
+		//
 		RECT x = new RECT()
 		{
 			left = start.left + (int)((end.left - start.left) * progress),
@@ -68,6 +71,13 @@ class _
 		};
 		//Console.WriteLine($"x -> {x.right}, y -> {x.bottom}");
 		return x;
+	}
+
+	public static double EaseInOutQuint(double x)
+	{
+		return x < 0.5
+			? 16 * x * x * x * x * x
+			: 1 - Math.Pow(-2 * x + 2, 5) / 2;
 	}
 }
 
