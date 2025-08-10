@@ -7,11 +7,7 @@ using System.Runtime.InteropServices;
 class _
 {
 	[DllImport("user32.dll")]
-	static extern int MoveWindow(nint hWnd, int x, int y, int cx, int cy, bool redraw);
-	[DllImport("user32.dll")]
 	static extern int SetWindowPos(nint hWnd, nint z, int x, int y, int cx, int cy, uint flags);
-	[DllImport("user32.dll")]
-	static extern int InvalidateRect(nint hWnd, nint rect, bool erase);
 	[DllImport("user32.dll")]
 	static extern int GetWindowRect(nint hWnd, out RECT rect);
 
@@ -22,7 +18,7 @@ class _
 	static int dt = (int)(1000 / fps); // milliseconds
 	static int frames = (int)(((float)duration / 1000) * fps);
 
-	static int zoom = 50;
+	static int zoom = 100;
 	static async Task Main()
 	{
 		Console.Write("hWnd: ");
