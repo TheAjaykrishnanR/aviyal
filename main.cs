@@ -15,14 +15,14 @@ class _
 	[DllImport("user32.dll")]
 	static extern int GetWindowRect(nint hWnd, out RECT rect);
 
+	const int SWP_NOREDRAW = 0x0008;
+
 	static int duration = 600; // milliseconds
 	static int fps = 60;
 	static int dt = (int)(1000 / fps); // milliseconds
 	static int frames = (int)(((float)duration / 1000) * fps);
 
 	static int extend = 100;
-	static int drawRate = 15; // px^2 / ms
-
 	static async Task Main()
 	{
 		Console.Write("hWnd: ");
@@ -46,10 +46,7 @@ class _
 			RECT frameRect = GetRect(start, end, i);
 			int cx = frameRect.right - frameRect.left;
 			int cy = frameRect.bottom - frameRect.top;
-			//MoveWindow(hWnd, frameRect.left, frameRect.top, cx, cy, false);
-			//InvalidateRect(hWnd, 0, false);
-			SetWindowPos(hWnd, 0, frameRect.left, frameRect.top, cx, cy, 0x0008);
-			//InvalidateRect(hWnd, 0, false);
+			SetWindowPos(hWnd, 0, frameRect.left, frameRect.top, cx, cy, SWP_NOREDRAW);
 			int wait = (int)(i * dt - sw.ElapsedMilliseconds);
 			wait = wait < 0 ? 0 : wait;
 			Console.WriteLine($"{i}. wait: {wait}");
