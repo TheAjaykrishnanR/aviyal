@@ -48,4 +48,7 @@ class WindowManager
  *
  * */
 
-
+interface ILayout
+{
+	RECT GetRect(int total, int index);
+}
