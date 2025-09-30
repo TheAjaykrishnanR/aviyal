@@ -1,5 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Drawing;
+using System.Text;
 
 class _Main
 {

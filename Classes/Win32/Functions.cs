@@ -3,9 +3,6 @@
     Copyright (c) 2025 Ajaykrishnan R	
 */
 
-using System;
-using System.Runtime.InteropServices;
-using System.Text;
 
 public class User32
 {
