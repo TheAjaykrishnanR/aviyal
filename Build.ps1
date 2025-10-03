@@ -5,8 +5,9 @@ dflat Main.cs `
 	  Classes\Win32\Structs.cs `
 	  Classes\Win32\Delegates.cs `
 	  Classes\Win32\Enums.cs `
+	  Classes\Utils\Core.cs `
+	  Classes\Utils\Extensions.cs `
+	  /langversion:preview `
 	  /out Main.exe
 
 mv Main.exe bin\Main.exe
-rm Main.exe
-

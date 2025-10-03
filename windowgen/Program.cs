@@ -7,7 +7,7 @@ class _
 	{
 		Application app = new();
 		Window wnd = new();
-		wnd.Title = "WindowGen";
+		wnd.Title = "windowgen";
 		wnd.Background = Utils.BrushFromHex(args[0]);
 		app.Run(wnd);
 	}

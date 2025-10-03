@@ -4,6 +4,7 @@ class Window
 	string title;
 	string exe;
 	RECT rect;
+	bool visible;
 
 	void Hide() { };
 	void Show(RECT pos) { };
