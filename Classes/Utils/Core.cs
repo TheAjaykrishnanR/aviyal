@@ -266,6 +266,7 @@ public partial class Utils
 		var taskbarWindows = topWindows.Where(hWnd => IsWindowInTaskBar(hWnd)).ToList();
 		//taskbarWindows.ForEach(hWnd => Logger.Log($"TASKBAR WINDOWS, hWnd: {hWnd}, class: {GetClassNameFromHWND(hWnd)}, exe: {GetExePathFromHWND(hWnd)}"));
 		return taskbarWindows;
+		//return topWindows;
 	}
 
 	/// <summary>

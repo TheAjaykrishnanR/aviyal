@@ -9,18 +9,7 @@ class _Main
 {
 	static void Main(string[] args)
 	{
-		//nint hWnd = (nint)Convert.ToInt64(args[0]);
-		//if (Convert.ToInt32(args[1]) == 0) User32.ShowWindow(hWnd, SHOWWINDOW.SW_HIDE);
-		//else User32.ShowWindow(hWnd, SHOWWINDOW.SW_SHOWNORMAL);
-
-		List<nint>? hWnds = Utils.GetAllTaskbarWindows();
-		List<Window> windows = new();
-		hWnds.ForEach(hWnd =>
-		{
-			windows.Add(new(hWnd));
-		});
-		windows = windows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
-		windows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
+		WindowManager wm = new();
 	}
 }
 
@@ -31,7 +20,7 @@ public class Window
 	{
 		get
 		{
-			return Utils.GetWindowTitleFromHWND(hWnd);
+			return Utils.GetWindowTitleFromHWND(this.hWnd);
 		}
 		private set;
 	}
@@ -40,7 +29,7 @@ public class Window
 	{
 		get
 		{
-			return Utils.GetExePathFromHWND(hWnd);
+			return Utils.GetExePathFromHWND(this.hWnd);
 		}
 		private set;
 	}
@@ -48,7 +37,7 @@ public class Window
 	{
 		get
 		{
-			User32.GetWindowRect(hWnd, out RECT _rect);
+			User32.GetWindowRect(this.hWnd, out RECT _rect);
 			return _rect;
 
 		}
@@ -59,16 +48,28 @@ public class Window
 		get
 		{
 			WINDOWPLACEMENT wndPlmnt = new();
-			User32.GetWindowPlacement(hWnd, ref wndPlmnt);
+			User32.GetWindowPlacement(this.hWnd, ref wndPlmnt);
 			return (SHOWWINDOW)wndPlmnt.showCmd;
 		}
 		private set;
 	}
 
-	public void Hide() { }
-	public void Show(RECT pos) { }
-	public void Focus() { }
-	public void Move(RECT target) { }
+	public void Hide()
+	{
+		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_HIDE);
+	}
+	public void Show()
+	{
+		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOW);
+	}
+	public void Focus()
+	{
+		User32.SetForegroundWindow(this.hWnd);
+	}
+	public void Move(RECT pos)
+	{
+		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
+	}
 
 	public Window(nint hWnd)
 	{
@@ -76,3 +77,76 @@ public class Window
 	}
 }
 
+public class Workspace
+{
+	public List<Window> windows = new();
+	Window? focusedWindow = null;
+	Layout layout = new();
+
+	public void Add(Window wnd) { windows.Add(wnd); }
+	public void Remove(nint hWnd)
+	{
+		int? search = windows.Index().First((i, wnd) => wnd.hWnd == hWnd).Item1;
+		if (search != null) windows.RemoveAt(search);
+	}
+
+	// main renderer
+	public void Focus()
+	{
+		windows.Index().ForEach((i, wnd) => wnd.Move(layout.GetRect(i)));
+	}
+
+	public void FocusWindow(Window wnd)
+	{
+		wnd.Focus();
+		focusedWindow = wnd;
+	}
+}
+
+public class Layout : ILayout
+{
+	public RECT GetRect(int index)
+	{
+		RECT rect = new();
+		return rect;
+	}
+	public int outer { get; set; }
+	public int inner { get; set; }
+}
+
+public interface ILayout
+{
+	public RECT GetRECT(int index);
+	public int outer { get; set; }
+	public int inner { get; set; }
+}
+
+public class WindowManager
+{
+	List<Window> windows = new();
+	List<Workspaces> workspaces = new();
+	Workspace? focusedWorkspace = null;
+
+	public WindowManager()
+	{
+		List<nint>? hWnds = Utils.GetAllTaskbarWindows();
+		hWnds.ForEach(hWnd =>
+		{
+			windows.Add(new(hWnd));
+		});
+		windows = windows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+		windows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
+
+		// add all windows to 1st workspace
+		Workspace wksp = new();
+		workspaces.Add(wksp);
+		windows.ForEach(wnd => wksp.windows.Add(wnd));
+		FocusWorkspace(wksp);
+	}
+
+	public void FocusWorkspace(Workspace wskp)
+	{
+		wksp.Focus();
+		focusedWorkspace = wksp;
+	}
+}
