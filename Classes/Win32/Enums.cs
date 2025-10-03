@@ -3,7 +3,9 @@
     Copyright (c) 2025 Ajaykrishnan R	
 */
 
-namespace sambar;
+using System;
+using System.Runtime.InteropServices;
+using System.Drawing;
 
 public enum WINDOWSTYLE : uint
 {
