@@ -11,6 +11,8 @@ class _Main
 	{
 		WindowEventsListener wel = new();
 		WindowManager wm = new();
+		wel.WINDOW_ADDED += wm.WindowAdded;
+		wel.WINDOW_REMOVED += wm.WindowRemoved;
 		while (Console.ReadLine() != ":q") { }
 	}
 }
@@ -247,6 +249,16 @@ public class WindowManager : IWindowManager
 		wksp.Focus();
 		focusedWorkspace = wksp;
 	}
+
+	public void WindowAdded(Window wnd)
+	{
+		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}");
+	}
+	public void WindowRemoved(Window wnd)
+	{
+		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
+	}
+	public void WindowMoved(Window wnd) { }
 }
 
 enum FillDirection

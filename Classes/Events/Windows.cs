@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -25,10 +27,18 @@ public class WindowEventsListener
 		uint dwFlags
 	);
 
-	static int OBJID_WINDOW = 0;
-	static int CHILDID_SELF = 0;
+	int OBJID_WINDOW = 0;
+	int CHILDID_SELF = 0;
+	List<nint> created = new();
+	List<nint> shown = new();
 
-	static void winEventProc(
+	public delegate void WindowAddedEventHandler(Window wnd);
+	public event WindowAddedEventHandler WINDOW_ADDED = (wnd) => { };
+
+	public delegate void WindowRemovedEventHandler(Window wnd);
+	public event WindowRemovedEventHandler WINDOW_REMOVED = (wnd) => { };
+
+	void winEventProc(
 		nint hWinEventHook,
 		WINEVENT msg,
 		nint hWnd,
@@ -37,14 +47,35 @@ public class WindowEventsListener
 		uint idEventThread,
 		uint dwmsEventTime)
 	{
-		if ((msg == WINEVENT.OBJECT_CREATE ||
+		if ((
+			msg == WINEVENT.OBJECT_CREATE ||
+			msg == WINEVENT.OBJECT_SHOW ||
 			msg == WINEVENT.OBJECT_DESTROY) &&
 			idObject == OBJID_WINDOW &&
 			idChild == CHILDID_SELF &&
 			!Utils.GetStylesFromHwnd(hWnd).Contains("WS_CHILD") &&
 			Utils.GetStylesFromHwnd(hWnd).Contains("WS_CAPTION")
 		)
-			Console.WriteLine($"hookMsg: {msg}, hWnd: {hWnd}, Title: {Utils.GetWindowTitleFromHWND(hWnd)}, iswindowintaskbar: {Utils.IsWindowInTaskBar(hWnd)}");
+		{
+			switch (msg)
+			{
+				case WINEVENT.OBJECT_CREATE:
+					created.Add(hWnd);
+					break;
+				case WINEVENT.OBJECT_SHOW:
+					if (created.Remove(hWnd))
+					{
+						shown.Add(hWnd);
+						WINDOW_ADDED(new Window(hWnd));
+					}
+					break;
+				case WINEVENT.OBJECT_DESTROY:
+					if (shown.Remove(hWnd))
+						WINDOW_REMOVED(new Window(hWnd));
+					break;
+			}
+			Console.WriteLine($"WINEVENT: [{msg}]");
+		}
 	}
 
 	public Thread thread;

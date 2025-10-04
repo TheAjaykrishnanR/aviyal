@@ -36,6 +36,9 @@ public interface IWindowManager
 	public Workspace? focusedWorkspace { get; }
 
 	public void FocusWorkspace(Workspace wksp);
+	public void WindowAdded(Window wnd);
+	public void WindowRemoved(Window wnd);
+	public void WindowMoved(Window wnd);
 }
 
 public interface ILayout
