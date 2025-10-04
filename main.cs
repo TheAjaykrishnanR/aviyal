@@ -51,7 +51,6 @@ public class Window : IWindow
 			User32.GetWindowPlacement(this.hWnd, ref wndPlmnt);
 			return (SHOWWINDOW)wndPlmnt.showCmd;
 		}
-
 	}
 
 	public void Hide()
@@ -68,7 +67,34 @@ public class Window : IWindow
 	}
 	public void Move(RECT pos)
 	{
+		// remove frame bounds
+		RECT margin = GetFrameMargin();
+		pos.Left -= margin.Left;
+		pos.Top -= margin.Top;
+		pos.Right -= margin.Right;
+		pos.Bottom -= margin.Bottom;
+
 		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
+	}
+
+	public RECT GetFrameMargin()
+	{
+		User32.GetWindowRect(this.hWnd, out RECT rect);
+		Console.WriteLine($"GWR [L: {rect.Left} R: {rect.Right} T: {rect.Top} B:{rect.Bottom}]");
+		int size = Marshal.SizeOf<RECT>();
+		nint rectPtr = Marshal.AllocHGlobal(size);
+		Dwmapi.DwmGetWindowAttribute(this.hWnd, (uint)DWMWINDOWATTRIBUTE.DWMWA_EXTENDED_FRAME_BOUNDS, rectPtr, (uint)size);
+		RECT rect2 = Marshal.PtrToStructure<RECT>(rectPtr);
+		Marshal.FreeHGlobal(rectPtr);
+		Console.WriteLine($"DWM [L: {rect2.Left} R: {rect2.Right} T: {rect2.Top} B:{rect2.Bottom}]");
+
+		return new RECT()
+		{
+			Left = rect2.Left - rect.Left,
+			Top = rect2.Top - rect.Top,
+			Right = rect2.Right - rect.Right,
+			Bottom = rect2.Bottom - rect.Bottom,
+		};
 	}
 
 	public Window(nint hWnd)
