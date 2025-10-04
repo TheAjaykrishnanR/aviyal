@@ -9,7 +9,9 @@ class _Main
 {
 	static void Main(string[] args)
 	{
+		WindowEventsListener wel = new();
 		WindowManager wm = new();
+		while (Console.ReadLine() != ":q") { }
 	}
 }
 
@@ -252,4 +254,3 @@ enum FillDirection
 	HORIZONTAL,
 	VERTICAL
 }
-
