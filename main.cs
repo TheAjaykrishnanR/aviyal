@@ -135,6 +135,7 @@ public class Dwindle : ILayout
 			}
 			fillDirection = fillDirection == FillDirection.HORIZONTAL ? FillDirection.VERTICAL : FillDirection.HORIZONTAL;
 		}
+		rects.Index().ToList().ForEach(irect => Console.WriteLine($"{irect.Item1}. L:{irect.Item2.Left} R:{irect.Item2.Right} T:{irect.Item2.Top} B:{irect.Item2.Bottom}"));
 		return rects;
 	}
 	public int outer { get; set; } = 5;
