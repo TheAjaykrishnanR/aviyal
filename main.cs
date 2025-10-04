@@ -13,25 +13,25 @@ class _Main
 	}
 }
 
-public class Window
+public class Window : IWindow
 {
-	public nint hWnd { get; private set; }
+	public nint hWnd { get; set; }
 	public string title
 	{
 		get
 		{
 			return Utils.GetWindowTitleFromHWND(this.hWnd);
 		}
-		private set;
+		set;
 	}
-	public string className { get; private set; }
+	public string className { get; set; }
 	public string exe
 	{
 		get
 		{
 			return Utils.GetExePathFromHWND(this.hWnd);
 		}
-		private set;
+		set;
 	}
 	public RECT rect
 	{
@@ -41,7 +41,7 @@ public class Window
 			return _rect;
 
 		}
-		private set;
+		set;
 	}
 	public SHOWWINDOW state
 	{
@@ -51,7 +51,7 @@ public class Window
 			User32.GetWindowPlacement(this.hWnd, ref wndPlmnt);
 			return (SHOWWINDOW)wndPlmnt.showCmd;
 		}
-		private set;
+		set;
 	}
 
 	public void Hide()
@@ -77,11 +77,11 @@ public class Window
 	}
 }
 
-public class Workspace
+public class Workspace : IWorkspace
 {
-	public List<Window> windows = new();
-	Window? focusedWindow = null;
-	ILayout layout = new Dwindle();
+	public List<Window> windows { get; set; } = new();
+	public Window? focusedWindow { get; set; } = null;
+	public ILayout layout { get; set; } = new Dwindle();
 
 	public void Add(Window wnd) { windows.Add(wnd); }
 	public void Remove(nint hWnd)
@@ -153,18 +153,11 @@ public class Dwindle : ILayout
 	}
 }
 
-public interface ILayout
+public class WindowManager : IWindowManager
 {
-	public RECT[] GetRect(int index);
-	public int outer { get; set; }
-	public int inner { get; set; }
-}
-
-public class WindowManager
-{
-	List<Window> windows = new();
-	List<Workspace> workspaces = new();
-	Workspace? focusedWorkspace = null;
+	public List<Window> windows { get; set; } = new();
+	public List<Workspace> workspaces { get; set; } = new();
+	public Workspace? focusedWorkspace { get; set; } = null;
 
 	public WindowManager()
 	{

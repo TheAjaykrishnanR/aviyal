@@ -7,6 +7,7 @@ dflat Main.cs `
 	  Classes\Win32\Enums.cs `
 	  Classes\Utils\Core.cs `
 	  Classes\Utils\Extensions.cs `
+	  Interfaces\Core.cs `
 	  /langversion:preview `
 	  /out Main.exe
 
