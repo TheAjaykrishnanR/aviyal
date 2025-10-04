@@ -116,6 +116,7 @@ public class Workspace : IWorkspace
 	public void Remove(nint hWnd)
 	{
 		int search = windows.Index().First(iwnd => iwnd.Item2.hWnd == hWnd).Item1;
+		Console.WriteLine($"removed: {search}");
 		if (search != null) windows.RemoveAt(search);
 	}
 
@@ -253,10 +254,14 @@ public class WindowManager : IWindowManager
 	public void WindowAdded(Window wnd)
 	{
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}");
+		focusedWorkspace.Add(wnd);
+		focusedWorkspace.Focus();
 	}
 	public void WindowRemoved(Window wnd)
 	{
 		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
+		focusedWorkspace.Remove(wnd.hWnd);
+		focusedWorkspace.Focus();
 	}
 	public void WindowMoved(Window wnd) { }
 }
