@@ -177,6 +177,9 @@ public class Dwindle : ILayout
 		rect.Bottom -= (int)((rect.Bottom - rect.Top) / 2);
 		return rect;
 	}
+
+	void ApplyOuter(RECT[] rects) { }
+	void ApplyInner(RECT[] rects) { }
 }
 
 public class WindowManager : IWindowManager
