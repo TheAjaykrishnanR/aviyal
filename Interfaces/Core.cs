@@ -3,12 +3,12 @@ using System.Collections.Generic;
 
 public interface IWindow
 {
-	public nint hWnd { get; set; }
-	public string title { get; set; }
-	public string className { get; set; }
-	public string exe { get; set; }
-	public RECT rect { get; set; }
-	public SHOWWINDOW state { get; set; }
+	public nint hWnd { get; }
+	public string title { get; }
+	public string className { get; }
+	public string exe { get; }
+	public RECT rect { get; }
+	public SHOWWINDOW state { get; }
 
 	public void Hide();
 	public void Show();
@@ -18,8 +18,8 @@ public interface IWindow
 
 public interface IWorkspace
 {
-	public List<Window> windows { get; set; }
-	public Window? focusedWindow { get; set; }
+	public List<Window> windows { get; }
+	public Window? focusedWindow { get; }
 	public ILayout layout { get; set; }
 
 	public void Add(Window wnd);
@@ -31,9 +31,9 @@ public interface IWorkspace
 
 public interface IWindowManager
 {
-	public List<Window> windows { get; set; }
-	public List<Workspace> workspaces { get; set; }
-	public Workspace? focusedWorkspace { get; set; }
+	public List<Window> windows { get; }
+	public List<Workspace> workspaces { get; }
+	public Workspace? focusedWorkspace { get; }
 
 	public void FocusWorkspace(Workspace wksp);
 }

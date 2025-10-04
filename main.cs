@@ -15,23 +15,23 @@ class _Main
 
 public class Window : IWindow
 {
-	public nint hWnd { get; set; }
+	public nint hWnd { get; }
 	public string title
 	{
 		get
 		{
 			return Utils.GetWindowTitleFromHWND(this.hWnd);
 		}
-		set;
+
 	}
-	public string className { get; set; }
+	public string className { get; }
 	public string exe
 	{
 		get
 		{
 			return Utils.GetExePathFromHWND(this.hWnd);
 		}
-		set;
+
 	}
 	public RECT rect
 	{
@@ -41,7 +41,7 @@ public class Window : IWindow
 			return _rect;
 
 		}
-		set;
+
 	}
 	public SHOWWINDOW state
 	{
@@ -51,7 +51,7 @@ public class Window : IWindow
 			User32.GetWindowPlacement(this.hWnd, ref wndPlmnt);
 			return (SHOWWINDOW)wndPlmnt.showCmd;
 		}
-		set;
+
 	}
 
 	public void Hide()
@@ -79,8 +79,8 @@ public class Window : IWindow
 
 public class Workspace : IWorkspace
 {
-	public List<Window> windows { get; set; } = new();
-	public Window? focusedWindow { get; set; } = null;
+	public List<Window> windows { get; } = new();
+	public Window? focusedWindow { get; private set; } = null;
 	public ILayout layout { get; set; } = new Dwindle();
 
 	public void Add(Window wnd) { windows.Add(wnd); }
@@ -155,9 +155,9 @@ public class Dwindle : ILayout
 
 public class WindowManager : IWindowManager
 {
-	public List<Window> windows { get; set; } = new();
-	public List<Workspace> workspaces { get; set; } = new();
-	public Workspace? focusedWorkspace { get; set; } = null;
+	public List<Window> windows { get; } = new();
+	public List<Workspace> workspaces { get; } = new();
+	public Workspace? focusedWorkspace { get; private set; } = null;
 
 	public WindowManager()
 	{
