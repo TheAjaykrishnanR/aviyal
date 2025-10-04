@@ -81,19 +81,24 @@ public class Workspace
 {
 	public List<Window> windows = new();
 	Window? focusedWindow = null;
-	Layout layout = new();
+	ILayout layout = new Dwindle();
 
 	public void Add(Window wnd) { windows.Add(wnd); }
 	public void Remove(nint hWnd)
 	{
-		int? search = windows.Index().First((i, wnd) => wnd.hWnd == hWnd).Item1;
+		int search = windows.Index().First(iwnd => iwnd.Item2.hWnd == hWnd).Item1;
 		if (search != null) windows.RemoveAt(search);
 	}
 
 	// main renderer
 	public void Focus()
 	{
-		windows.Index().ForEach((i, wnd) => wnd.Move(layout.GetRect(i)));
+		RECT[] rects = layout.GetRect(windows.Count);
+		for (int i = 0; i < windows.Count; i++)
+		{
+			windows[i].Move(rects[i]);
+			windows[i].Show();
+		}
 	}
 
 	public void FocusWindow(Window wnd)
@@ -103,20 +108,31 @@ public class Workspace
 	}
 }
 
-public class Layout : ILayout
+public class Dwindle : ILayout
 {
-	public RECT GetRect(int index)
+	public RECT[] GetRect(int count)
 	{
-		RECT rect = new();
-		return rect;
+		RECT[] rects = new RECT[count];
+		(int width, int height) = Utils.GetScreenSize();
+		for (int i = 0; i < count; i++)
+		{
+			// if count = 1
+			RECT rect = new();
+			rect.Left = outer;
+			rect.Right = width - outer;
+			rect.Top = outer;
+			rect.Bottom = height - outer;
+			rects[i] = rect;
+		}
+		return rects;
 	}
-	public int outer { get; set; }
-	public int inner { get; set; }
+	public int outer { get; set; } = 5;
+	public int inner { get; set; } = 5;
 }
 
 public interface ILayout
 {
-	public RECT GetRECT(int index);
+	public RECT[] GetRect(int index);
 	public int outer { get; set; }
 	public int inner { get; set; }
 }
@@ -124,7 +140,7 @@ public interface ILayout
 public class WindowManager
 {
 	List<Window> windows = new();
-	List<Workspaces> workspaces = new();
+	List<Workspace> workspaces = new();
 	Workspace? focusedWorkspace = null;
 
 	public WindowManager()
@@ -144,8 +160,9 @@ public class WindowManager
 		FocusWorkspace(wksp);
 	}
 
-	public void FocusWorkspace(Workspace wskp)
+	public void FocusWorkspace(Workspace wksp)
 	{
+		windows.ForEach(wnd => wnd.Hide());
 		wksp.Focus();
 		focusedWorkspace = wksp;
 	}
