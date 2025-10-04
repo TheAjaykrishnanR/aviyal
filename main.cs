@@ -114,20 +114,42 @@ public class Dwindle : ILayout
 	{
 		RECT[] rects = new RECT[count];
 		(int width, int height) = Utils.GetScreenSize();
+		FillDirection fillDirection = FillDirection.HORIZONTAL;
+		// where the nth window will go
+		RECT fillRect = new() { Left = 0, Top = 0, Right = width, Bottom = height };
 		for (int i = 0; i < count; i++)
 		{
-			// if count = 1
-			RECT rect = new();
-			rect.Left = outer;
-			rect.Right = width - outer;
-			rect.Top = outer;
-			rect.Bottom = height - outer;
-			rects[i] = rect;
+			rects[i] = fillRect;
+
+			// modify the fillRect
+			switch (fillDirection)
+			{
+				case FillDirection.HORIZONTAL:
+					if (i - 1 >= 0) rects[i - 1] = TopHalf(rects[i - 1]);
+					fillRect.Left += (int)((fillRect.Right - fillRect.Left) / 2);
+					break;
+				case FillDirection.VERTICAL:
+					if (i - 1 >= 0) rects[i - 1] = LeftHalf(rects[i - 1]);
+					fillRect.Top += (int)((fillRect.Bottom - fillRect.Top) / 2);
+					break;
+			}
+			fillDirection = fillDirection == FillDirection.HORIZONTAL ? FillDirection.VERTICAL : FillDirection.HORIZONTAL;
 		}
 		return rects;
 	}
 	public int outer { get; set; } = 5;
 	public int inner { get; set; } = 5;
+
+	RECT LeftHalf(RECT rect)
+	{
+		rect.Right -= (int)((rect.Right - rect.Left) / 2);
+		return rect;
+	}
+	RECT TopHalf(RECT rect)
+	{
+		rect.Bottom -= (int)((rect.Bottom - rect.Top) / 2);
+		return rect;
+	}
 }
 
 public interface ILayout
@@ -166,4 +188,10 @@ public class WindowManager
 		wksp.Focus();
 		focusedWorkspace = wksp;
 	}
+}
+
+enum FillDirection
+{
+	HORIZONTAL,
+	VERTICAL
 }
