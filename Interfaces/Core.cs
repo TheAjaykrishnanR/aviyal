@@ -31,7 +31,6 @@ public interface IWorkspace
 
 public interface IWindowManager
 {
-	public List<Window> windows { get; }
 	public List<Workspace> workspaces { get; }
 	public Workspace? focusedWorkspace { get; }
 

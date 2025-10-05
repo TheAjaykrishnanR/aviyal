@@ -229,7 +229,7 @@ public class Dwindle : ILayout
 
 public class WindowManager : IWindowManager
 {
-	public List<Window> windows { get; } = new();
+	List<Window> initWindows = new();
 	public List<Workspace> workspaces { get; } = new();
 	public Workspace? focusedWorkspace { get; private set; } = null;
 	public int focusedWorkspaceIndex
@@ -246,10 +246,10 @@ public class WindowManager : IWindowManager
 		List<nint>? hWnds = Utils.GetAllTaskbarWindows();
 		hWnds.ForEach(hWnd =>
 		{
-			windows.Add(new(hWnd));
+			initWindows.Add(new(hWnd));
 		});
-		windows = windows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
-		windows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
+		initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+		initWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
 		for (int i = 0; i < 9; i++)
 		{
@@ -257,7 +257,7 @@ public class WindowManager : IWindowManager
 			workspaces.Add(wksp);
 		}
 		// add all windows to 1st workspace
-		windows.ForEach(wnd => workspaces[0].windows.Add(wnd));
+		initWindows.ForEach(wnd => workspaces[0].windows.Add(wnd));
 		FocusWorkspace(workspaces[0]);
 
 		//
@@ -285,14 +285,14 @@ public class WindowManager : IWindowManager
 
 	public void FocusWorkspace(Workspace wksp)
 	{
-		windows.ForEach(wnd => wnd.Hide());
+		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => wnd.Hide()));
 		wksp.Focus();
 		focusedWorkspace = wksp;
 	}
 
 	public void WindowAdded(Window wnd)
 	{
-		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}");
+		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		focusedWorkspace.Add(wnd);
 		focusedWorkspace.Focus();
 	}

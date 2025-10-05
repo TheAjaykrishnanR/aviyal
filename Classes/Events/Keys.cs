@@ -27,15 +27,15 @@ public class KeyEventsListener
 	List<string> hotkeys = ["LCONTROL+LSHIFT+H", "LCONTROL+LSHIFT+L",];
 	void HotkeySearch(VK key, uint dt)
 	{
-		if (dt > 100) captured = new();
+		if (dt > 100) captured.Clear();
 		captured.Add(key);
 		string combo = string.Join("+", captured);
 		Console.WriteLine($"COMBO: {combo}");
 		if (hotkeys.Contains(combo))
 		{
-			Console.WriteLine("COMBO FIRED");
+			captured.Clear();
 			HOTKEY_PRESSED(combo);
-			captured = new();
+			Console.WriteLine("COMBO FIRED");
 		}
 	}
 
