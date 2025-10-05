@@ -10,6 +10,8 @@ class _Main
 	static void Main(string[] args)
 	{
 		WindowEventsListener wel = new();
+		KeyEventsListener kel = new();
+
 		WindowManager wm = new();
 		wel.WINDOW_ADDED += wm.WindowAdded;
 		wel.WINDOW_REMOVED += wm.WindowRemoved;

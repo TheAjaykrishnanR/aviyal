@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 using System.Runtime.InteropServices;
 
 public class KeyEventsListener
@@ -20,12 +23,29 @@ public class KeyEventsListener
 	[DllImport("user32.dll", SetLastError = true)]
 	public static extern bool DispatchMessage(ref uint msg);
 
+	System.Timers.Timer captureTimer = new(500);
+	bool capturing = false;
+	List<VK> captured = new();
+	void Capture(VK key)
+	{
+		if (!capturing)
+		{
+			capturing = true;
+			captureTimer.Start();
+		}
+		captured.Add(key);
+	}
+
+	uint lastKeyTime = 0;
 	void Loop()
 	{
 		KeyboardProc proc = (int code, nint wparam, nint lparam) =>
 		{
 			var info = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
-			Console.WriteLine($"code: {code}, wparam: {wparam}, key: {(VK)info.vkCode}");
+			Console.WriteLine($"code: {code}, wparam: {wparam}, key: {(VK)info.vkCode}, time: {info.time}, dt = {info.time - lastKeyTime}ms");
+			if ((uint)wparam == (uint)WINDOWMESSAGE.WM_KEYDOWN) Capture((VK)info.vkCode);
+			if (info.time - lastKeyTime < 1000)
+				lastKeyTime = info.time;
 			return CallNextHookEx(0, code, wparam, lparam);
 		};
 		const int WH_KEYBOARD_LL = 13;
@@ -41,9 +61,22 @@ public class KeyEventsListener
 		}
 	}
 
+	public delegate void HotkeyPressedEventHandler(List<VK> combo);
+	public event HotkeyPressedEventHandler HOTKEY_PRESSED = (combo) => { };
+
 	Thread thread;
 	public KeyEventsListener()
 	{
+		captureTimer.Elapsed += (s, e) =>
+		{
+			capturing = false;
+			HOTKEY_PRESSED(captured);
+			captured.ForEach(key => Console.Write($"HOTKEY: {key} "));
+			Console.WriteLine($"CAPTURED: {captured.Count}");
+			captured = new();
+			captureTimer.Stop();
+		};
+
 		thread = new(Loop);
 		thread.Start();
 	}
