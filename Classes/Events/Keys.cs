@@ -23,7 +23,7 @@ public class KeyEventsListener
 	[DllImport("user32.dll", SetLastError = true)]
 	public static extern bool DispatchMessage(ref uint msg);
 
-	System.Timers.Timer captureTimer = new(500);
+	System.Timers.Timer captureTimer = new(300);
 	bool capturing = false;
 	List<VK> captured = new();
 	void Capture(VK key)
@@ -61,7 +61,7 @@ public class KeyEventsListener
 		}
 	}
 
-	public delegate void HotkeyPressedEventHandler(List<VK> combo);
+	public delegate void HotkeyPressedEventHandler(string combo);
 	public event HotkeyPressedEventHandler HOTKEY_PRESSED = (combo) => { };
 
 	Thread thread;
@@ -70,9 +70,9 @@ public class KeyEventsListener
 		captureTimer.Elapsed += (s, e) =>
 		{
 			capturing = false;
-			HOTKEY_PRESSED(captured);
-			captured.ForEach(key => Console.Write($"HOTKEY: {key} "));
-			Console.WriteLine($"CAPTURED: {captured.Count}");
+			HOTKEY_PRESSED(string.Join("+", captured));
+			//captured.ForEach(key => Console.Write($"HOTKEY: {key} "));
+			//Console.WriteLine($"CAPTURED: {captured.Count}");
 			captured = new();
 			captureTimer.Stop();
 		};

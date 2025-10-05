@@ -11,10 +11,13 @@ class _Main
 	{
 		WindowEventsListener wel = new();
 		KeyEventsListener kel = new();
-
 		WindowManager wm = new();
+
 		wel.WINDOW_ADDED += wm.WindowAdded;
 		wel.WINDOW_REMOVED += wm.WindowRemoved;
+
+		kel.HOTKEY_PRESSED += wm.HotkeyPressed;
+
 		while (Console.ReadLine() != ":q") { }
 	}
 }
@@ -239,11 +242,14 @@ public class WindowManager : IWindowManager
 		windows = windows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		windows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
+		for (int i = 0; i < 9; i++)
+		{
+			Workspace wksp = new();
+			workspaces.Add(wksp);
+		}
 		// add all windows to 1st workspace
-		Workspace wksp = new();
-		workspaces.Add(wksp);
-		windows.ForEach(wnd => wksp.windows.Add(wnd));
-		FocusWorkspace(wksp);
+		windows.ForEach(wnd => workspaces[0].windows.Add(wnd));
+		FocusWorkspace(workspaces[0]);
 	}
 
 	public void FocusWorkspace(Workspace wksp)
@@ -266,6 +272,16 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Focus();
 	}
 	public void WindowMoved(Window wnd) { }
+
+	Dictionary<string, Action> comboActionMaps = new()
+	{
+		{ "G+L", () => Console.WriteLine("Ghoul") },
+	};
+	public void HotkeyPressed(string combo)
+	{
+		comboActionMaps.TryGetValue(combo, out Action action);
+		action?.Invoke();
+	}
 }
 
 enum FillDirection
