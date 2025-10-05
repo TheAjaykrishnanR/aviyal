@@ -1,6 +1,9 @@
 Remove-Item -Recurse -Confirm:$false bin\*
 
 dflat Main.cs `
+	  Interfaces\Core.cs `
+	  Classes\Core.cs `
+	  Classes\Layouts.cs `
 	  Classes\Win32\Functions.cs `
 	  Classes\Win32\Structs.cs `
 	  Classes\Win32\Delegates.cs `
@@ -9,7 +12,6 @@ dflat Main.cs `
 	  Classes\Utils\Extensions.cs `
 	  Classes\Events\Keys.cs `
 	  Classes\Events\Windows.cs `
-	  Interfaces\Core.cs `
 	  /langversion:preview `
 	  /out Main.exe
 
