@@ -67,7 +67,7 @@ public class Window : IWindow
 	}
 	public void Show()
 	{
-		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOW);
+		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOWNA);
 	}
 	public void Focus()
 	{
@@ -82,7 +82,7 @@ public class Window : IWindow
 		pos.Right -= margin.Right;
 		pos.Bottom -= margin.Bottom;
 
-		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
+		User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_BOTTOM, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
 	}
 
 	public RECT GetFrameMargin()
