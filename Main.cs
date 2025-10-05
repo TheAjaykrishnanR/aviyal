@@ -113,6 +113,7 @@ public class Window : IWindow
 
 public class Workspace : IWorkspace
 {
+	public Guid id { get; } = Guid.NewGuid();
 	public List<Window> windows { get; } = new();
 	public Window? focusedWindow { get; private set; } = null;
 	public ILayout layout { get; set; } = new Dwindle();
@@ -120,9 +121,9 @@ public class Workspace : IWorkspace
 	public void Add(Window wnd) { windows.Add(wnd); }
 	public void Remove(nint hWnd)
 	{
-		int search = windows.Index().First(iwnd => iwnd.Item2.hWnd == hWnd).Item1;
-		Console.WriteLine($"removed: {search}");
-		if (search != null) windows.RemoveAt(search);
+		(int, Window)? search = windows.Index().First(iwnd => iwnd.Item2.hWnd == hWnd);
+		int? index = search?.Item1;
+		if (index != null) windows.RemoveAt((int)index);
 	}
 
 	// main renderer
@@ -231,9 +232,17 @@ public class WindowManager : IWindowManager
 	public List<Window> windows { get; } = new();
 	public List<Workspace> workspaces { get; } = new();
 	public Workspace? focusedWorkspace { get; private set; } = null;
+	public int focusedWorkspaceIndex
+	{
+		get
+		{
+			return workspaces.Index().ToList().First(iwksp => iwksp.Item2.id == focusedWorkspace.id).Item1;
+		}
+	}
 
 	public WindowManager()
 	{
+
 		List<nint>? hWnds = Utils.GetAllTaskbarWindows();
 		hWnds.ForEach(hWnd =>
 		{
@@ -250,6 +259,28 @@ public class WindowManager : IWindowManager
 		// add all windows to 1st workspace
 		windows.ForEach(wnd => workspaces[0].windows.Add(wnd));
 		FocusWorkspace(workspaces[0]);
+
+		//
+		comboActionMaps = new()
+		{
+			{
+				"LCONTROL+LSHIFT+H",
+				() =>
+				{
+					if(focusedWorkspaceIndex - 1 >= 0) FocusWorkspace(workspaces[focusedWorkspaceIndex - 1]);
+					Console.WriteLine($"Focussed workspace index: {focusedWorkspaceIndex}");
+				}
+			},
+			{
+				"LCONTROL+LSHIFT+L",
+				() =>
+				{
+					FocusWorkspace(workspaces[focusedWorkspaceIndex + 1]);
+					Console.WriteLine($"Focussed workspace index: {focusedWorkspaceIndex}");
+				}
+			},
+
+		};
 	}
 
 	public void FocusWorkspace(Workspace wksp)
@@ -273,10 +304,7 @@ public class WindowManager : IWindowManager
 	}
 	public void WindowMoved(Window wnd) { }
 
-	Dictionary<string, Action> comboActionMaps = new()
-	{
-		{ "G+L", () => Console.WriteLine("Ghoul") },
-	};
+	Dictionary<string, Action> comboActionMaps = new();
 	public void HotkeyPressed(string combo)
 	{
 		comboActionMaps.TryGetValue(combo, out Action action);

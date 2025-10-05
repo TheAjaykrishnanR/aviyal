@@ -23,7 +23,7 @@ public class KeyEventsListener
 	[DllImport("user32.dll", SetLastError = true)]
 	public static extern bool DispatchMessage(ref uint msg);
 
-	System.Timers.Timer captureTimer = new(300);
+	System.Timers.Timer captureTimer = new(200);
 	bool capturing = false;
 	List<VK> captured = new();
 	void Capture(VK key)
