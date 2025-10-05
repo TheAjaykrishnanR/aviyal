@@ -131,6 +131,16 @@ public class Workspace : IWorkspace
 	public Window? focusedWindow { get; private set; } = null;
 	public ILayout layout { get; set; } = new Dwindle();
 
+	public override bool Equals(object? obj)
+	{
+		if (((Workspace)obj).id == this.id) return true;
+		return false;
+	}
+
+	public static bool operator ==(Workspace left, Workspace right) { return left.Equals(right); }
+
+	public static bool operator !=(Workspace left, Workspace right) { return !left.Equals(right); }
+
 	public void Add(Window wnd) { windows.Add(wnd); }
 	//public void Remove(nint hWnd)
 	public void Remove(Window wnd)
@@ -251,7 +261,12 @@ public class WindowManager : IWindowManager
 	{
 		get
 		{
-			return workspaces.Index().ToList().First(iwksp => iwksp.Item2.id == focusedWorkspace.id).Item1;
+			int index = 0;
+			for (int i = 0; i < workspaces.Count; i++)
+			{
+				if (workspaces[i] == focusedWorkspace) index = i;
+			}
+			return index;
 		}
 	}
 
