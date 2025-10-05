@@ -167,9 +167,9 @@ public class WindowManager : IWindowManager
 		}
 	}
 	public int WORKSPACES = 9;
+
 	public WindowManager()
 	{
-
 		List<nint>? hWnds = Utils.GetAllTaskbarWindows();
 		hWnds.ForEach(hWnd =>
 		{
@@ -221,14 +221,6 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Focus();
 	}
 	public void WindowMoved(Window wnd) { }
-
-	public void HotkeyPressed(List<VK> captured)
-	{
-		if (Utils.ListContentEqual<VK>(captured, [VK.LCONTROL, VK.LSHIFT, VK.L]))
-			FocusNextWorkspace();
-		if (Utils.ListContentEqual<VK>(captured, [VK.LCONTROL, VK.LSHIFT, VK.H]))
-			FocusPreviousWorkspace();
-	}
 }
 
 enum FillDirection

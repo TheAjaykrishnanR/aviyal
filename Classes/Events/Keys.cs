@@ -25,10 +25,8 @@ public class KeyEventsListener
 	public static extern bool DispatchMessage(ref uint msg);
 
 	List<VK> captured = new();
-	List<List<VK>> hotkeys = [
-		[ VK.LCONTROL, VK.LSHIFT, VK.H ],
-		[ VK.LCONTROL, VK.LSHIFT, VK.L ],
-	];
+	List<Keymap> keymaps = new();
+
 	void HotkeySearch(VK key, uint dt)
 	{
 		if (dt >= 300)
@@ -38,11 +36,11 @@ public class KeyEventsListener
 		}
 		captured.Add(key);
 
-		foreach (List<VK> hotkey in hotkeys)
+		foreach (Keymap keymap in keymaps)
 		{
-			if (Utils.ListContentEqual<VK>(captured, hotkey))
+			if (Utils.ListContentEqual<VK>(captured, keymap.keys))
 			{
-				HOTKEY_PRESSED(captured);
+				HOTKEY_PRESSED(keymap);
 				captured.Clear();
 				break;
 			}
@@ -74,15 +72,38 @@ public class KeyEventsListener
 		}
 	}
 
-	public delegate void HotkeyPressedEventHandler(List<VK> captured);
-	public event HotkeyPressedEventHandler HOTKEY_PRESSED = (captured) => { };
+	public delegate void HotkeyPressedEventHandler(Keymap keymap);
+	public event HotkeyPressedEventHandler HOTKEY_PRESSED = (keymap) => { };
 
 	Thread thread;
-	public KeyEventsListener()
+	public KeyEventsListener(List<Keymap> keymaps)
 	{
+		this.keymaps = keymaps;
+
 		thread = new(Loop);
 		thread.Start();
 	}
+}
+
+public class Keymap
+{
+	public Guid id { get; } = Guid.NewGuid();
+	public List<VK> keys = new();
+	public COMMAND command;
+	public COMMANDTYPE type;
+	public override bool Equals(object? obj)
+	{
+		if (((Keymap)obj).id == this.id) return true;
+		return false;
+	}
+	public static bool operator ==(Keymap left, Keymap right) { return left.Equals(right); }
+	public static bool operator !=(Keymap left, Keymap right) { return !left.Equals(right); }
+}
+
+public enum COMMANDTYPE
+{
+	COMMAND,
+	SHELL_COMMAND
 }
 
 public enum VK : int

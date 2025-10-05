@@ -7,20 +7,47 @@ using System.Linq;
 
 class Aviyal
 {
-	static void Main(string[] args)
-	{
-		WindowManager wm = new();
-		WindowEventsListener wndListener = new();
-		KeyEventsListener kbdListener = new();
+	WindowManager wm = new();
+	WindowEventsListener wndListener = new();
+	KeyEventsListener kbdListener;
 
+	Dictionary<COMMAND, Action> actions { get; }
+
+	public Aviyal()
+	{
+		actions = new()
+		{
+			{ COMMAND.FOCUS_NEXT_WORKSPACE, () => wm.FocusNextWorkspace() },
+			{ COMMAND.FOCUS_PREVIOUS_WORKSPACE, () => wm.FocusPreviousWorkspace() },
+		};
 		// in order to recieve window events for windows that
 		// already exists while the application is run
 		wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
-
 		wndListener.WINDOW_ADDED += wm.WindowAdded;
 		wndListener.WINDOW_REMOVED += wm.WindowRemoved;
-		kbdListener.HOTKEY_PRESSED += wm.HotkeyPressed;
 
+		List<Keymap> keymaps = [
+			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.L], command= COMMAND.FOCUS_NEXT_WORKSPACE },
+			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.H], command= COMMAND.FOCUS_PREVIOUS_WORKSPACE },
+		];
+		kbdListener = new(keymaps);
+		kbdListener.HOTKEY_PRESSED += HotkeyPressed;
+	}
+
+	public void HotkeyPressed(Keymap keymap)
+	{
+		actions[keymap.command]?.Invoke();
+	}
+
+	static void Main(string[] args)
+	{
+		Aviyal aviyal = new();
 		while (Console.ReadLine() != ":q") { }
 	}
+}
+
+public enum COMMAND
+{
+	FOCUS_NEXT_WORKSPACE,
+	FOCUS_PREVIOUS_WORKSPACE
 }
