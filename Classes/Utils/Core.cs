@@ -317,8 +317,17 @@ public partial class Utils
 	{
 		nint hMon = User32.MonitorFromPoint(new POINT() { X = 0, Y = 0 }, 0x01);
 		Shcore.GetDpiForMonitor(hMon, MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out uint dpiX, out uint dpiY);
+		Console.WriteLine($"dpiX: {dpiX}, dpiY: {dpiY}");
 		return dpiX / 96.0f;
 	}
+
+	//public static double GetDisplayScaling()
+	//{
+	//	nint hMon = User32.MonitorFromPoint(new POINT() { X = 0, Y = 0 }, 0x01);
+	//	Shcore.GetScaleFactorForMonitor(hMon, out DEVICE_SCALE_FACTOR scale);
+	//	Console.WriteLine($"SCALE: {scale}, hMon: {hMon}");
+	//	return ((double)scale) / 100;
+	//}
 
 	/// <summary>
 	/// Hides window in the alt-tab window by (ADDING the WS_EX_TOOLWINDOW) and 
@@ -361,8 +370,9 @@ public partial class Utils
 		double scale = Utils.GetDisplayScaling();
 		int screenWidth = User32.GetSystemMetrics(0);
 		int screenHeight = User32.GetSystemMetrics(1);
-		screenWidth = (int)(screenWidth / scale);
-		screenHeight = (int)(screenHeight / scale);
+		screenWidth = (int)(screenWidth);
+		screenHeight = (int)(screenHeight);
+		Console.WriteLine($"[{screenWidth}x{screenHeight}], scale: {scale}");
 		return (screenWidth, screenHeight);
 	}
 

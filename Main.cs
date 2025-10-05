@@ -41,6 +41,7 @@ class Aviyal
 
 	static void Main(string[] args)
 	{
+		Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
 		Aviyal aviyal = new();
 		while (Console.ReadLine() != ":q") { }
 	}

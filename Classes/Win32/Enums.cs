@@ -718,10 +718,18 @@ public enum ADRESS_FAMILY : uint
 	AF_INET6 = 23
 }
 
+public enum PROCESS_DPI_AWARENESS
+{
+	PROCESS_DPI_UNAWARE = 0,
+	PROCESS_SYSTEM_DPI_AWARE = 1,
+	PROCESS_PER_MONITOR_DPI_AWARE = 2
+}
+
 /// <summary>
 /// Used by GetScaleFactorForMonitor()
 /// </summary>
-public enum DEVICE_SCALE_FACTOR : uint
+///
+public enum DEVICE_SCALE_FACTOR : int
 {
 	DEVICE_SCALE_FACTOR_INVALID = 0,
 	SCALE_100_PERCENT = 100,

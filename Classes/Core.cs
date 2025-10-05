@@ -81,13 +81,15 @@ public class Window : IWindow
 	public RECT GetFrameMargin()
 	{
 		User32.GetWindowRect(this.hWnd, out RECT rect);
-		//Console.WriteLine($"GWR [L: {rect.Left} R: {rect.Right} T: {rect.Top} B:{rect.Bottom}]");
+		Console.WriteLine($"GWR [L: {rect.Left} R: {rect.Right} T: {rect.Top} B:{rect.Bottom}]");
 		int size = Marshal.SizeOf<RECT>();
 		nint rectPtr = Marshal.AllocHGlobal(size);
 		Dwmapi.DwmGetWindowAttribute(this.hWnd, (uint)DWMWINDOWATTRIBUTE.DWMWA_EXTENDED_FRAME_BOUNDS, rectPtr, (uint)size);
 		RECT rect2 = Marshal.PtrToStructure<RECT>(rectPtr);
 		Marshal.FreeHGlobal(rectPtr);
-		//Console.WriteLine($"DWM [L: {rect2.Left} R: {rect2.Right} T: {rect2.Top} B:{rect2.Bottom}]");
+		Console.WriteLine($"DWM [L: {rect2.Left} R: {rect2.Right} T: {rect2.Top} B:{rect2.Bottom}]");
+		// scale dwm rect2 to take into account display scaling
+		double scale = Utils.GetDisplayScaling();
 
 		return new RECT()
 		{
@@ -96,6 +98,15 @@ public class Window : IWindow
 			Right = rect2.Right - rect.Right,
 			Bottom = rect2.Bottom - rect.Bottom,
 		};
+	}
+
+	RECT ScaleRect(RECT rect, double scale)
+	{
+		rect.Left = (int)(rect.Left * scale);
+		rect.Top = (int)(rect.Top * scale);
+		rect.Right = (int)(rect.Right * scale);
+		rect.Bottom = (int)(rect.Bottom * scale);
+		return rect;
 	}
 
 	public Window(nint hWnd)
