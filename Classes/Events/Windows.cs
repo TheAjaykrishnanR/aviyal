@@ -29,8 +29,9 @@ public class WindowEventsListener
 
 	int OBJID_WINDOW = 0;
 	int CHILDID_SELF = 0;
-	List<nint> created = new();
-	List<nint> shown = new();
+
+	public List<nint> created = new();
+	public List<nint> shown = new();
 
 	public delegate void WindowAddedEventHandler(Window wnd);
 	public event WindowAddedEventHandler WINDOW_ADDED = (wnd) => { };
@@ -74,7 +75,7 @@ public class WindowEventsListener
 						WINDOW_REMOVED(new Window(hWnd));
 					break;
 			}
-			//Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}");
+			Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, shown.Count: {shown.Count}");
 		}
 	}
 

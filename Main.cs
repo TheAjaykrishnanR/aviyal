@@ -9,13 +9,16 @@ class _Main
 {
 	static void Main(string[] args)
 	{
+		WindowManager wm = new();
 		WindowEventsListener wel = new();
 		KeyEventsListener kel = new();
-		WindowManager wm = new();
+
+		// in order to recieve window events for windows that
+		// already exists while the application is run
+		wm.initWindows.ForEach(wnd => wel.shown.Add(wnd.hWnd));
 
 		wel.WINDOW_ADDED += wm.WindowAdded;
 		wel.WINDOW_REMOVED += wm.WindowRemoved;
-
 		kel.HOTKEY_PRESSED += wm.HotkeyPressed;
 
 		while (Console.ReadLine() != ":q") { }
@@ -229,7 +232,7 @@ public class Dwindle : ILayout
 
 public class WindowManager : IWindowManager
 {
-	List<Window> initWindows = new();
+	public List<Window> initWindows { get; } = new();
 	public List<Workspace> workspaces { get; } = new();
 	public Workspace? focusedWorkspace { get; private set; } = null;
 	public int focusedWorkspaceIndex
