@@ -269,7 +269,7 @@ public class WindowManager : IWindowManager
 			return index;
 		}
 	}
-
+	public int WORKSPACES = 9;
 	public WindowManager()
 	{
 
@@ -281,7 +281,7 @@ public class WindowManager : IWindowManager
 		initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		initWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
-		for (int i = 0; i < 9; i++)
+		for (int i = 0; i < WORKSPACES; i++)
 		{
 			Workspace wksp = new();
 			workspaces.Add(wksp);
@@ -289,7 +289,6 @@ public class WindowManager : IWindowManager
 		// add all windows to 1st workspace
 		initWindows.ForEach(wnd => workspaces[0].windows.Add(wnd));
 		FocusWorkspace(workspaces[0]);
-
 	}
 
 	public void FocusWorkspace(Workspace wksp)
@@ -301,12 +300,14 @@ public class WindowManager : IWindowManager
 
 	public void FocusNextWorkspace()
 	{
-		FocusWorkspace(workspaces[focusedWorkspaceIndex + 1]);
+		if (focusedWorkspaceIndex < workspaces.Count - 1) FocusWorkspace(workspaces[focusedWorkspaceIndex + 1]);
+		else FocusWorkspace(workspaces.First());
 		Console.WriteLine($"next, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 	}
 	public void FocusPreviousWorkspace()
 	{
-		if (focusedWorkspaceIndex - 1 >= 0) FocusWorkspace(workspaces[focusedWorkspaceIndex - 1]);
+		if (focusedWorkspaceIndex > 0) FocusWorkspace(workspaces[focusedWorkspaceIndex - 1]);
+		else FocusWorkspace(workspaces.Last());
 		Console.WriteLine($"previous, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 	}
 
