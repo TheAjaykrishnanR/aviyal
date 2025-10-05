@@ -64,6 +64,16 @@ public class Window : IWindow
 		}
 	}
 
+	public override bool Equals(object? obj)
+	{
+		if (((Window)obj).hWnd == this.hWnd) return true;
+		return false;
+	}
+
+	public static bool operator ==(Window left, Window right) { return left.Equals(right); }
+
+	public static bool operator !=(Window left, Window right) { return !left.Equals(right); }
+
 	public void Hide()
 	{
 		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_HIDE);
@@ -122,11 +132,13 @@ public class Workspace : IWorkspace
 	public ILayout layout { get; set; } = new Dwindle();
 
 	public void Add(Window wnd) { windows.Add(wnd); }
-	public void Remove(nint hWnd)
+	//public void Remove(nint hWnd)
+	public void Remove(Window wnd)
 	{
-		(int, Window)? search = windows.Index().First(iwnd => iwnd.Item2.hWnd == hWnd);
-		int? index = search?.Item1;
-		if (index != null) windows.RemoveAt((int)index);
+		//(int, Window)? search = windows.Index().First(iwnd => iwnd.Item2.hWnd == hWnd);
+		//int? index = search?.Item1;
+		//if (index != null) windows.RemoveAt((int)index);
+		windows.Remove(wnd);
 	}
 
 	// main renderer
@@ -292,7 +304,7 @@ public class WindowManager : IWindowManager
 	public void WindowRemoved(Window wnd)
 	{
 		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
-		focusedWorkspace.Remove(wnd.hWnd);
+		focusedWorkspace.Remove(wnd);
 		focusedWorkspace.Focus();
 	}
 	public void WindowMoved(Window wnd) { }

@@ -23,7 +23,7 @@ public interface IWorkspace
 	public ILayout layout { get; set; }
 
 	public void Add(Window wnd);
-	public void Remove(nint hWnd);
+	public void Remove(Window wnd);
 
 	public void Focus();
 	public void FocusWindow(Window wnd);
