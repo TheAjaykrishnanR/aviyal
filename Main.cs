@@ -10,16 +10,16 @@ class Aviyal
 	static void Main(string[] args)
 	{
 		WindowManager wm = new();
-		WindowEventsListener wel = new();
-		KeyEventsListener kel = new();
+		WindowEventsListener wndListener = new();
+		KeyEventsListener kbdListener = new();
 
 		// in order to recieve window events for windows that
 		// already exists while the application is run
-		wm.initWindows.ForEach(wnd => wel.shown.Add(wnd.hWnd));
+		wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
 
-		wel.WINDOW_ADDED += wm.WindowAdded;
-		wel.WINDOW_REMOVED += wm.WindowRemoved;
-		kel.HOTKEY_PRESSED += wm.HotkeyPressed;
+		wndListener.WINDOW_ADDED += wm.WindowAdded;
+		wndListener.WINDOW_REMOVED += wm.WindowRemoved;
+		kbdListener.HOTKEY_PRESSED += wm.HotkeyPressed;
 
 		while (Console.ReadLine() != ":q") { }
 	}
