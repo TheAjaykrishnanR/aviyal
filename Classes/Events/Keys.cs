@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -24,18 +25,27 @@ public class KeyEventsListener
 	public static extern bool DispatchMessage(ref uint msg);
 
 	List<VK> captured = new();
-	List<string> hotkeys = ["LCONTROL+LSHIFT+H", "LCONTROL+LSHIFT+L",];
+	List<List<VK>> hotkeys = [
+		[ VK.LCONTROL, VK.LSHIFT, VK.H ],
+		[ VK.LCONTROL, VK.LSHIFT, VK.L ],
+	];
 	void HotkeySearch(VK key, uint dt)
 	{
-		if (dt > 100) captured.Clear();
-		captured.Add(key);
-		string combo = string.Join("+", captured);
-		Console.WriteLine($"COMBO: {combo}");
-		if (hotkeys.Contains(combo))
+		if (dt >= 300)
 		{
 			captured.Clear();
-			HOTKEY_PRESSED(combo);
-			Console.WriteLine("COMBO FIRED");
+			Console.WriteLine($"[ CAPTURED ]: CLEARED");
+		}
+		captured.Add(key);
+
+		foreach (List<VK> hotkey in hotkeys)
+		{
+			if (Utils.ListContentEqual<VK>(captured, hotkey))
+			{
+				HOTKEY_PRESSED(captured);
+				captured.Clear();
+				break;
+			}
 		}
 	}
 
@@ -45,7 +55,7 @@ public class KeyEventsListener
 		KeyboardProc proc = (int code, nint wparam, nint lparam) =>
 		{
 			var info = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
-			Console.WriteLine($"code: {code}, wparam: {wparam}, key: {(VK)info.vkCode}, time: {info.time}, dt = {info.time - lastKeyTime}ms");
+			//Console.WriteLine($"code: {code}, wparam: {wparam}, key: {(VK)info.vkCode}, time: {info.time}, dt = {info.time - lastKeyTime}ms");
 			if ((uint)wparam == (uint)WINDOWMESSAGE.WM_KEYDOWN)
 				HotkeySearch((VK)info.vkCode, info.time - lastKeyTime);
 			lastKeyTime = info.time;
@@ -64,8 +74,8 @@ public class KeyEventsListener
 		}
 	}
 
-	public delegate void HotkeyPressedEventHandler(string combo);
-	public event HotkeyPressedEventHandler HOTKEY_PRESSED = (combo) => { };
+	public delegate void HotkeyPressedEventHandler(List<VK> captured);
+	public event HotkeyPressedEventHandler HOTKEY_PRESSED = (captured) => { };
 
 	Thread thread;
 	public KeyEventsListener()

@@ -387,6 +387,15 @@ public partial class Utils
 			return (imgWidth, imgHeight);
 	}
 
+	public static bool ListContentEqual<T>(List<T> a, List<T> b)
+	{
+		if (a.Count != b.Count) return false;
+		for (int i = 0; i < a.Count; i++)
+		{
+			if (!b.Contains(a[i])) return false;
+		}
+		return true;
+	}
 }
 
 public class _Window

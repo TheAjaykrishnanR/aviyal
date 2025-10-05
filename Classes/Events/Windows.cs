@@ -74,7 +74,7 @@ public class WindowEventsListener
 						WINDOW_REMOVED(new Window(hWnd));
 					break;
 			}
-			Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}");
+			//Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}");
 		}
 	}
 

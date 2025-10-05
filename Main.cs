@@ -260,27 +260,6 @@ public class WindowManager : IWindowManager
 		initWindows.ForEach(wnd => workspaces[0].windows.Add(wnd));
 		FocusWorkspace(workspaces[0]);
 
-		//
-		comboActionMaps = new()
-		{
-			{
-				"LCONTROL+LSHIFT+H",
-				() =>
-				{
-					if(focusedWorkspaceIndex - 1 >= 0) FocusWorkspace(workspaces[focusedWorkspaceIndex - 1]);
-					Console.WriteLine($"Focussed workspace index: {focusedWorkspaceIndex}");
-				}
-			},
-			{
-				"LCONTROL+LSHIFT+L",
-				() =>
-				{
-					FocusWorkspace(workspaces[focusedWorkspaceIndex + 1]);
-					Console.WriteLine($"Focussed workspace index: {focusedWorkspaceIndex}");
-				}
-			},
-
-		};
 	}
 
 	public void FocusWorkspace(Workspace wksp)
@@ -288,6 +267,17 @@ public class WindowManager : IWindowManager
 		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => wnd.Hide()));
 		wksp.Focus();
 		focusedWorkspace = wksp;
+	}
+
+	public void FocusNextWorkspace()
+	{
+		FocusWorkspace(workspaces[focusedWorkspaceIndex + 1]);
+		Console.WriteLine($"next, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+	}
+	public void FocusPreviousWorkspace()
+	{
+		if (focusedWorkspaceIndex - 1 >= 0) FocusWorkspace(workspaces[focusedWorkspaceIndex - 1]);
+		Console.WriteLine($"previous, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 	}
 
 	public void WindowAdded(Window wnd)
@@ -304,11 +294,12 @@ public class WindowManager : IWindowManager
 	}
 	public void WindowMoved(Window wnd) { }
 
-	Dictionary<string, Action> comboActionMaps = new();
-	public void HotkeyPressed(string combo)
+	public void HotkeyPressed(List<VK> captured)
 	{
-		comboActionMaps.TryGetValue(combo, out Action action);
-		action?.Invoke();
+		if (Utils.ListContentEqual<VK>(captured, [VK.LCONTROL, VK.LSHIFT, VK.L]))
+			FocusNextWorkspace();
+		if (Utils.ListContentEqual<VK>(captured, [VK.LCONTROL, VK.LSHIFT, VK.H]))
+			FocusPreviousWorkspace();
 	}
 }
 
