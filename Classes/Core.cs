@@ -109,6 +109,11 @@ public class Window : IWindow
 		return rect;
 	}
 
+	public void Close()
+	{
+		User32.SendMessage(this.hWnd, (uint)WINDOWMESSAGE.WM_CLOSE, 0, 0);
+	}
+
 	public Window(nint hWnd)
 	{
 		this.hWnd = hWnd;
@@ -119,7 +124,14 @@ public class Workspace : IWorkspace
 {
 	public Guid id { get; } = Guid.NewGuid();
 	public List<Window> windows { get; } = new();
-	public Window? focusedWindow { get; private set; } = null;
+	public Window? focusedWindow
+	{
+		get
+		{
+			return new Window(User32.GetForegroundWindow());
+		}
+		private set;
+	}
 	public ILayout layout { get; set; } = new Dwindle();
 
 	public override bool Equals(object? obj)
@@ -156,7 +168,7 @@ public class Workspace : IWorkspace
 	public void FocusWindow(Window wnd)
 	{
 		wnd.Focus();
-		focusedWindow = wnd;
+		//focusedWindow = wnd;
 	}
 }
 
@@ -218,6 +230,7 @@ public class WindowManager : IWindowManager
 		else FocusWorkspace(workspaces.Last());
 		Console.WriteLine($"previous, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 	}
+	public void CloseFocusedWindow() => focusedWorkspace.focusedWindow.Close();
 
 	public void WindowAdded(Window wnd)
 	{

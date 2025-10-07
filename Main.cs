@@ -19,6 +19,7 @@ class Aviyal
 		{
 			{ COMMAND.FOCUS_NEXT_WORKSPACE, () => wm.FocusNextWorkspace() },
 			{ COMMAND.FOCUS_PREVIOUS_WORKSPACE, () => wm.FocusPreviousWorkspace() },
+			{ COMMAND.CLOSE_FOCUSED_WINDOW, () => wm.CloseFocusedWindow() },
 		};
 		// in order to recieve window events for windows that
 		// already exists while the application is run
@@ -29,6 +30,7 @@ class Aviyal
 		List<Keymap> keymaps = [
 			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.L], command= COMMAND.FOCUS_NEXT_WORKSPACE },
 			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.H], command= COMMAND.FOCUS_PREVIOUS_WORKSPACE },
+			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.X], command= COMMAND.CLOSE_FOCUSED_WINDOW},
 		];
 		kbdListener = new(keymaps);
 		kbdListener.HOTKEY_PRESSED += HotkeyPressed;
@@ -50,5 +52,10 @@ class Aviyal
 public enum COMMAND
 {
 	FOCUS_NEXT_WORKSPACE,
-	FOCUS_PREVIOUS_WORKSPACE
+	FOCUS_PREVIOUS_WORKSPACE,
+	CLOSE_FOCUSED_WINDOW,
+	FOCUS_RIGHT_WINDOW,
+	FOCUS_TOP_WINDOW,
+	FOCUS_LEFT_WINDOW,
+	FOCUS_BOTTOM_WINDOW,
 }

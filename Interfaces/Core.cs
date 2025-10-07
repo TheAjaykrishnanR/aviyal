@@ -14,6 +14,7 @@ public interface IWindow
 	public void Show();
 	public void Focus();
 	public void Move(RECT pos);
+	public void Close();
 }
 
 public interface IWorkspace
