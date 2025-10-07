@@ -27,42 +27,49 @@ public class KeyEventsListener
 	List<VK> captured = new();
 	List<Keymap> keymaps = new();
 
-	void HotkeySearch(VK key, uint dt)
+	void Log(List<VK> keys, uint dt = 0, string prefix = "")
 	{
-		if (dt >= 300)
-		{
-			captured.Clear();
-			Console.WriteLine($"[ CAPTURED ]: CLEARED");
-		}
-		captured.Add(key);
-
-		foreach (Keymap keymap in keymaps)
-		{
-			if (Utils.ListContentEqual<VK>(captured, keymap.keys))
-			{
-				HOTKEY_PRESSED(keymap);
-				captured.Clear();
-				break;
-			}
-		}
+		Console.Write($"{prefix}[");
+		keys.ForEach(key => Console.Write($"{key}, "));
+		Console.Write($"] {dt}ms\n");
 	}
 
 	uint lastKeyTime = 0;
+	int KeyboardCallback(int code, nint wparam, nint lparam)
+	{
+		var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
+		VK key = (VK)kbdStruct.vkCode;
+		uint dt = kbdStruct.time - lastKeyTime;
+		switch ((WINDOWMESSAGE)wparam)
+		{
+			case WINDOWMESSAGE.WM_KEYDOWN:
+				if (!captured.Contains(key)) captured.Add(key);
+				foreach (Keymap keymap in keymaps)
+				{
+					if (Utils.ListContentEqual<VK>(captured, keymap.keys))
+					{
+						Log(captured, dt, "HOTKEY_PRESSED");
+						Log(keymap.keys, dt, "HOTKEY_PRESSED");
+						HOTKEY_PRESSED(keymap);
+						break;
+					}
+				}
+				break;
+			case WINDOWMESSAGE.WM_KEYUP:
+				captured.Remove(key);
+				break;
+		}
+		Log(captured, dt);
+		lastKeyTime = kbdStruct.time;
+		return CallNextHookEx(0, code, wparam, lparam);
+	}
+
 	void Loop()
 	{
-		KeyboardProc proc = (int code, nint wparam, nint lparam) =>
-		{
-			var info = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
-			//Console.WriteLine($"code: {code}, wparam: {wparam}, key: {(VK)info.vkCode}, time: {info.time}, dt = {info.time - lastKeyTime}ms");
-			if ((uint)wparam == (uint)WINDOWMESSAGE.WM_KEYDOWN)
-				HotkeySearch((VK)info.vkCode, info.time - lastKeyTime);
-			lastKeyTime = info.time;
-			return CallNextHookEx(0, code, wparam, lparam);
-		};
 		const int WH_KEYBOARD_LL = 13;
 		// hmod = 0, hook function is in code
 		// dwThreadId = 0, hook all threads
-		nint hhook = SetWindowsHookExA(WH_KEYBOARD_LL, proc, Process.GetCurrentProcess().MainModule.BaseAddress, 0);
+		nint hhook = SetWindowsHookExA(WH_KEYBOARD_LL, KeyboardCallback, Process.GetCurrentProcess().MainModule.BaseAddress, 0);
 		// always use a message pump, instead of: while(Console.ReadLine() != ":q") { }
 		while (true)
 		{

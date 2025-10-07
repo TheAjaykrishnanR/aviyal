@@ -402,7 +402,7 @@ public partial class Utils
 		if (a.Count != b.Count) return false;
 		for (int i = 0; i < a.Count; i++)
 		{
-			if (!b.Contains(a[i])) return false;
+			if (!b.Contains(a[i]) || !a.Contains(b[i])) return false;
 		}
 		return true;
 	}
