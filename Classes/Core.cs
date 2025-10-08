@@ -14,8 +14,8 @@ public class Window : IWindow
 		{
 			return Utils.GetWindowTitleFromHWND(this.hWnd);
 		}
-
 	}
+
 	public string className { get; }
 	public string exe
 	{
@@ -23,8 +23,8 @@ public class Window : IWindow
 		{
 			return Utils.GetExePathFromHWND(this.hWnd);
 		}
-
 	}
+
 	public RECT rect
 	{
 		get
@@ -136,6 +136,7 @@ public class Workspace : IWorkspace
 	{
 		get
 		{
+			// TODO: changes state while performing operations
 			Window wnd = new(User32.GetForegroundWindow());
 			if (windows.Contains(wnd)) return wnd;
 			return windows.First();
@@ -149,7 +150,12 @@ public class Workspace : IWorkspace
 			int index = 0;
 			for (int i = 0; i < windows.Count; i++)
 			{
-				if (windows[i] == focusedWindow) index = i;
+				Console.WriteLine($"windows[{i}]: {windows[i].hWnd}, focusedWindow: {focusedWindow.hWnd}");
+				if (windows[i] == focusedWindow)
+				{
+					index = i;
+					break;
+				}
 			}
 			return index;
 		}
@@ -190,10 +196,9 @@ public class Workspace : IWorkspace
 	public void FocusWindow(Window wnd)
 	{
 		wnd.Focus();
-		//focusedWindow = wnd;
+		// dont leave this function until focusWindow gets stable
+		TaskEx.WaitUntil(() => wnd == focusedWindow).Wait();
 	}
-
-
 
 	public void FocusAdjacentWindow(EDGE direction)
 	{
@@ -215,7 +220,11 @@ public class WindowManager : IWindowManager
 			int index = 0;
 			for (int i = 0; i < workspaces.Count; i++)
 			{
-				if (workspaces[i] == focusedWorkspace) index = i;
+				if (workspaces[i] == focusedWorkspace)
+				{
+					index = i;
+					break;
+				}
 			}
 			return index;
 		}

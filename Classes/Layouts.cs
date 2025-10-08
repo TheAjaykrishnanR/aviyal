@@ -94,7 +94,7 @@ public class Dwindle : ILayout
 	EDGE[] GetEdges(RECT rect, int screenWidth, int screenHeight)
 	{
 		List<EDGE> edges = new();
-		Console.WriteLine($"GetEdges: {rect.Left}");
+		//Console.WriteLine($"GetEdges: {rect.Left}");
 		if (rect.Left == 0) edges.Add(EDGE.LEFT);
 		if (rect.Top == 0) edges.Add(EDGE.TOP);
 		if (rect.Right == screenWidth) edges.Add(EDGE.RIGHT);
@@ -110,7 +110,7 @@ public class Dwindle : ILayout
 		if (index > fillRects.Length - 1) return null;
 		(int width, int height) = Utils.GetScreenSize();
 		EDGE[] edges = GetEdges(fillRects[index], width, height);
-		Console.WriteLine("edgesCount: " + edges.Length);
+		//Console.WriteLine("edgesCount: " + edges.Length);
 		edges.ToList().ForEach(edge => Console.Write($"{edge}, "));
 
 		if (edges.Contains(direction)) return index;
