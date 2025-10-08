@@ -17,9 +17,17 @@ class Aviyal
 	{
 		actions = new()
 		{
+			// focus workspaces
 			{ COMMAND.FOCUS_NEXT_WORKSPACE, () => wm.FocusNextWorkspace() },
 			{ COMMAND.FOCUS_PREVIOUS_WORKSPACE, () => wm.FocusPreviousWorkspace() },
+			// close window
 			{ COMMAND.CLOSE_FOCUSED_WINDOW, () => wm.CloseFocusedWindow() },
+			// focus window
+			{ COMMAND.FOCUS_LEFT_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.LEFT) },
+			{ COMMAND.FOCUS_TOP_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.TOP) },
+			{ COMMAND.FOCUS_RIGHT_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.RIGHT) },
+			{ COMMAND.FOCUS_BOTTOM_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.BOTTOM) },
+
 		};
 		// in order to recieve window events for windows that
 		// already exists while the application is run
@@ -28,9 +36,17 @@ class Aviyal
 		wndListener.WINDOW_REMOVED += wm.WindowRemoved;
 
 		List<Keymap> keymaps = [
+			// focus workspaces
 			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.L], command= COMMAND.FOCUS_NEXT_WORKSPACE },
 			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.H], command= COMMAND.FOCUS_PREVIOUS_WORKSPACE },
+			// close window
 			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.X], command= COMMAND.CLOSE_FOCUSED_WINDOW},
+			// focus window
+			new() { keys= [VK.LCONTROL, VK.H], command= COMMAND.FOCUS_LEFT_WINDOW},
+			new() { keys= [VK.LCONTROL, VK.K], command= COMMAND.FOCUS_TOP_WINDOW},
+			new() { keys= [VK.LCONTROL, VK.L], command= COMMAND.FOCUS_RIGHT_WINDOW
+			},
+			new() { keys= [VK.LCONTROL, VK.J], command= COMMAND.FOCUS_BOTTOM_WINDOW},
 		];
 		kbdListener = new(keymaps);
 		kbdListener.HOTKEY_PRESSED += HotkeyPressed;

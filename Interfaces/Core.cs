@@ -21,6 +21,7 @@ public interface IWorkspace
 {
 	public List<Window> windows { get; }
 	public Window? focusedWindow { get; }
+	public int focusedWindowIndex { get; }
 	public ILayout layout { get; set; }
 
 	public void Add(Window wnd);
@@ -28,12 +29,14 @@ public interface IWorkspace
 
 	public void Focus();
 	public void FocusWindow(Window wnd);
+	public void FocusAdjacentWindow(EDGE direction);
 }
 
 public interface IWindowManager
 {
 	public List<Workspace> workspaces { get; }
 	public Workspace? focusedWorkspace { get; }
+	public int focusedWorkspaceIndex { get; }
 
 	public void FocusWorkspace(Workspace wksp);
 	public void FocusNextWorkspace() { }
@@ -46,7 +49,9 @@ public interface IWindowManager
 
 public interface ILayout
 {
-	public RECT[] GetRect(int index);
+	public RECT[] GetRects(int index);
 	public int outer { get; set; }
 	public int inner { get; set; }
+	public int? GetAdjacent(int index, EDGE direction);
 }
+

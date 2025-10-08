@@ -128,9 +128,23 @@ public class Workspace : IWorkspace
 	{
 		get
 		{
-			return new Window(User32.GetForegroundWindow());
+			Window wnd = new(User32.GetForegroundWindow());
+			if (windows.Contains(wnd)) return wnd;
+			return windows.First();
 		}
 		private set;
+	}
+	public int focusedWindowIndex
+	{
+		get
+		{
+			int index = 0;
+			for (int i = 0; i < windows.Count; i++)
+			{
+				if (windows[i] == focusedWindow) index = i;
+			}
+			return index;
+		}
 	}
 	public ILayout layout { get; set; } = new Dwindle();
 
@@ -157,7 +171,7 @@ public class Workspace : IWorkspace
 	// main renderer
 	public void Focus()
 	{
-		RECT[] rects = layout.GetRect(windows.Count);
+		RECT[] rects = layout.GetRects(windows.Count);
 		for (int i = 0; i < windows.Count; i++)
 		{
 			windows[i].Move(rects[i]);
@@ -169,6 +183,13 @@ public class Workspace : IWorkspace
 	{
 		wnd.Focus();
 		//focusedWindow = wnd;
+	}
+
+	public void FocusAdjacentWindow(EDGE direction)
+	{
+		int? indexOfWindowToFocus = layout.GetAdjacent(focusedWindowIndex, direction);
+		FocusWindow(windows[(int)indexOfWindowToFocus]);
+		Console.WriteLine($"Focusing window in [ {direction} ], windowToFocus: [ {indexOfWindowToFocus} ], currentlyFocused: {focusedWindowIndex}");
 	}
 }
 

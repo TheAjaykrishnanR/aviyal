@@ -7,12 +7,16 @@ using System.Linq;
 
 public class Dwindle : ILayout
 {
-	public RECT[] GetRect(int count)
+	// rects with margin
+	RECT[] rects = null;
+	// rects with no margins
+	RECT[] fillRects = null;
+
+	public RECT[] GetRects(int count /* no of windows */)
 	{
-		// rects with margin
-		RECT[] rects = new RECT[count];
-		// rects with no margins
-		RECT[] fillRects = new RECT[count];
+		rects = new RECT[count];
+		fillRects = new RECT[count];
+
 		(int width, int height) = Utils.GetScreenSize();
 		FillDirection fillDirection = FillDirection.HORIZONTAL;
 		// where the nth window will go
@@ -43,7 +47,7 @@ public class Dwindle : ILayout
 
 		}
 		fillRects.Index().ToList().ForEach(irect => Console.WriteLine($"{irect.Item1}. L:{irect.Item2.Left} R:{irect.Item2.Right} T:{irect.Item2.Top} B:{irect.Item2.Bottom}"));
-		return ApplyInner(ApplyOuter(fillRects));
+		return ApplyInner(ApplyOuter(fillRects.ToArray()));
 	}
 	public int outer { get; set; } = 5;
 	public int inner { get; set; } = 5;
@@ -86,4 +90,41 @@ public class Dwindle : ILayout
 		}
 		return fillRects;
 	}
+
+	EDGE[] GetEdges(RECT rect, int screenWidth, int screenHeight)
+	{
+		List<EDGE> edges = new();
+		Console.WriteLine($"GetEdges: {rect.Left}");
+		if (rect.Left == 0) edges.Add(EDGE.LEFT);
+		if (rect.Top == 0) edges.Add(EDGE.TOP);
+		if (rect.Right == screenWidth) edges.Add(EDGE.RIGHT);
+		if (rect.Bottom == screenHeight) edges.Add(EDGE.BOTTOM);
+		return edges.ToArray();
+	}
+
+	public int? GetAdjacent(int index, EDGE direction)
+	{
+		// 1. figure out if the window is on an edge
+		// 2. if not just add +1 to index if direction is RIGHT, -1 if direction is LEFT
+		// 3. if at edge return index
+		if (index > fillRects.Length - 1) return null;
+		(int width, int height) = Utils.GetScreenSize();
+		EDGE[] edges = GetEdges(fillRects[index], width, height);
+		Console.WriteLine("edgesCount: " + edges.Length);
+		edges.ToList().ForEach(edge => Console.Write($"{edge}, "));
+
+		if (edges.Contains(direction)) return index;
+		else
+		{
+			if (direction == EDGE.LEFT || direction == EDGE.TOP)
+				return index - 1;
+			else
+				return index + 1;
+		}
+	}
+}
+
+public enum EDGE
+{
+	LEFT, TOP, RIGHT, BOTTOM
 }
