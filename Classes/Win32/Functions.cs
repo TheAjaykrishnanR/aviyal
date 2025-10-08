@@ -147,6 +147,15 @@ public class User32
 	);
 
 	[DllImport("user32.dll", SetLastError = true)]
+	public static extern void keybd_event(
+		byte vk, // virtual key code
+		byte scan, // scan code that identifies the key irrespective of 
+				   // active layout, An application typically ignores scan codes. Instead, it uses the virtual-key codes to interpret keystroke messages.
+		uint flags,
+		nint extra
+	);
+
+	[DllImport("user32.dll", SetLastError = true)]
 	public static extern void SetTimer(nint hWnd, nint nIdEvent, uint uElapse, TIMERPROC timerProc);
 
 	[DllImport("user32.dll", SetLastError = true)]

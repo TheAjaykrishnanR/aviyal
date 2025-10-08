@@ -64,6 +64,14 @@ public class Window : IWindow
 	}
 	public void Focus()
 	{
+		// simulate an ALT key press inorder to focus and not just flash in
+		// the taskbar
+		// https://stackoverflow.com/a/13881647
+		const uint EXTENDEDKEY = 0x1;
+		const uint KEYUP = 0x2;
+		User32.keybd_event((byte)VK.LMENU, 0x3C, EXTENDEDKEY, 0);
+		User32.keybd_event((byte)VK.LMENU, 0x3C, EXTENDEDKEY | KEYUP, 0);
+
 		User32.SetForegroundWindow(this.hWnd);
 	}
 	public void Move(RECT pos)
@@ -184,6 +192,8 @@ public class Workspace : IWorkspace
 		wnd.Focus();
 		//focusedWindow = wnd;
 	}
+
+
 
 	public void FocusAdjacentWindow(EDGE direction)
 	{
