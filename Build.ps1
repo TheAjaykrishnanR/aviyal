@@ -12,6 +12,8 @@ dflat Main.cs `
 	  Classes\Utils\Extensions.cs `
 	  Classes\Events\Keys.cs `
 	  Classes\Events\Windows.cs `
+	  Classes\Config\Config.cs `
+	  Classes\Config\Paths.cs `
 	  /langversion:preview `
 	  /out Main.exe
 

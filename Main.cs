@@ -1,9 +1,12 @@
 using System;
-using System.Runtime.InteropServices;
-using System.Drawing;
+using System.IO;
 using System.Text;
-using System.Collections.Generic;
 using System.Linq;
+using System.Drawing;
+using System.Text.Json;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 class Aviyal
 {
@@ -59,7 +62,27 @@ class Aviyal
 
 	static void Main(string[] args)
 	{
+		if (Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1)
+		{
+			Console.WriteLine("an instance is already running, exiting...");
+			return;
+		}
+
+		Config config = new();
+		if (File.Exists(Paths.configFile))
+		{
+			string jsonString = File.ReadAllText(Paths.configFile);
+			config = JsonSerializer.Deserialize<Config>(jsonString);
+		}
+		else
+		{
+			string jsonString = JsonSerializer.Serialize(config);
+			Console.WriteLine($"configJson: {jsonString}");
+			File.AppendAllText(Paths.configFile, jsonString);
+		}
+
 		Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
+
 		Aviyal aviyal = new();
 		while (Console.ReadLine() != ":q") { }
 	}
