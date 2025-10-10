@@ -26,7 +26,6 @@ class Aviyal
 			{ COMMAND.FOCUS_TOP_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.TOP) },
 			{ COMMAND.FOCUS_RIGHT_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.RIGHT) },
 			{ COMMAND.FOCUS_BOTTOM_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.BOTTOM) },
-
 		};
 		// in order to recieve window events for windows that
 		// already exists while the application is run
@@ -40,7 +39,8 @@ class Aviyal
 
 	public void HotkeyPressed(Keymap keymap)
 	{
-		actions[keymap.command]?.Invoke();
+		if (keymap.command == COMMAND.EXEC) Exec(keymap.arguments);
+		else actions[keymap.command]?.Invoke();
 	}
 
 	static void Main(string[] args)
@@ -70,6 +70,25 @@ class Aviyal
 
 		Aviyal aviyal = new(config.keymaps);
 		while (Console.ReadLine() != ":q") { }
+	}
+
+	public void Exec(List<string> args)
+	{
+		if (args.Count == 0) return;
+		try
+		{
+			ProcessStartInfo psi = new();
+			psi.FileName = args[0];
+			//if (args.Count > 0) psi.Arguments = args[1];
+			Process process = new();
+			process.StartInfo = psi;
+			process.Start();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Unable to execute command: {ex.Message}");
+			Console.WriteLine(string.Join(", ", args));
+		}
 	}
 }
 

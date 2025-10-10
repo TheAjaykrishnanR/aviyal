@@ -62,6 +62,14 @@
       ],
       "command": "FOCUS_BOTTOM_WINDOW",
       "arguments": []
-    }
+    },
+	{
+      "keys": [
+        "LCONTROL",
+        "G"
+      ],
+      "command": "EXEC",
+      "arguments": ["wt.exe"]
+    }	
   ]
 }

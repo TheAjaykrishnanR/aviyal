@@ -227,8 +227,8 @@ public class Workspace : IWorkspace
 	{
 		int indexToFocus = focusedWindowIndex;
 		indexToFocus = indexToFocus > 0 ? indexToFocus - 1 : 0;
-		FocusWindow(windows[indexToFocus]);
 		focusedWindow.Close();
+		FocusWindow(windows[indexToFocus]);
 	}
 
 	public void FocusAdjacentWindow(EDGE direction)
