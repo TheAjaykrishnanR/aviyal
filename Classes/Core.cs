@@ -139,7 +139,7 @@ public class Workspace : IWorkspace
 			// TODO: changes state while performing operations
 			Window wnd = new(User32.GetForegroundWindow());
 			if (windows.Contains(wnd)) return wnd;
-			return windows.First();
+			return null;
 		}
 		private set;
 	}
@@ -172,7 +172,11 @@ public class Workspace : IWorkspace
 
 	public static bool operator !=(Workspace left, Workspace right) { return !left.Equals(right); }
 
-	public void Add(Window wnd) { windows.Add(wnd); }
+	public void Add(Window wnd)
+	{
+		windows.Add(wnd);
+		Update();
+	}
 	//public void Remove(nint hWnd)
 	public void Remove(Window wnd)
 	{
@@ -180,24 +184,39 @@ public class Workspace : IWorkspace
 		//int? index = search?.Item1;
 		//if (index != null) windows.RemoveAt((int)index);
 		windows.Remove(wnd);
+		Update();
 	}
 
-	// main renderer
-	public void Focus()
+	private void Update()
 	{
 		RECT[] rects = layout.GetRects(windows.Count);
 		for (int i = 0; i < windows.Count; i++)
 		{
 			windows[i].Move(rects[i]);
-			windows[i].Show();
 		}
+	}
+
+	public void Focus()
+	{
+		Update();
+		windows.ForEach(wnd => wnd.Show());
+		//if (focusedWindow == null) FocusWindow(windows.First());
 	}
 
 	public void FocusWindow(Window wnd)
 	{
+		if (!windows.Contains(wnd)) return;
 		wnd.Focus();
 		// dont leave this function until focusWindow gets stable
 		TaskEx.WaitUntil(() => wnd == focusedWindow).Wait();
+	}
+
+	public void CloseFocusedWindow()
+	{
+		int indexToFocus = focusedWindowIndex;
+		indexToFocus = indexToFocus > 0 ? indexToFocus - 1 : 0;
+		FocusWindow(windows[indexToFocus]);
+		focusedWindow.Close();
 	}
 
 	public void FocusAdjacentWindow(EDGE direction)
@@ -270,7 +289,6 @@ public class WindowManager : IWindowManager
 		else FocusWorkspace(workspaces.Last());
 		Console.WriteLine($"previous, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 	}
-	public void CloseFocusedWindow() => focusedWorkspace.focusedWindow.Close();
 
 	public void WindowAdded(Window wnd)
 	{

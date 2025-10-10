@@ -29,6 +29,7 @@ public interface IWorkspace
 
 	public void Focus();
 	public void FocusWindow(Window wnd);
+	public void CloseFocusedWindow();
 	public void FocusAdjacentWindow(EDGE direction);
 }
 
