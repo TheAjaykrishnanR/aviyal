@@ -3,7 +3,6 @@ using System.IO;
 using System.Text;
 using System.Linq;
 using System.Drawing;
-using System.Text.Json;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -16,7 +15,7 @@ class Aviyal
 
 	Dictionary<COMMAND, Action> actions { get; }
 
-	public Aviyal()
+	public Aviyal(List<Keymap> keymaps)
 	{
 		actions = new()
 		{
@@ -38,19 +37,6 @@ class Aviyal
 		wndListener.WINDOW_ADDED += wm.WindowAdded;
 		wndListener.WINDOW_REMOVED += wm.WindowRemoved;
 
-		List<Keymap> keymaps = [
-			// focus workspaces
-			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.L], command= COMMAND.FOCUS_NEXT_WORKSPACE },
-			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.H], command= COMMAND.FOCUS_PREVIOUS_WORKSPACE },
-			// close window
-			new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.X], command= COMMAND.CLOSE_FOCUSED_WINDOW},
-			// focus window
-			new() { keys= [VK.LCONTROL, VK.H], command= COMMAND.FOCUS_LEFT_WINDOW},
-			new() { keys= [VK.LCONTROL, VK.K], command= COMMAND.FOCUS_TOP_WINDOW},
-			new() { keys= [VK.LCONTROL, VK.L], command= COMMAND.FOCUS_RIGHT_WINDOW
-			},
-			new() { keys= [VK.LCONTROL, VK.J], command= COMMAND.FOCUS_BOTTOM_WINDOW},
-		];
 		kbdListener = new(keymaps);
 		kbdListener.HOTKEY_PRESSED += HotkeyPressed;
 	}
@@ -68,22 +54,24 @@ class Aviyal
 			return;
 		}
 
-		Config config = new();
+		Config config = null;
 		if (File.Exists(Paths.configFile))
 		{
 			string jsonString = File.ReadAllText(Paths.configFile);
-			config = JsonSerializer.Deserialize<Config>(jsonString);
+			config = Config.FromJson(jsonString);
+			Console.WriteLine("Read config: ");
 		}
 		else
 		{
-			string jsonString = JsonSerializer.Serialize(config);
-			Console.WriteLine($"configJson: {jsonString}");
-			File.AppendAllText(Paths.configFile, jsonString);
+			config = new();
+			Console.WriteLine("Default config: ");
+			File.AppendAllText(Paths.configFile, config.ToJson());
 		}
+		Console.WriteLine(config.ToJson());
 
 		Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
 
-		Aviyal aviyal = new();
+		Aviyal aviyal = new(config.keymaps);
 		while (Console.ReadLine() != ":q") { }
 	}
 }
@@ -97,4 +85,6 @@ public enum COMMAND
 	FOCUS_TOP_WINDOW,
 	FOCUS_LEFT_WINDOW,
 	FOCUS_BOTTOM_WINDOW,
+
+	EXEC,
 }

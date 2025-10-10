@@ -1,1 +1,67 @@
-{}
+{
+  "layout": "dwindle",
+  "outer": 5,
+  "inner": 5,
+  "workspaces": 9,
+  "keymaps": [
+    {
+      "keys": [
+        "LCONTROL",
+        "LSHIFT",
+        "L"
+      ],
+      "command": "FOCUS_NEXT_WORKSPACE",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "LSHIFT",
+        "H"
+      ],
+      "command": "FOCUS_PREVIOUS_WORKSPACE",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "LSHIFT",
+        "X"
+      ],
+      "command": "CLOSE_FOCUSED_WINDOW",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "H"
+      ],
+      "command": "FOCUS_LEFT_WINDOW",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "K"
+      ],
+      "command": "FOCUS_TOP_WINDOW",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "L"
+      ],
+      "command": "FOCUS_RIGHT_WINDOW",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "J"
+      ],
+      "command": "FOCUS_BOTTOM_WINDOW",
+      "arguments": []
+    }
+  ]
+}

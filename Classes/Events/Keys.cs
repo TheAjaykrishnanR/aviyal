@@ -97,7 +97,7 @@ public class Keymap
 	public Guid id { get; } = Guid.NewGuid();
 	public List<VK> keys = new();
 	public COMMAND command;
-	public COMMANDTYPE type;
+	public List<string> arguments = new();
 	public override bool Equals(object? obj)
 	{
 		if (((Keymap)obj).id == this.id) return true;
@@ -105,12 +105,6 @@ public class Keymap
 	}
 	public static bool operator ==(Keymap left, Keymap right) { return left.Equals(right); }
 	public static bool operator !=(Keymap left, Keymap right) { return !left.Equals(right); }
-}
-
-public enum COMMANDTYPE
-{
-	COMMAND,
-	SHELL_COMMAND
 }
 
 public enum VK : int

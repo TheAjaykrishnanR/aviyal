@@ -1,7 +1,9 @@
-Remove-Item -Recurse -Confirm:$false bin\*
+# Remove-Item -Recurse -Confirm:$false bin\*
+rm bin\Main.exe
 
 dflat Main.cs `
 	  Interfaces\Core.cs `
+	  Interfaces\Json.cs `
 	  Classes\Core.cs `
 	  Classes\Layouts.cs `
 	  Classes\Win32\Functions.cs `
@@ -14,7 +16,8 @@ dflat Main.cs `
 	  Classes\Events\Windows.cs `
 	  Classes\Config\Config.cs `
 	  Classes\Config\Paths.cs `
+	  /r:Libs `
 	  /langversion:preview `
-	  /out Main.exe
+	  /out Main.exe `
 
 mv Main.exe bin\Main.exe
