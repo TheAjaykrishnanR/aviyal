@@ -20,7 +20,7 @@ public interface IWindow
 public interface IWorkspace
 {
 	public List<Window> windows { get; }
-	public Window? focusedWindow { get; }
+	public Window focusedWindow { get; }
 	public int focusedWindowIndex { get; }
 	public ILayout layout { get; set; }
 
@@ -36,7 +36,7 @@ public interface IWorkspace
 public interface IWindowManager
 {
 	public List<Workspace> workspaces { get; }
-	public Workspace? focusedWorkspace { get; }
+	public Workspace focusedWorkspace { get; }
 	public int focusedWorkspaceIndex { get; }
 
 	public void FocusWorkspace(Workspace wksp);

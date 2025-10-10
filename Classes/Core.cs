@@ -132,14 +132,14 @@ public class Workspace : IWorkspace
 {
 	public Guid id { get; } = Guid.NewGuid();
 	public List<Window> windows { get; } = new();
-	public Window? focusedWindow
+	public Window focusedWindow
 	{
 		get
 		{
 			// TODO: changes state while performing operations
 			Window wnd = new(User32.GetForegroundWindow());
 			if (windows.Contains(wnd)) return wnd;
-			return null;
+			return windows.First();
 		}
 		private set;
 	}
@@ -200,7 +200,7 @@ public class Workspace : IWorkspace
 	{
 		Update();
 		windows.ForEach(wnd => wnd.Show());
-		//if (focusedWindow == null) FocusWindow(windows.First());
+		//if (focusedWindow == null && windows.Count > 0) FocusWindow(windows.First());
 	}
 
 	public void FocusWindow(Window wnd)
@@ -231,7 +231,7 @@ public class WindowManager : IWindowManager
 {
 	public List<Window> initWindows { get; } = new();
 	public List<Workspace> workspaces { get; } = new();
-	public Workspace? focusedWorkspace { get; private set; } = null;
+	public Workspace focusedWorkspace { get; private set; }
 	public int focusedWorkspaceIndex
 	{
 		get

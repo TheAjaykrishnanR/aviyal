@@ -19,12 +19,9 @@ class Aviyal
 	{
 		actions = new()
 		{
-			// focus workspaces
 			{ COMMAND.FOCUS_NEXT_WORKSPACE, () => wm.FocusNextWorkspace() },
 			{ COMMAND.FOCUS_PREVIOUS_WORKSPACE, () => wm.FocusPreviousWorkspace() },
-			// close window
 			{ COMMAND.CLOSE_FOCUSED_WINDOW, () => wm.focusedWorkspace.CloseFocusedWindow() },
-			// focus window
 			{ COMMAND.FOCUS_LEFT_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.LEFT) },
 			{ COMMAND.FOCUS_TOP_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.TOP) },
 			{ COMMAND.FOCUS_RIGHT_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.RIGHT) },
