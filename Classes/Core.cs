@@ -54,13 +54,25 @@ public class Window : IWindow
 
 	public static bool operator !=(Window left, Window right) { return !left.Equals(right); }
 
+	public void ToggleAnimation(bool flag)
+	{
+		int attr = 0;
+		if (!flag) attr = 1;
+		int res = Dwmapi.DwmSetWindowAttribute(this.hWnd, DWMWINDOWATTRIBUTE.DWMWA_TRANSITIONS_FORCEDISABLED, ref attr, sizeof(int));
+		Console.WriteLine($"ToggleAnimation(): {res}");
+	}
+
 	public void Hide()
 	{
+		ToggleAnimation(false);
 		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_HIDE);
+		ToggleAnimation(true);
 	}
 	public void Show()
 	{
+		ToggleAnimation(false);
 		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOWNA);
+		ToggleAnimation(true);
 	}
 	public void Focus()
 	{
