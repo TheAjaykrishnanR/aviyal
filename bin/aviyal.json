@@ -65,11 +65,21 @@
     },
 	{
       "keys": [
-        "LCONTROL",
-        "G"
+        "LMENU",
+        "LSHIFT",
+        "L"
       ],
-      "command": "EXEC",
-      "arguments": ["wt.exe"]
-    }	
+      "command": "SHIFT_FOCUSED_WINDOW_RIGHT",
+      "arguments": []
+    },
+	{
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "H"
+      ],
+      "command": "SHIFT_FOCUSED_WINDOW_LEFT",
+      "arguments": []
+    }
   ]
 }

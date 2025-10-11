@@ -40,9 +40,10 @@ public class KeyEventsListener
 		var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
 		VK key = (VK)kbdStruct.vkCode;
 		uint dt = kbdStruct.time - lastKeyTime;
+		if (dt > 500) captured.Clear();
 		switch ((WINDOWMESSAGE)wparam)
 		{
-			case WINDOWMESSAGE.WM_KEYDOWN:
+			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */:
 				if (!captured.Contains(key)) captured.Add(key);
 				foreach (Keymap keymap in keymaps)
 				{
@@ -59,6 +60,7 @@ public class KeyEventsListener
 				captured.Remove(key);
 				break;
 		}
+		Console.WriteLine($"KEY: {key}, MSG: {(WINDOWMESSAGE)wparam}");
 		Log(captured, dt);
 		lastKeyTime = kbdStruct.time;
 		return CallNextHookEx(0, code, wparam, lparam);

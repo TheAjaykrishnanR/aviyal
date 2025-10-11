@@ -151,7 +151,7 @@ public class Window : IWindow
 public class Workspace : IWorkspace
 {
 	public Guid id { get; } = Guid.NewGuid();
-	public List<Window> windows { get; } = new();
+	public List<Window> windows { get; private set; } = new();
 	public Window focusedWindow
 	{
 		get
@@ -237,6 +237,17 @@ public class Workspace : IWorkspace
 		windows[(int)indexOfWindowToFocus].Focus();
 		Console.WriteLine($"Focusing window in [ {direction} ], windowToFocus: [ {indexOfWindowToFocus} ], currentlyFocused: {focusedWindowIndex}");
 	}
+
+	public void ShiftFocusedWindow(int shiftBy)
+	{
+		var _fwnd = focusedWindow;
+		var index = focusedWindowIndex + shiftBy;
+		Console.WriteLine($"SHIFTING");
+		if (index < 0 || index > windows.Count - 1) return;
+		windows.Remove(_fwnd);
+		windows.Insert(index, _fwnd);
+		Focus();
+	}
 }
 
 public class WindowManager : IWindowManager
@@ -269,7 +280,7 @@ public class WindowManager : IWindowManager
 		{
 			initWindows.Add(new(hWnd));
 		});
-		initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+		//initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		initWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
 		for (int i = 0; i < WORKSPACES; i++)

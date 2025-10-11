@@ -26,6 +26,9 @@ class Aviyal
 			{ COMMAND.FOCUS_TOP_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.TOP) },
 			{ COMMAND.FOCUS_RIGHT_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.RIGHT) },
 			{ COMMAND.FOCUS_BOTTOM_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.BOTTOM) },
+
+			{ COMMAND.SHIFT_FOCUSED_WINDOW_RIGHT, () => wm.focusedWorkspace.ShiftFocusedWindow(+1) },
+			{ COMMAND.SHIFT_FOCUSED_WINDOW_LEFT, () => wm.focusedWorkspace.ShiftFocusedWindow(-1) },
 		};
 		// in order to recieve window events for windows that
 		// already exists while the application is run
@@ -102,6 +105,9 @@ public enum COMMAND
 	FOCUS_TOP_WINDOW,
 	FOCUS_LEFT_WINDOW,
 	FOCUS_BOTTOM_WINDOW,
+
+	SHIFT_FOCUSED_WINDOW_RIGHT,
+	SHIFT_FOCUSED_WINDOW_LEFT,
 
 	EXEC,
 }
