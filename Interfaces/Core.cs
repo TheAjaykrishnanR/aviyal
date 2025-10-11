@@ -9,6 +9,7 @@ public interface IWindow
 	public string exe { get; }
 	public RECT rect { get; }
 	public SHOWWINDOW state { get; }
+	public bool floating { get; set; }
 
 	public void Hide();
 	public void Show();

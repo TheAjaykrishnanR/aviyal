@@ -43,7 +43,7 @@ public class Window : IWindow
 			return (SHOWWINDOW)wndPlmnt.showCmd;
 		}
 	}
-	public bool floating = false;
+	public bool floating { get; set; } = false;
 
 	public override bool Equals(object? obj)
 	{
@@ -213,7 +213,11 @@ public class Workspace : IWorkspace
 
 	private void Update()
 	{
-		List<Window> nonFloating = windows.Where(wnd => wnd.floating == false).ToList();
+		List<Window> nonFloating = windows
+		.Where(
+			wnd => wnd.floating == false && wnd.state != SHOWWINDOW.SW_MAXIMIZE
+		).ToList();
+
 		RECT[] rects = layout.GetRects(nonFloating.Count);
 		for (int i = 0; i < nonFloating.Count; i++)
 		{
