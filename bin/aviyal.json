@@ -96,6 +96,15 @@
       ],
       "command": "SHIFT_WINDOW_PREVIOUS_WORKSPACE",
       "arguments": []
+    },
+	{
+      "keys": [
+        "LCONTROL",
+		"LSHIFT",
+        "Z"
+      ],
+      "command": "TOGGLE_FLOATING_WINDOW",
+      "arguments": []
     }
   ]
 }

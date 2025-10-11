@@ -156,7 +156,6 @@ public class Workspace : IWorkspace
 	{
 		get
 		{
-			// TODO: changes state while performing operations
 			Window wnd = new(User32.GetForegroundWindow());
 			if (windows.Contains(wnd)) return wnd;
 			return windows.First();
@@ -204,15 +203,17 @@ public class Workspace : IWorkspace
 		//int? index = search?.Item1;
 		//if (index != null) windows.RemoveAt((int)index);
 		windows.Remove(wnd);
+		floating.Remove(wnd);
 		Update();
 	}
 
 	private void Update()
 	{
-		RECT[] rects = layout.GetRects(windows.Count);
-		for (int i = 0; i < windows.Count; i++)
+		List<Window> nonFloating = windows.Where(wnd => !floating.Contains(wnd)).ToList();
+		RECT[] rects = layout.GetRects(nonFloating.Count);
+		for (int i = 0; i < nonFloating.Count; i++)
 		{
-			windows[i].Move(rects[i]);
+			nonFloating[i].Move(rects[i]);
 		}
 	}
 
@@ -245,6 +246,13 @@ public class Workspace : IWorkspace
 		if (index < 0 || index > windows.Count - 1) return;
 		windows.Remove(_fwnd);
 		windows.Insert(index, _fwnd);
+		Focus();
+	}
+
+	List<Window> floating = new();
+	public void ToggleFloating()
+	{
+		if (!floating.Remove(focusedWindow)) floating.Add(focusedWindow);
 		Focus();
 	}
 }

@@ -31,6 +31,7 @@ class Aviyal
 			{ COMMAND.SHIFT_FOCUSED_WINDOW_LEFT, () => wm.focusedWorkspace.ShiftFocusedWindow(-1) },
 			{ COMMAND.SHIFT_WINDOW_NEXT_WORKSPACE, () => wm.ShiftFocusedWindowToWorkspace(wm.focusedWorkspaceIndex+1) },
 			{ COMMAND.SHIFT_WINDOW_PREVIOUS_WORKSPACE, () => wm.ShiftFocusedWindowToWorkspace(wm.focusedWorkspaceIndex-1) },
+			{ COMMAND.TOGGLE_FLOATING_WINDOW, () => wm.focusedWorkspace.ToggleFloating() },
 		};
 		// in order to recieve window events for windows that
 		// already exists while the application is run
@@ -113,6 +114,8 @@ public enum COMMAND
 
 	SHIFT_WINDOW_NEXT_WORKSPACE,
 	SHIFT_WINDOW_PREVIOUS_WORKSPACE,
+
+	TOGGLE_FLOATING_WINDOW,
 
 	EXEC,
 }
