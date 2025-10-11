@@ -220,7 +220,6 @@ public class Workspace : IWorkspace
 	{
 		Update();
 		windows.ForEach(wnd => wnd.Show());
-		//if (focusedWindow == null && windows.Count > 0) FocusWindow(windows.First());
 	}
 
 	public void CloseFocusedWindow()
@@ -255,6 +254,7 @@ public class WindowManager : IWindowManager
 	public List<Window> initWindows { get; } = new();
 	public List<Workspace> workspaces { get; } = new();
 	public Workspace focusedWorkspace { get; private set; }
+
 	public int focusedWorkspaceIndex
 	{
 		get
@@ -311,6 +311,16 @@ public class WindowManager : IWindowManager
 		if (focusedWorkspaceIndex > 0) FocusWorkspace(workspaces[focusedWorkspaceIndex - 1]);
 		else FocusWorkspace(workspaces.Last());
 		Console.WriteLine($"previous, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+	}
+
+	public void ShiftFocusedWindowToWorkspace(int index)
+	{
+		if (index < 0 || index > workspaces.Count - 1) return;
+		Window wnd = focusedWorkspace.focusedWindow;
+		focusedWorkspace.Remove(wnd);
+		workspaces[index].Add(wnd);
+		workspaces[index].Focus();
+		focusedWorkspace = workspaces[index];
 	}
 
 	public void WindowAdded(Window wnd)

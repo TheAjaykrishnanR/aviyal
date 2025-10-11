@@ -66,7 +66,6 @@
 	{
       "keys": [
         "LMENU",
-        "LSHIFT",
         "L"
       ],
       "command": "SHIFT_FOCUSED_WINDOW_RIGHT",
@@ -75,10 +74,27 @@
 	{
       "keys": [
         "LMENU",
-        "LSHIFT",
         "H"
       ],
       "command": "SHIFT_FOCUSED_WINDOW_LEFT",
+      "arguments": []
+    },
+	{
+      "keys": [
+        "LMENU",
+		"LSHIFT",
+        "L"
+      ],
+      "command": "SHIFT_WINDOW_NEXT_WORKSPACE",
+      "arguments": []
+    },
+	{
+      "keys": [
+        "LMENU",
+		"LSHIFT",
+        "H"
+      ],
+      "command": "SHIFT_WINDOW_PREVIOUS_WORKSPACE",
       "arguments": []
     }
   ]
