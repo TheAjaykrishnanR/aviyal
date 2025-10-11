@@ -43,6 +43,7 @@ public class Window : IWindow
 			return (SHOWWINDOW)wndPlmnt.showCmd;
 		}
 	}
+	public bool floating = false;
 
 	public override bool Equals(object? obj)
 	{
@@ -156,9 +157,13 @@ public class Workspace : IWorkspace
 	{
 		get
 		{
-			Window wnd = new(User32.GetForegroundWindow());
-			if (windows.Contains(wnd)) return wnd;
-			return windows.First();
+			//nint hWnd = User32.GetForegroundWindow();
+			//Window wnd = windows.FirstOrDefault(_wnd => _wnd.hWnd == hWnd);
+			//if (wnd.hWnd == hWnd) return wnd;
+			//else return windows.First();
+			//Window wnd = new(User32.GetForegroundWindow());
+			//if (windows.Contains(wnd)) return wnd;
+			return windows.First(_wnd => _wnd == new Window(User32.GetForegroundWindow()));
 		}
 		private set;
 	}
@@ -203,13 +208,12 @@ public class Workspace : IWorkspace
 		//int? index = search?.Item1;
 		//if (index != null) windows.RemoveAt((int)index);
 		windows.Remove(wnd);
-		floating.Remove(wnd);
 		Update();
 	}
 
 	private void Update()
 	{
-		List<Window> nonFloating = windows.Where(wnd => !floating.Contains(wnd)).ToList();
+		List<Window> nonFloating = windows.Where(wnd => wnd.floating == false).ToList();
 		RECT[] rects = layout.GetRects(nonFloating.Count);
 		for (int i = 0; i < nonFloating.Count; i++)
 		{
@@ -249,10 +253,11 @@ public class Workspace : IWorkspace
 		Focus();
 	}
 
-	List<Window> floating = new();
 	public void ToggleFloating()
 	{
-		if (!floating.Remove(focusedWindow)) floating.Add(focusedWindow);
+		var wnd = focusedWindow;
+		wnd.floating = !wnd.floating;
+		Console.WriteLine($"[ TOGGLE FLOATING ] : {wnd.floating}");
 		Focus();
 	}
 }
@@ -297,8 +302,8 @@ public class WindowManager : IWindowManager
 			workspaces.Add(wksp);
 		}
 		// add all windows to 1st workspace
-		initWindows.ForEach(wnd => workspaces[0].windows.Add(wnd));
-		FocusWorkspace(workspaces[0]);
+		initWindows.ForEach(wnd => workspaces.First().windows.Add(wnd));
+		FocusWorkspace(workspaces.First());
 	}
 
 	public void FocusWorkspace(Workspace wksp)
@@ -312,13 +317,14 @@ public class WindowManager : IWindowManager
 	{
 		if (focusedWorkspaceIndex < workspaces.Count - 1) FocusWorkspace(workspaces[focusedWorkspaceIndex + 1]);
 		else FocusWorkspace(workspaces.First());
-		Console.WriteLine($"next, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+		Console.WriteLine($"NEXT, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 	}
+
 	public void FocusPreviousWorkspace()
 	{
 		if (focusedWorkspaceIndex > 0) FocusWorkspace(workspaces[focusedWorkspaceIndex - 1]);
 		else FocusWorkspace(workspaces.Last());
-		Console.WriteLine($"previous, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+		Console.WriteLine($"PREVIOUS, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 	}
 
 	public void ShiftFocusedWindowToWorkspace(int index)
@@ -327,7 +333,7 @@ public class WindowManager : IWindowManager
 		Window wnd = focusedWorkspace.focusedWindow;
 		focusedWorkspace.Remove(wnd);
 		workspaces[index].Add(wnd);
-		workspaces[index].Focus();
+		FocusWorkspace(workspaces[index]);
 		focusedWorkspace = workspaces[index];
 	}
 
