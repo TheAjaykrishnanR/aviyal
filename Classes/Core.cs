@@ -85,6 +85,9 @@ public class Window : IWindow
 		User32.keybd_event((byte)VK.LMENU, 0x3C, EXTENDEDKEY | KEYUP, 0);
 
 		User32.SetForegroundWindow(this.hWnd);
+
+		// dont leave this function until focusWindow gets stable
+		TaskEx.WaitUntil(() => this.hWnd == User32.GetForegroundWindow()).Wait();
 	}
 	public void Move(RECT pos)
 	{
@@ -96,6 +99,11 @@ public class Window : IWindow
 		pos.Bottom -= margin.Bottom;
 
 		User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_BOTTOM, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
+	}
+
+	public void SetBottom()
+	{
+		User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_BOTTOM, 0, 0, 0, 0, SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
 	}
 
 	public RECT GetFrameMargin()
@@ -215,26 +223,18 @@ public class Workspace : IWorkspace
 		//if (focusedWindow == null && windows.Count > 0) FocusWindow(windows.First());
 	}
 
-	public void FocusWindow(Window wnd)
-	{
-		if (!windows.Contains(wnd)) return;
-		wnd.Focus();
-		// dont leave this function until focusWindow gets stable
-		TaskEx.WaitUntil(() => wnd == focusedWindow).Wait();
-	}
-
 	public void CloseFocusedWindow()
 	{
 		int indexToFocus = focusedWindowIndex;
 		indexToFocus = indexToFocus > 0 ? indexToFocus - 1 : 0;
 		focusedWindow.Close();
-		FocusWindow(windows[indexToFocus]);
+		windows[indexToFocus].Focus();
 	}
 
 	public void FocusAdjacentWindow(EDGE direction)
 	{
 		int? indexOfWindowToFocus = layout.GetAdjacent(focusedWindowIndex, direction);
-		FocusWindow(windows[(int)indexOfWindowToFocus]);
+		windows[(int)indexOfWindowToFocus].Focus();
 		Console.WriteLine($"Focusing window in [ {direction} ], windowToFocus: [ {indexOfWindowToFocus} ], currentlyFocused: {focusedWindowIndex}");
 	}
 }
@@ -307,6 +307,7 @@ public class WindowManager : IWindowManager
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		focusedWorkspace.Add(wnd);
 		focusedWorkspace.Focus();
+		//wnd.SetBottom(); // if you wanna move the window back to even the terminal while debugging
 	}
 	public void WindowRemoved(Window wnd)
 	{
@@ -314,7 +315,11 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Remove(wnd);
 		focusedWorkspace.Focus();
 	}
-	public void WindowMoved(Window wnd) { }
+	public void WindowMoved(Window wnd)
+	{
+		Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
+		focusedWorkspace.Focus();
+	}
 }
 
 enum FillDirection

@@ -32,6 +32,7 @@ class Aviyal
 		wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
 		wndListener.WINDOW_ADDED += wm.WindowAdded;
 		wndListener.WINDOW_REMOVED += wm.WindowRemoved;
+		wndListener.WINDOW_MOVED += wm.WindowMoved;
 
 		kbdListener = new(keymaps);
 		kbdListener.HOTKEY_PRESSED += HotkeyPressed;
