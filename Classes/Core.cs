@@ -123,7 +123,6 @@ public class Window : IWindow
 	public void Move(int? x, int? y)
 	{
 		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
-		TaskEx.WaitUntil(() => (rect.Left == (x == null ? rect.Left : x)) && rect.Top == (y == null ? rect.Top : y)).Wait();
 	}
 
 	public void SetBottom()
@@ -442,8 +441,6 @@ public class WindowManager : IWindowManager
 		{
 			// move left
 			(int w, int h) = Utils.GetScreenSize();
-
-			workspaces[next].Hide(); // if not, a slight flicker will appear because the windows apparently rememeber its last location even after Move for a short while
 
 			workspaces[next].Move(w, null);
 			workspaces[next].Focus();
