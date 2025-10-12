@@ -90,7 +90,7 @@ public class WindowEventsListener
 					WINDOWPLACEMENT wndPlmnt = new();
 					User32.GetWindowPlacement(hWnd, ref wndPlmnt);
 					SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
-					if (state == SHOWWINDOW.SW_MAXIMIZE)
+					if (state == SHOWWINDOW.SW_MAXIMIZE && shown.Contains(hWnd))
 						WINDOW_MAXIMIZED(new Window(hWnd));
 					break;
 			}

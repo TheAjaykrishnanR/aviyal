@@ -228,8 +228,8 @@ public class Workspace : IWorkspace
 
 		List<Window?> nonFloating = windows
 		.Where(wnd => wnd?.floating == false)
-		.Where(wnd => wnd?.state != SHOWWINDOW.SW_MAXIMIZE)
-		.Where(wnd => wnd?.state != SHOWWINDOW.SW_MINIMIZE)
+		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
+		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
 		.ToList();
 
 		if (nonFloating.Count == 0) return;
@@ -413,6 +413,8 @@ public class WindowManager : IWindowManager
 	public void WindowMinimized(Window wnd)
 	{
 		Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}");
+		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
+		TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED).Wait();
 		focusedWorkspace.Focus();
 	}
 	public void WindowRestored(Window wnd)
