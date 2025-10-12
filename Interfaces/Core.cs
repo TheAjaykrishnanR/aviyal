@@ -30,6 +30,7 @@ public interface IWorkspace
 	public void Remove(Window wnd);
 
 	public void Focus();
+	public void Hide();
 	public void CloseFocusedWindow();
 	public void FocusAdjacentWindow(EDGE direction);
 	public void Move(int? x, int? y);
@@ -55,9 +56,12 @@ public interface IWindowManager
 
 public interface ILayout
 {
-	public RECT[] GetRects(int index);
-	public int outer { get; set; }
 	public int inner { get; set; }
+	public int outer { get; set; }
+
+	public RECT[] GetRects(int index);
+	public RECT[] ApplyInner(RECT[] rects);
+	public RECT[] ApplyOuter(RECT[] rects);
 	public int? GetAdjacent(int index, EDGE direction);
 }
 

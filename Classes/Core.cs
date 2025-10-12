@@ -28,7 +28,7 @@ public class Window : IWindow
 		}
 	}
 
-	public RECT rect
+	public RECT rect // absolute position
 	{
 		get
 		{
@@ -36,6 +36,9 @@ public class Window : IWindow
 			return _rect;
 		}
 	}
+
+	public RECT relRect { get; set; } // position of window relative to workspace (without margins)
+
 	public SHOWWINDOW state
 	{
 		get
@@ -120,6 +123,7 @@ public class Window : IWindow
 	public void Move(int? x, int? y)
 	{
 		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
+		TaskEx.WaitUntil(() => (rect.Left == (x == null ? rect.Left : x)) && rect.Top == (y == null ? rect.Top : y)).Wait();
 	}
 
 	public void SetBottom()
@@ -230,7 +234,7 @@ public class Workspace : IWorkspace
 		Update();
 	}
 
-	private void Update()
+	public void Update()
 	{
 		windows.ForEach(wnd => Console.WriteLine($"WND IS NULL: {wnd == null}"));
 
@@ -242,10 +246,12 @@ public class Workspace : IWorkspace
 
 		if (nonFloating.Count == 0) return;
 
-		RECT[] rects = layout.GetRects(nonFloating.Count);
+		RECT[] relRects = layout.GetRects(nonFloating.Count);
+		RECT[] rects = layout.ApplyInner(layout.ApplyOuter(relRects.ToArray()));
 		for (int i = 0; i < nonFloating.Count; i++)
 		{
 			nonFloating[i]?.Move(rects[i]);
+			nonFloating[i].relRect = relRects[i];
 		}
 	}
 
@@ -254,6 +260,11 @@ public class Workspace : IWorkspace
 		Update();
 		windows?.ForEach(wnd => wnd?.Show());
 		windows?.FirstOrDefault()?.Focus();
+	}
+
+	public void Hide()
+	{
+		windows?.ForEach(wnd => wnd?.Hide());
 	}
 
 	public void CloseFocusedWindow()
@@ -310,7 +321,7 @@ public class Workspace : IWorkspace
 	{
 		windows.ForEach(wnd =>
 		{
-			wnd?.Move(x, y);
+			wnd?.Move(wnd.relRect.Left + x, wnd.relRect.Top + y);
 		});
 	}
 
@@ -374,7 +385,7 @@ public class WindowManager : IWindowManager
 
 	public void FocusWorkspace(Workspace wksp)
 	{
-		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => wnd?.Hide()));
+		workspaces.ForEach(wksp => wksp.Hide());
 		wksp.Focus();
 		focusedWorkspace = wksp;
 	}
@@ -431,9 +442,22 @@ public class WindowManager : IWindowManager
 		{
 			// move left
 			(int w, int h) = Utils.GetScreenSize();
-			WorkspaceAnimate(focusedWorkspace, 0, -3 * w / 4, 1000).Wait();
-			//WorkspaceAnimate(workspaces[next], w, 0, 10000).Wait();
+
+			workspaces[next].Hide(); // if not, a slight flicker will appear because the windows apparently rememeber its last location even after Move for a short while
+
+			workspaces[next].Move(w, null);
+			workspaces[next].Focus();
+
+			int duration = 500;
+			List<Task> _ts = new();
+			_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, 0, -w, duration)));
+			_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[next], w, 0, duration)));
+			Task.WhenAll(_ts).Wait();
+			focusedWorkspace.Hide();
+			focusedWorkspace = workspaces[next];
+			focusedWorkspace.Update();
 		}
+
 		else
 		{
 			FocusWorkspace(workspaces[next]);
@@ -446,7 +470,7 @@ public class WindowManager : IWindowManager
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
 
-		if (config.workspaceAnimations)
+		if (!config.workspaceAnimations)
 		{
 			// move right
 		}

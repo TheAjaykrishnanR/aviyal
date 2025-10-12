@@ -47,7 +47,8 @@ public class Dwindle : ILayout
 
 		}
 		fillRects.Index().ToList().ForEach(irect => Console.WriteLine($"{irect.Item1}. L:{irect.Item2.Left} R:{irect.Item2.Right} T:{irect.Item2.Top} B:{irect.Item2.Bottom}"));
-		return ApplyInner(ApplyOuter(fillRects.ToArray()));
+		//return ApplyInner(ApplyOuter(fillRects.ToArray()));
+		return fillRects;
 	}
 	public int outer { get; set; } = 5;
 	public int inner { get; set; } = 5;
@@ -64,7 +65,7 @@ public class Dwindle : ILayout
 	}
 
 	// applies outer margins
-	RECT[] ApplyOuter(RECT[] fillRects)
+	public RECT[] ApplyOuter(RECT[] fillRects)
 	{
 		(int width, int height) = Utils.GetScreenSize();
 		for (int i = 0; i < fillRects.Length; i++)
@@ -78,7 +79,7 @@ public class Dwindle : ILayout
 	}
 
 	// applies inner margins (apply only after outer)
-	RECT[] ApplyInner(RECT[] fillRects)
+	public RECT[] ApplyInner(RECT[] fillRects)
 	{
 		(int width, int height) = Utils.GetScreenSize();
 		for (int i = 0; i < fillRects.Length; i++)
