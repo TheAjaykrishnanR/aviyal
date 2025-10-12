@@ -9,14 +9,16 @@ using System.Runtime.InteropServices;
 
 class Aviyal
 {
-	WindowManager wm = new();
+	WindowManager wm;
 	WindowEventsListener wndListener = new();
 	KeyEventsListener kbdListener;
 
 	Dictionary<COMMAND, Action> actions { get; }
 
-	public Aviyal(List<Keymap> keymaps)
+	public Aviyal(Config config)
 	{
+		wm = new(config);
+
 		actions = new()
 		{
 			{ COMMAND.FOCUS_NEXT_WORKSPACE, () => wm.FocusNextWorkspace() },
@@ -39,9 +41,27 @@ class Aviyal
 		wndListener.WINDOW_ADDED += wm.WindowAdded;
 		wndListener.WINDOW_REMOVED += wm.WindowRemoved;
 		wndListener.WINDOW_MOVED += wm.WindowMoved;
+		wndListener.WINDOW_MAXIMIZED += wm.WindowMaximized;
+		wndListener.WINDOW_MINIMIZED += wm.WindowMinimized;
+		wndListener.WINDOW_RESTORED += wm.WindowRestored;
 
-		kbdListener = new(keymaps);
+		kbdListener = new(config);
 		kbdListener.HOTKEY_PRESSED += HotkeyPressed;
+
+		// just make all windows reappear if crashes
+		//AppDomain currentDomain = AppDomain.CurrentDomain;
+		//currentDomain.UnhandledException += (s, e) =>
+		//{
+		//	int i = 0;
+		//	wm.workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => { wnd.Show(); i++; }));
+		//	Console.WriteLine($"Crash: Restored {i} windows...");
+
+		//	Exception ex = (Exception)e.ExceptionObject;
+		//	string text = ex.Message + "\n" + ex.StackTrace;
+		//	Console.WriteLine(text);
+		//	User32.MessageBox(0, text, "CRASH", 0);
+		//	errored = true;
+		//};
 	}
 
 	public void HotkeyPressed(Keymap keymap)
@@ -50,6 +70,7 @@ class Aviyal
 		else actions[keymap.command]?.Invoke();
 	}
 
+	static bool errored = false;
 	static void Main(string[] args)
 	{
 		if (Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1)
@@ -75,8 +96,9 @@ class Aviyal
 
 		Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
 
-		Aviyal aviyal = new(config.keymaps);
-		while (Console.ReadLine() != ":q") { }
+		Aviyal aviyal = new(config);
+
+		while (Console.ReadLine() != ":q" && !errored) { }
 	}
 
 	public void Exec(List<string> args)

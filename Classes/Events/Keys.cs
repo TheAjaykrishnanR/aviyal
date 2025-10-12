@@ -35,6 +35,7 @@ public class KeyEventsListener
 	}
 
 	uint lastKeyTime = 0;
+	private readonly Lock _lock = new();
 	int KeyboardCallback(int code, nint wparam, nint lparam)
 	{
 		var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
@@ -44,15 +45,18 @@ public class KeyEventsListener
 		switch ((WINDOWMESSAGE)wparam)
 		{
 			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */:
-				if (!captured.Contains(key)) captured.Add(key);
-				foreach (Keymap keymap in keymaps)
+				lock (_lock)
 				{
-					if (Utils.ListContentEqual<VK>(captured, keymap.keys))
+					if (!captured.Contains(key)) captured.Add(key);
+					foreach (Keymap keymap in keymaps)
 					{
-						Log(captured, dt, "HOTKEY_PRESSED");
-						Log(keymap.keys, dt, "HOTKEY_PRESSED");
-						HOTKEY_PRESSED(keymap);
-						break;
+						if (Utils.ListContentEqual<VK>(captured, keymap.keys))
+						{
+							Log(captured, dt, "HOTKEY_PRESSED");
+							Log(keymap.keys, dt, "HOTKEY_PRESSED");
+							HOTKEY_PRESSED(keymap);
+							break;
+						}
 					}
 				}
 				break;
@@ -61,9 +65,14 @@ public class KeyEventsListener
 				break;
 		}
 		Console.WriteLine($"KEY: {key}, MSG: {(WINDOWMESSAGE)wparam}");
+		if (captured.SequenceEqual([VK.LMENU, VK.LSHIFT, VK.L]))
+		{
+			Console.WriteLine("HOTKEY PRESSED");
+		}
 		Log(captured, dt);
 		lastKeyTime = kbdStruct.time;
 		return CallNextHookEx(0, code, wparam, lparam);
+		//return 1;
 	}
 
 	void Loop()
@@ -85,9 +94,9 @@ public class KeyEventsListener
 	public event HotkeyPressedEventHandler HOTKEY_PRESSED = (keymap) => { };
 
 	Thread thread;
-	public KeyEventsListener(List<Keymap> keymaps)
+	public KeyEventsListener(Config config)
 	{
-		this.keymaps = keymaps;
+		this.keymaps = config.keymaps;
 
 		thread = new(Loop);
 		thread.Start();

@@ -9,6 +9,7 @@ public class Config : IJson<Config>
 	public int outer { get; set; } = 5;
 	public int inner { get; set; } = 5;
 	public int workspaces { get; set; } = 9;
+	public string floatingWindowSize { get; set; } = "800x400";
 	public List<Keymap> keymaps = new() {
 		// focus workspaces
 		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.L], command= COMMAND.FOCUS_NEXT_WORKSPACE },
@@ -31,6 +32,7 @@ public class Config : IJson<Config>
 			["outer"] = outer,
 			["inner"] = inner,
 			["workspaces"] = workspaces,
+			["floatingWindowSize"] = floatingWindowSize,
 			["keymaps"] = new JsonArray(
 				keymaps.Select(
 					keymap => new JsonObject()
@@ -56,8 +58,9 @@ public class Config : IJson<Config>
 		config.inner = Convert.ToInt32(node["inner"].ToString());
 		config.outer = Convert.ToInt32(node["outer"].ToString());
 		config.workspaces = Convert.ToInt32(node["workspaces"].ToString());
-		config.keymaps = new();
+		config.floatingWindowSize = node["floatingWindowSize"].ToString();
 
+		config.keymaps = new();
 		JsonArray _keymaps = node["keymaps"].AsArray();
 		_keymaps.ToList().ForEach(_keymap =>
 		{

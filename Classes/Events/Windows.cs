@@ -38,6 +38,9 @@ public class WindowEventsListener
 	public event WindowEventHandler WINDOW_ADDED = (wnd) => { };
 	public event WindowEventHandler WINDOW_REMOVED = (wnd) => { };
 	public event WindowEventHandler WINDOW_MOVED = (wnd) => { };
+	public event WindowEventHandler WINDOW_MAXIMIZED = (wnd) => { };
+	public event WindowEventHandler WINDOW_MINIMIZED = (wnd) => { };
+	public event WindowEventHandler WINDOW_RESTORED = (wnd) => { };
 
 	void winEventProc(
 		nint hWinEventHook,
@@ -75,6 +78,21 @@ public class WindowEventsListener
 					if (shown.Contains(hWnd))
 						WINDOW_MOVED(new Window(hWnd));
 					break;
+				case WINEVENT.EVENT_SYSTEM_MINIMIZESTART:
+					if (shown.Contains(hWnd))
+						WINDOW_MINIMIZED(new Window(hWnd));
+					break;
+				case WINEVENT.EVENT_SYSTEM_MINIMIZEEND:
+					if (shown.Contains(hWnd))
+						WINDOW_RESTORED(new Window(hWnd));
+					break;
+				case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
+					WINDOWPLACEMENT wndPlmnt = new();
+					User32.GetWindowPlacement(hWnd, ref wndPlmnt);
+					SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
+					if (state == SHOWWINDOW.SW_MAXIMIZE)
+						WINDOW_MAXIMIZED(new Window(hWnd));
+					break;
 			}
 			Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, shown.Count: {shown.Count}");
 		}
@@ -103,6 +121,7 @@ public class WindowEventsListener
 	}
 }
 
+// https://learn.microsoft.com/en-us/windows/win32/winauto/event-constants
 enum WINEVENT : uint
 {
 	OBJECT_CREATE = 0x8000,
@@ -110,4 +129,8 @@ enum WINEVENT : uint
 	OBJECT_SHOW = 0x8002,
 	OBJECT_HIDE = 0x8003,
 	EVENT_SYSTEM_MOVESIZEEND = 0x000B,
+	EVENT_SYSTEM_MINIMIZESTART = 0x0016,
+	EVENT_SYSTEM_MINIMIZEEND = 0x0017,
+	// because windows doesnt have a maximize winevent
+	EVENT_OBJECT_LOCATIONCHANGE = 0x800B
 }

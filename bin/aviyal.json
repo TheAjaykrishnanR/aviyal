@@ -3,6 +3,7 @@
   "outer": 5,
   "inner": 5,
   "workspaces": 9,
+  "floatingWindowSize": "800x400",
   "keymaps": [
     {
       "keys": ["LCONTROL", "LSHIFT", "L"],

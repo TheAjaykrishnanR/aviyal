@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "9hrxNZ0m23s=",
+  "dgSpecHash": "e+oJZdnJWNw=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Jayakuttan\\dev\\aviyal\\Windowgen\\windowgen.csproj",
+  "projectFilePath": "C:\\Users\\Jayakuttan\\dev\\aviyal\\aviyal.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Jayakuttan\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.5\\microsoft.netcore.app.ref.9.0.5.nupkg.sha512",
     "C:\\Users\\Jayakuttan\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.5\\microsoft.windowsdesktop.app.ref.9.0.5.nupkg.sha512",

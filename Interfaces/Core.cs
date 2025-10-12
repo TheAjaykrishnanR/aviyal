@@ -21,8 +21,8 @@ public interface IWindow
 public interface IWorkspace
 {
 	public List<Window> windows { get; }
-	public Window focusedWindow { get; }
-	public int focusedWindowIndex { get; }
+	public Window? focusedWindow { get; }
+	public int? focusedWindowIndex { get; }
 	public ILayout layout { get; set; }
 
 	public void Add(Window wnd);
@@ -46,6 +46,9 @@ public interface IWindowManager
 	public void WindowAdded(Window wnd);
 	public void WindowRemoved(Window wnd);
 	public void WindowMoved(Window wnd);
+	public void WindowMaximized(Window wnd);
+	public void WindowMinimized(Window wnd);
+	public void WindowRestored(Window wnd);
 }
 
 public interface ILayout

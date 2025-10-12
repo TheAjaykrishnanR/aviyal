@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aviyal", "aviyal.csproj", "{12425B9E-F8F9-4A18-9F95-97EA07DE1970}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aviyal (1)", "Tests\aviyal.csproj", "{0154C294-699C-4424-BCBA-696E5311D4E1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "windowgen", "Windowgen\windowgen.csproj", "{2DC98601-B4A0-41B6-B991-C4707EB9CBC0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{12425B9E-F8F9-4A18-9F95-97EA07DE1970}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12425B9E-F8F9-4A18-9F95-97EA07DE1970}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12425B9E-F8F9-4A18-9F95-97EA07DE1970}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12425B9E-F8F9-4A18-9F95-97EA07DE1970}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0154C294-699C-4424-BCBA-696E5311D4E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0154C294-699C-4424-BCBA-696E5311D4E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0154C294-699C-4424-BCBA-696E5311D4E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0154C294-699C-4424-BCBA-696E5311D4E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DC98601-B4A0-41B6-B991-C4707EB9CBC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DC98601-B4A0-41B6-B991-C4707EB9CBC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DC98601-B4A0-41B6-B991-C4707EB9CBC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DC98601-B4A0-41B6-B991-C4707EB9CBC0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {50C8C70A-9CB3-4E09-9F12-3E2F1BCBC076}
+	EndGlobalSection
+EndGlobal

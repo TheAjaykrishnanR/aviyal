@@ -9,7 +9,7 @@ using System.Text;
 public class User32
 {
 	[DllImport("user32.dll", SetLastError = true)]
-	public static extern int MessageBox(nint hWnd, string title, string message, uint type);
+	public static extern int MessageBox(nint hWnd, string message, string title, uint type);
 
 	[DllImport("user32.dll", SetLastError = true)]
 	public static extern int SetWindowLong(nint hWnd, int nIndex, int dwNewLong);

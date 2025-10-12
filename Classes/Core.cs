@@ -32,7 +32,6 @@ public class Window : IWindow
 			User32.GetWindowRect(this.hWnd, out RECT _rect);
 			return _rect;
 		}
-
 	}
 	public SHOWWINDOW state
 	{
@@ -40,27 +39,39 @@ public class Window : IWindow
 		{
 			WINDOWPLACEMENT wndPlmnt = new();
 			User32.GetWindowPlacement(this.hWnd, ref wndPlmnt);
-			return (SHOWWINDOW)wndPlmnt.showCmd;
+			var state = (SHOWWINDOW)wndPlmnt.showCmd;
+			Console.WriteLine($"state: {state}");
+			return state;
 		}
 	}
 	public bool floating { get; set; } = false;
 
 	public override bool Equals(object? obj)
 	{
+		//if (base.Equals(obj)) return true;
+		if (obj is null) return false;
 		if (((Window)obj).hWnd == this.hWnd) return true;
 		return false;
 	}
 
-	public static bool operator ==(Window left, Window right) { return left.Equals(right); }
+	public static bool operator ==(Window? left, Window? right)
+	{
+		if (left is null) return right is null;
+		return left.Equals(right);
+	}
 
-	public static bool operator !=(Window left, Window right) { return !left.Equals(right); }
+	public static bool operator !=(Window? left, Window? right)
+	{
+		if (left is null) return right is not null;
+		return !left.Equals(right);
+	}
 
 	public void ToggleAnimation(bool flag)
 	{
 		int attr = 0;
 		if (!flag) attr = 1;
 		int res = Dwmapi.DwmSetWindowAttribute(this.hWnd, DWMWINDOWATTRIBUTE.DWMWA_TRANSITIONS_FORCEDISABLED, ref attr, sizeof(int));
-		Console.WriteLine($"ToggleAnimation(): {res}");
+		//Console.WriteLine($"ToggleAnimation(): {res}");
 	}
 
 	public void Hide()
@@ -90,6 +101,7 @@ public class Window : IWindow
 		// dont leave this function until focusWindow gets stable
 		TaskEx.WaitUntil(() => this.hWnd == User32.GetForegroundWindow()).Wait();
 	}
+
 	public void Move(RECT pos)
 	{
 		// remove frame bounds
@@ -152,29 +164,23 @@ public class Window : IWindow
 public class Workspace : IWorkspace
 {
 	public Guid id { get; } = Guid.NewGuid();
-	public List<Window> windows { get; private set; } = new();
-	public Window focusedWindow
+	public List<Window?> windows { get; private set; } = new();
+	public Window? focusedWindow
 	{
 		get
 		{
-			//nint hWnd = User32.GetForegroundWindow();
-			//Window wnd = windows.FirstOrDefault(_wnd => _wnd.hWnd == hWnd);
-			//if (wnd.hWnd == hWnd) return wnd;
-			//else return windows.First();
-			//Window wnd = new(User32.GetForegroundWindow());
-			//if (windows.Contains(wnd)) return wnd;
-			return windows.First(_wnd => _wnd == new Window(User32.GetForegroundWindow()));
+			return windows.FirstOrDefault(_wnd => _wnd == new Window(User32.GetForegroundWindow()));
 		}
 		private set;
 	}
-	public int focusedWindowIndex
+	public int? focusedWindowIndex
 	{
 		get
 		{
-			int index = 0;
+			int? index = null;
+			if (focusedWindow == null) return null;
 			for (int i = 0; i < windows.Count; i++)
 			{
-				Console.WriteLine($"windows[{i}]: {windows[i].hWnd}, focusedWindow: {focusedWindow.hWnd}");
 				if (windows[i] == focusedWindow)
 				{
 					index = i;
@@ -188,72 +194,86 @@ public class Workspace : IWorkspace
 
 	public override bool Equals(object? obj)
 	{
+		if (obj is null) return this is null;
 		if (((Workspace)obj).id == this.id) return true;
 		return false;
 	}
 
-	public static bool operator ==(Workspace left, Workspace right) { return left.Equals(right); }
+	public static bool operator ==(Workspace left, Workspace right)
+	{
+		if (left is null) return right is null;
+		return left.Equals(right);
+	}
 
-	public static bool operator !=(Workspace left, Workspace right) { return !left.Equals(right); }
+	public static bool operator !=(Workspace left, Workspace right)
+	{
+		if (left is null) return right is not null;
+		return !left.Equals(right);
+	}
 
 	public void Add(Window wnd)
 	{
 		windows.Add(wnd);
 		Update();
 	}
-	//public void Remove(nint hWnd)
 	public void Remove(Window wnd)
 	{
-		//(int, Window)? search = windows.Index().First(iwnd => iwnd.Item2.hWnd == hWnd);
-		//int? index = search?.Item1;
-		//if (index != null) windows.RemoveAt((int)index);
 		windows.Remove(wnd);
 		Update();
 	}
 
 	private void Update()
 	{
-		List<Window> nonFloating = windows
-		.Where(
-			wnd => wnd.floating == false && wnd.state != SHOWWINDOW.SW_MAXIMIZE
-		).ToList();
+		windows.ForEach(wnd => Console.WriteLine($"WND IS NULL: {wnd == null}"));
+
+		List<Window?> nonFloating = windows
+		.Where(wnd => wnd?.floating == false)
+		.Where(wnd => wnd?.state != SHOWWINDOW.SW_MAXIMIZE)
+		.Where(wnd => wnd?.state != SHOWWINDOW.SW_MINIMIZE)
+		.ToList();
+
+		if (nonFloating.Count == 0) return;
 
 		RECT[] rects = layout.GetRects(nonFloating.Count);
 		for (int i = 0; i < nonFloating.Count; i++)
 		{
-			nonFloating[i].Move(rects[i]);
+			nonFloating[i]?.Move(rects[i]);
 		}
 	}
 
 	public void Focus()
 	{
 		Update();
-		windows.ForEach(wnd => wnd.Show());
+		windows?.ForEach(wnd => wnd?.Show());
+		windows?.FirstOrDefault()?.Focus();
 	}
 
 	public void CloseFocusedWindow()
 	{
-		int indexToFocus = focusedWindowIndex;
-		indexToFocus = indexToFocus > 0 ? indexToFocus - 1 : 0;
-		focusedWindow.Close();
-		windows[indexToFocus].Focus();
+		int? index = focusedWindowIndex;
+		if (index == null) return;
+		index = index > 0 ? index - 1 : 0;
+		focusedWindow?.Close();
+		windows.ElementAtOrDefault((int)index)?.Focus();
 	}
 
 	public void FocusAdjacentWindow(EDGE direction)
 	{
-		int? indexOfWindowToFocus = layout.GetAdjacent(focusedWindowIndex, direction);
-		windows[(int)indexOfWindowToFocus].Focus();
-		Console.WriteLine($"Focusing window in [ {direction} ], windowToFocus: [ {indexOfWindowToFocus} ], currentlyFocused: {focusedWindowIndex}");
+		if (focusedWindowIndex == null) return;
+		int? index = layout.GetAdjacent((int)focusedWindowIndex, direction);
+		if (index != null) windows[(int)index].Focus();
 	}
 
 	public void ShiftFocusedWindow(int shiftBy)
 	{
-		var _fwnd = focusedWindow;
-		var index = focusedWindowIndex + shiftBy;
+		Window? _fwnd = focusedWindow;
+		int? index = focusedWindowIndex;
+		if (index == null) return;
+		index += shiftBy;
 		Console.WriteLine($"SHIFTING");
 		if (index < 0 || index > windows.Count - 1) return;
 		windows.Remove(_fwnd);
-		windows.Insert(index, _fwnd);
+		windows.Insert((int)index, _fwnd);
 		Focus();
 	}
 
@@ -261,8 +281,31 @@ public class Workspace : IWorkspace
 	{
 		var wnd = focusedWindow;
 		wnd.floating = !wnd.floating;
-		Console.WriteLine($"[ TOGGLE FLOATING ] : {wnd.floating}");
+		Console.WriteLine($"[ TOGGLE FLOATING ] : {wnd.floating}, [ {config.floatingWindowSize} ]");
+		wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
 		Focus();
+	}
+
+	RECT GetCenterRect(int w, int h)
+	{
+		(int sw, int sh) = Utils.GetScreenSize();
+		return new()
+		{
+			Left = (int)((sw - w) / 2),
+			Right = (int)((sw + w) / 2),
+			Top = (int)((sh - h) / 2),
+			Bottom = (int)((sh + h) / 2),
+		};
+	}
+
+	Config config;
+	(int, int) floatingWindowSize;
+	public Workspace(Config config)
+	{
+		this.config = config;
+		var sizeStrs = config.floatingWindowSize.Split("x");
+		floatingWindowSize.Item1 = Convert.ToInt32(sizeStrs[0]);
+		floatingWindowSize.Item2 = Convert.ToInt32(sizeStrs[1]);
 	}
 }
 
@@ -290,19 +333,19 @@ public class WindowManager : IWindowManager
 	}
 	public int WORKSPACES = 9;
 
-	public WindowManager()
+	public WindowManager(Config config)
 	{
 		List<nint>? hWnds = Utils.GetAllTaskbarWindows();
-		hWnds.ForEach(hWnd =>
+		hWnds?.ForEach(hWnd =>
 		{
 			initWindows.Add(new(hWnd));
 		});
-		//initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+		initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		initWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
 		for (int i = 0; i < WORKSPACES; i++)
 		{
-			Workspace wksp = new();
+			Workspace wksp = new(config);
 			workspaces.Add(wksp);
 		}
 		// add all windows to 1st workspace
@@ -334,7 +377,8 @@ public class WindowManager : IWindowManager
 	public void ShiftFocusedWindowToWorkspace(int index)
 	{
 		if (index < 0 || index > workspaces.Count - 1) return;
-		Window wnd = focusedWorkspace.focusedWindow;
+		Window? wnd = focusedWorkspace.focusedWindow;
+		if (wnd == null) return;
 		focusedWorkspace.Remove(wnd);
 		workspaces[index].Add(wnd);
 		FocusWorkspace(workspaces[index]);
@@ -357,6 +401,23 @@ public class WindowManager : IWindowManager
 	public void WindowMoved(Window wnd)
 	{
 		Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
+		focusedWorkspace.Focus();
+	}
+
+	public void WindowMaximized(Window wnd)
+	{
+		Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}");
+		focusedWorkspace.Focus();
+	}
+
+	public void WindowMinimized(Window wnd)
+	{
+		Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}");
+		focusedWorkspace.Focus();
+	}
+	public void WindowRestored(Window wnd)
+	{
+		Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}");
 		focusedWorkspace.Focus();
 	}
 }
