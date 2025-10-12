@@ -49,19 +49,18 @@ class Aviyal
 		kbdListener.HOTKEY_PRESSED += HotkeyPressed;
 
 		// just make all windows reappear if crashes
-		//AppDomain currentDomain = AppDomain.CurrentDomain;
-		//currentDomain.UnhandledException += (s, e) =>
-		//{
-		//	int i = 0;
-		//	wm.workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => { wnd.Show(); i++; }));
-		//	Console.WriteLine($"Crash: Restored {i} windows...");
+		AppDomain currentDomain = AppDomain.CurrentDomain;
+		currentDomain.UnhandledException += (s, e) =>
+		{
+			int i = 0;
+			wm.workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => { wnd?.Show(); i++; }));
+			Console.WriteLine($"Crash: Restored {i} windows...");
 
-		//	Exception ex = (Exception)e.ExceptionObject;
-		//	string text = ex.Message + "\n" + ex.StackTrace;
-		//	Console.WriteLine(text);
-		//	User32.MessageBox(0, text, "CRASH", 0);
-		//	errored = true;
-		//};
+			Exception ex = (Exception)e.ExceptionObject;
+			string text = ex.Message + "\n" + ex.StackTrace;
+			Console.WriteLine(text);
+			errored = true;
+		};
 	}
 
 	public void HotkeyPressed(Keymap keymap)

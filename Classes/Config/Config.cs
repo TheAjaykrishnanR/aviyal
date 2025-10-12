@@ -10,6 +10,7 @@ public class Config : IJson<Config>
 	public int inner { get; set; } = 5;
 	public int workspaces { get; set; } = 9;
 	public string floatingWindowSize { get; set; } = "800x400";
+	public bool workspaceAnimations = true;
 	public List<Keymap> keymaps = new() {
 		// focus workspaces
 		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.L], command= COMMAND.FOCUS_NEXT_WORKSPACE },

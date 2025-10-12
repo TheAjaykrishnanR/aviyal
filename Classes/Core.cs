@@ -1,4 +1,7 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Text;
@@ -112,6 +115,11 @@ public class Window : IWindow
 		pos.Bottom -= margin.Bottom;
 
 		User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_BOTTOM, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
+	}
+
+	public void Move(int? x, int? y)
+	{
+		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
 	}
 
 	public void SetBottom()
@@ -298,6 +306,14 @@ public class Workspace : IWorkspace
 		};
 	}
 
+	public void Move(int? x, int? y)
+	{
+		windows.ForEach(wnd =>
+		{
+			wnd?.Move(x, y);
+		});
+	}
+
 	Config config;
 	(int, int) floatingWindowSize;
 	public Workspace(Config config)
@@ -333,8 +349,11 @@ public class WindowManager : IWindowManager
 	}
 	public int WORKSPACES = 9;
 
+	Config config;
 	public WindowManager(Config config)
 	{
+		this.config = config;
+
 		List<nint>? hWnds = Utils.GetAllTaskbarWindows();
 		hWnds?.ForEach(hWnd =>
 		{
@@ -355,23 +374,87 @@ public class WindowManager : IWindowManager
 
 	public void FocusWorkspace(Workspace wksp)
 	{
-		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => wnd.Hide()));
+		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => wnd?.Hide()));
 		wksp.Focus();
 		focusedWorkspace = wksp;
 	}
 
+	int GetX(int start, int end, int frames, int frame)
+	{
+		double progress = (double)frame / frames;
+		progress = EaseOutQuint(progress);
+		return start + (int)((end - start) * progress);
+	}
+
+	public double EaseOutQuint(double x)
+	{
+		return 1 - Math.Pow(1 - x, 3);
+	}
+
+	public async Task WorkspaceAnimate(Workspace wksp, int startX, int endX, int duration)
+	{
+		int fps = 60;
+		int dt = (int)(1000 / fps); // milliseconds
+		int frames = (int)(((float)duration / 1000) * fps);
+
+		Stopwatch sw = new();
+		sw.Start();
+		for (int i = 0; i < frames; i++)
+		{
+			wksp.Move(GetX(startX, endX, frames, i), null);
+			int wait = (int)(i * dt - sw.ElapsedMilliseconds);
+			wait = wait < 0 ? 0 : wait;
+			Console.WriteLine($"{i}. wait: {wait}");
+			await Task.Delay(wait);
+		}
+		sw.Stop();
+		Console.WriteLine($"total: {sw.ElapsedMilliseconds} ms");
+
+		//System.Timers.Timer timer = new(dt);
+		//int frame = 0;
+		//timer.Elapsed += (s, e) =>
+		//{
+		//	if (frame == frames) timer.Stop();
+		//	int x = GetX(startX, endX, frames, frame++);
+		//	wksp.Move(x, null);
+		//	Console.WriteLine($"frame: {frame}, dt: {dt}, x: {x}");
+		//};
+		//timer.Start();
+	}
+
 	public void FocusNextWorkspace()
 	{
-		if (focusedWorkspaceIndex < workspaces.Count - 1) FocusWorkspace(workspaces[focusedWorkspaceIndex + 1]);
-		else FocusWorkspace(workspaces.First());
-		Console.WriteLine($"NEXT, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
+		int prev = focusedWorkspaceIndex > 0 ? focusedWorkspaceIndex - 1 : workspaces.Count - 1;
+
+		if (config.workspaceAnimations)
+		{
+			// move left
+			(int w, int h) = Utils.GetScreenSize();
+			WorkspaceAnimate(focusedWorkspace, 0, -3 * w / 4, 1000).Wait();
+			//WorkspaceAnimate(workspaces[next], w, 0, 10000).Wait();
+		}
+		else
+		{
+			FocusWorkspace(workspaces[next]);
+			Console.WriteLine($"NEXT, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+		}
 	}
 
 	public void FocusPreviousWorkspace()
 	{
-		if (focusedWorkspaceIndex > 0) FocusWorkspace(workspaces[focusedWorkspaceIndex - 1]);
-		else FocusWorkspace(workspaces.Last());
-		Console.WriteLine($"PREVIOUS, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
+		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
+
+		if (config.workspaceAnimations)
+		{
+			// move right
+		}
+		else
+		{
+			FocusWorkspace(workspaces[prev]);
+			Console.WriteLine($"PREVIOUS, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+		}
 	}
 
 	public void ShiftFocusedWindowToWorkspace(int index)
@@ -387,14 +470,14 @@ public class WindowManager : IWindowManager
 
 	public void ShiftFocusedWindowToNextWorkspace()
 	{
-		int index = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
-		ShiftFocusedWindowToWorkspace(index);
+		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
+		ShiftFocusedWindowToWorkspace(next);
 	}
 
 	public void ShiftFocusedWindowToPreviousWorkspace()
 	{
-		int index = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
-		ShiftFocusedWindowToWorkspace(index);
+		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
+		ShiftFocusedWindowToWorkspace(prev);
 	}
 
 	public void WindowAdded(Window wnd)

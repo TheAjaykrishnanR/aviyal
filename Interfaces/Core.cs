@@ -15,6 +15,7 @@ public interface IWindow
 	public void Show();
 	public void Focus();
 	public void Move(RECT pos);
+	public void Move(int? x, int? y);
 	public void Close();
 }
 
@@ -31,6 +32,7 @@ public interface IWorkspace
 	public void Focus();
 	public void CloseFocusedWindow();
 	public void FocusAdjacentWindow(EDGE direction);
+	public void Move(int? x, int? y);
 }
 
 public interface IWindowManager
@@ -57,5 +59,10 @@ public interface ILayout
 	public int outer { get; set; }
 	public int inner { get; set; }
 	public int? GetAdjacent(int index, EDGE direction);
+}
+
+public interface IAnimation<T>
+{
+	public T GetValue(double progress);
 }
 
