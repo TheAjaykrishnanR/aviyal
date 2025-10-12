@@ -452,7 +452,7 @@ public class WindowManager : IWindowManager
 			Task.WhenAll(_ts).Wait();
 			focusedWorkspace.Hide();
 			focusedWorkspace = workspaces[next];
-			focusedWorkspace.Update();
+			focusedWorkspace.Update(); // when animation finishes, margins dont match
 		}
 
 		else
@@ -467,9 +467,22 @@ public class WindowManager : IWindowManager
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
 
-		if (!config.workspaceAnimations)
+		if (config.workspaceAnimations)
 		{
 			// move right
+			(int w, int h) = Utils.GetScreenSize();
+
+			workspaces[prev].Move(-w, null);
+			workspaces[prev].Focus();
+
+			int duration = 500;
+			List<Task> _ts = new();
+			_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, 0, w, duration)));
+			_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[prev], -w, 0, duration)));
+			Task.WhenAll(_ts).Wait();
+			focusedWorkspace.Hide();
+			focusedWorkspace = workspaces[prev];
+			focusedWorkspace.Update();
 		}
 		else
 		{
