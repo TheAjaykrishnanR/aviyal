@@ -86,7 +86,7 @@ public class Window : IWindow
 		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOWNA);
 		ToggleAnimation(true);
 	}
-	public void Focus()
+	public async void Focus()
 	{
 		// simulate an ALT key press inorder to focus and not just flash in
 		// the taskbar
@@ -99,7 +99,7 @@ public class Window : IWindow
 		User32.SetForegroundWindow(this.hWnd);
 
 		// dont leave this function until focusWindow gets stable
-		TaskEx.WaitUntil(() => this.hWnd == User32.GetForegroundWindow()).Wait();
+		await TaskEx.WaitUntil(() => this.hWnd == User32.GetForegroundWindow());
 	}
 
 	public void Move(RECT pos)
@@ -385,6 +385,18 @@ public class WindowManager : IWindowManager
 		focusedWorkspace = workspaces[index];
 	}
 
+	public void ShiftFocusedWindowToNextWorkspace()
+	{
+		int index = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
+		ShiftFocusedWindowToWorkspace(index);
+	}
+
+	public void ShiftFocusedWindowToPreviousWorkspace()
+	{
+		int index = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
+		ShiftFocusedWindowToWorkspace(index);
+	}
+
 	public void WindowAdded(Window wnd)
 	{
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
@@ -410,11 +422,11 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Focus();
 	}
 
-	public void WindowMinimized(Window wnd)
+	public async void WindowMinimized(Window wnd)
 	{
 		Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}");
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
-		TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED).Wait();
+		await TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED);
 		focusedWorkspace.Focus();
 	}
 	public void WindowRestored(Window wnd)
