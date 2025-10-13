@@ -3,9 +3,13 @@
     Copyright (c) 2025 Ajaykrishnan R	
 */
 
+using System;
+using System.Linq;
 using System.Diagnostics;
 using System.Windows;
 using System.IO;
+using System.Text.Json.Nodes;
+using System.Collections.Generic;
 
 public class Logger
 {
@@ -23,5 +27,44 @@ public class Logger
 	public static void Log(List<string> array)
 	{
 		foreach (var arr in array) Log(arr);
+	}
+}
+
+public class WindowManagerState : IJson<WindowManagerState>
+{
+	public List<Window> windows = new();
+
+	public string ToJson()
+	{
+		JsonObject j = new()
+		{
+			["windows"] = new JsonArray(
+				windows.Select(wnd =>
+				{
+					return new JsonObject()
+					{
+						["hWnd"] = wnd.hWnd.ToString(),
+						["title"] = wnd.title,
+						["exe"] = wnd.exe,
+					};
+				}).ToArray()
+			),
+		};
+		return j.ToString();
+	}
+
+	public WindowManagerState FromJson(string json)
+	{
+		JsonNode? node = JsonNode.Parse(json);
+		WindowManagerState state = new();
+		JsonArray? _arr = node?["windows"]?.AsArray();
+		_arr?.ToList().ForEach(
+			_wnd =>
+			{
+				nint hWnd = (nint)Convert.ToInt32(_wnd?["hWnd"]?.ToString());
+				state.windows.Add(new Window(hWnd));
+			}
+		);
+		return state;
 	}
 }

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
@@ -519,24 +520,31 @@ public class WindowManager : IWindowManager
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		focusedWorkspace.Add(wnd);
 		focusedWorkspace.Focus();
-		//wnd.SetBottom(); // if you wanna move the window back to even the terminal while debugging
+
+		SaveState();
 	}
 	public void WindowRemoved(Window wnd)
 	{
 		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
 		focusedWorkspace.Remove(wnd);
 		focusedWorkspace.Focus();
+
+		SaveState();
 	}
 	public void WindowMoved(Window wnd)
 	{
 		Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
 		focusedWorkspace.Focus();
+
+		SaveState();
 	}
 
 	public void WindowMaximized(Window wnd)
 	{
 		Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}");
 		focusedWorkspace.Focus();
+
+		SaveState();
 	}
 
 	public async void WindowMinimized(Window wnd)
@@ -545,11 +553,23 @@ public class WindowManager : IWindowManager
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
 		await TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED);
 		focusedWorkspace.Focus();
+
+		SaveState();
 	}
 	public void WindowRestored(Window wnd)
 	{
 		Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}");
 		focusedWorkspace.Focus();
+
+		SaveState();
+	}
+
+	public void SaveState()
+	{
+		WindowManagerState state = new();
+		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => state.windows.Add(wnd!)));
+		File.WriteAllText(Paths.stateFile, state.ToJson());
+		Console.WriteLine(state.ToJson());
 	}
 }
 

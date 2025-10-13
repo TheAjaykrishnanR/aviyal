@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("windowgen")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f525d6da45ff78686434dab05a4a664a35d94238")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+79b1ce5de7656b3cc1c6a4586ea37c3fd2924ad7")]
 [assembly: System.Reflection.AssemblyProductAttribute("windowgen")]
 [assembly: System.Reflection.AssemblyTitleAttribute("windowgen")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

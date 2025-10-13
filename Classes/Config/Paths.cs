@@ -4,5 +4,7 @@ using System.Diagnostics;
 
 public class Paths
 {
-	public static string configFile = Path.Join(Path.GetDirectoryName(Environment.ProcessPath), "aviyal.json");
+	public static string rootDir = Path.GetDirectoryName(Environment.ProcessPath)!;
+	public static string configFile = Path.Join(rootDir, "aviyal.json");
+	public static string stateFile = Path.Join(rootDir, "state.json");
 }
