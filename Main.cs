@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 
 class Aviyal
 {
+	static string ver = "0.1.0";
+
 	WindowManager wm;
 	WindowEventsListener wndListener = new();
 	KeyEventsListener kbdListener;
@@ -81,37 +83,6 @@ class Aviyal
 		else actions[keymap.command]?.Invoke();
 	}
 
-	static bool errored = false;
-	static void Main(string[] args)
-	{
-		if (Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1)
-		{
-			Console.WriteLine("an instance is already running, exiting...");
-			return;
-		}
-
-		Config config = null;
-		if (File.Exists(Paths.configFile))
-		{
-			string jsonString = File.ReadAllText(Paths.configFile);
-			config = Config.FromJson(jsonString);
-			Console.WriteLine("Read config: ");
-		}
-		else
-		{
-			config = new();
-			Console.WriteLine("Default config: ");
-			File.AppendAllText(Paths.configFile, config.ToJson());
-		}
-		Console.WriteLine(config.ToJson());
-
-		Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
-
-		Aviyal aviyal = new(config);
-
-		while (Console.ReadLine() != ":q" && !errored) { }
-	}
-
 	public void Exec(List<string> args)
 	{
 		if (args.Count == 0) return;
@@ -128,6 +99,48 @@ class Aviyal
 		{
 			Console.WriteLine($"Unable to execute command: {ex.Message}");
 			Console.WriteLine(string.Join(", ", args));
+		}
+	}
+
+	static void Run()
+	{
+		if (Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1)
+		{
+			Console.WriteLine("an instance is already running, exiting...");
+			return;
+		}
+
+		Config config = null;
+		if (File.Exists(Paths.configFile))
+		{
+			string jsonString = File.ReadAllText(Paths.configFile);
+			config = Config.FromJson(jsonString);
+		}
+		else
+		{
+			config = new();
+			Console.WriteLine("Default config: ");
+			File.AppendAllText(Paths.configFile, config.ToJson());
+		}
+
+		Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
+		Aviyal aviyal = new(config);
+		while (Console.ReadLine() != ":q" && !errored) { }
+	}
+
+	static bool errored = false;
+	static void Main(string[] args)
+	{
+		switch (args.ToList().ElementAtOrDefault(0))
+		{
+			case null or "--debug":
+				Run();
+				break;
+			case "--version":
+				Console.WriteLine($"AVIYAL VERSION: {ver}");
+				break;
+			case "--help":
+				break;
 		}
 	}
 }
