@@ -42,6 +42,7 @@ public class KeyEventsListener
 		VK key = (VK)kbdStruct.vkCode;
 		uint dt = kbdStruct.time - lastKeyTime;
 		if (dt > 500) captured.Clear();
+		bool letKeyPass = true;
 		switch ((WINDOWMESSAGE)wparam)
 		{
 			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */:
@@ -55,6 +56,7 @@ public class KeyEventsListener
 							Log(captured, dt, "HOTKEY_PRESSED");
 							Log(keymap.keys, dt, "HOTKEY_PRESSED");
 							HOTKEY_PRESSED(keymap);
+							letKeyPass = false;
 							break;
 						}
 					}
@@ -71,8 +73,9 @@ public class KeyEventsListener
 		}
 		Log(captured, dt);
 		lastKeyTime = kbdStruct.time;
-		return CallNextHookEx(0, code, wparam, lparam);
-		//return 1;
+
+		if (letKeyPass) return CallNextHookEx(0, code, wparam, lparam);
+		return 1;
 	}
 
 	void Loop()

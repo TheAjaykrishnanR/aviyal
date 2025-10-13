@@ -93,6 +93,8 @@ public class Window : IWindow
 		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOWNA);
 		ToggleAnimation(true);
 	}
+
+	// https://stackoverflow.com/a/62968073/14588925
 	public async void Focus()
 	{
 		while (this.hWnd != User32.GetForegroundWindow())
