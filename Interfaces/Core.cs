@@ -34,6 +34,8 @@ public interface IWorkspace
 	public void CloseFocusedWindow();
 	public void FocusAdjacentWindow(EDGE direction);
 	public void Move(int? x, int? y);
+	public void SwapWindows(Window wnd1, Window wnd2);
+	public Window? GetWindowFromPoint(POINT pt);
 }
 
 public interface IWindowManager

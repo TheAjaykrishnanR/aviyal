@@ -325,6 +325,25 @@ public class Workspace : IWorkspace
 		});
 	}
 
+	public void SwapWindows(Window wnd1, Window wnd2)
+	{
+		if (!windows.Contains(wnd1) || !windows.Contains(wnd2)) return;
+		int wnd1_index = windows.Index().First(iwnd => iwnd.Item == wnd1).Index;
+		int wnd2_index = windows.Index().First(iwnd => iwnd.Item == wnd2).Index;
+		windows[wnd1_index] = wnd2;
+		windows[wnd2_index] = wnd1;
+		Update();
+	}
+
+	public Window? GetWindowFromPoint(POINT pt)
+	{
+		return windows.First(wnd =>
+		{
+			return wnd?.relRect.Left < pt.X && pt.X < wnd?.relRect.Right &&
+				   wnd?.relRect.Top < pt.Y && pt.Y < wnd?.relRect.Bottom;
+		});
+	}
+
 	Config config;
 	(int, int) floatingWindowSize;
 	public Workspace(Config config)
@@ -420,17 +439,6 @@ public class WindowManager : IWindowManager
 		}
 		sw.Stop();
 		Console.WriteLine($"total: {sw.ElapsedMilliseconds} ms");
-
-		//System.Timers.Timer timer = new(dt);
-		//int frame = 0;
-		//timer.Elapsed += (s, e) =>
-		//{
-		//	if (frame == frames) timer.Stop();
-		//	int x = GetX(startX, endX, frames, frame++);
-		//	wksp.Move(x, null);
-		//	Console.WriteLine($"frame: {frame}, dt: {dt}, x: {x}");
-		//};
-		//timer.Start();
 	}
 
 	public void FocusNextWorkspace()
@@ -537,6 +545,13 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Focus();
 
 		SaveState();
+		// wnd -> window being moved
+		// cursorPos
+		// wndEnclosingCursor -> window enclosing cursor
+		User32.GetCursorPos(out POINT pt);
+		Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
+		if (wndUnderCursor == null) return;
+		focusedWorkspace.SwapWindows(wnd, wndUnderCursor);
 	}
 
 	public void WindowMaximized(Window wnd)
