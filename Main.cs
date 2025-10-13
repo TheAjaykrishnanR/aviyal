@@ -34,7 +34,18 @@ class Aviyal
 			{ COMMAND.SHIFT_WINDOW_NEXT_WORKSPACE, () => wm.ShiftFocusedWindowToNextWorkspace() },
 			{ COMMAND.SHIFT_WINDOW_PREVIOUS_WORKSPACE, () => wm.ShiftFocusedWindowToPreviousWorkspace() },
 			{ COMMAND.TOGGLE_FLOATING_WINDOW, () => wm.focusedWorkspace.ToggleFloating() },
+
+			{ COMMAND.FOCUS_WORKSPACE_1, () => wm.FocusWorkspace(wm.workspaces[0]) },
+			{ COMMAND.FOCUS_WORKSPACE_2, () => wm.FocusWorkspace(wm.workspaces[1]) },
+			{ COMMAND.FOCUS_WORKSPACE_3, () => wm.FocusWorkspace(wm.workspaces[2]) },
+			{ COMMAND.FOCUS_WORKSPACE_4, () => wm.FocusWorkspace(wm.workspaces[3]) },
+			{ COMMAND.FOCUS_WORKSPACE_5, () => wm.FocusWorkspace(wm.workspaces[4]) },
+			{ COMMAND.FOCUS_WORKSPACE_6, () => wm.FocusWorkspace(wm.workspaces[5]) },
+			{ COMMAND.FOCUS_WORKSPACE_7, () => wm.FocusWorkspace(wm.workspaces[6]) },
+			{ COMMAND.FOCUS_WORKSPACE_8, () => wm.FocusWorkspace(wm.workspaces[7]) },
+			{ COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(wm.workspaces[8]) },
 		};
+
 		// in order to recieve window events for windows that
 		// already exists while the application is run
 		wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
@@ -140,4 +151,14 @@ public enum COMMAND
 	TOGGLE_FLOATING_WINDOW,
 
 	EXEC,
+
+	FOCUS_WORKSPACE_1,
+	FOCUS_WORKSPACE_2,
+	FOCUS_WORKSPACE_3,
+	FOCUS_WORKSPACE_4,
+	FOCUS_WORKSPACE_5,
+	FOCUS_WORKSPACE_6,
+	FOCUS_WORKSPACE_7,
+	FOCUS_WORKSPACE_8,
+	FOCUS_WORKSPACE_9,
 }

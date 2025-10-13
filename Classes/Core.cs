@@ -120,7 +120,13 @@ public class Window : IWindow
 		pos.Right -= margin.Right;
 		pos.Bottom -= margin.Bottom;
 
-		User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_BOTTOM, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
+		nint zorder = floating switch
+		{
+			true => (nint)SWPZORDER.HWND_TOP,
+			false => (nint)SWPZORDER.HWND_BOTTOM
+		};
+
+		User32.SetWindowPos(this.hWnd, zorder, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
 	}
 
 	public void Move(int? x, int? y)
@@ -261,7 +267,6 @@ public class Workspace : IWorkspace
 	{
 		Update();
 		windows?.ForEach(wnd => wnd?.Show());
-		windows?.FirstOrDefault()?.Focus();
 	}
 
 	public void Hide()

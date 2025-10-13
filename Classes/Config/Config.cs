@@ -10,19 +10,36 @@ public class Config : IJson<Config>
 	public int inner { get; set; } = 5;
 	public int workspaces { get; set; } = 9;
 	public string floatingWindowSize { get; set; } = "800x400";
-	public bool workspaceAnimations = true;
+	public bool workspaceAnimations = false;
 	public List<Keymap> keymaps = new() {
 		// focus workspaces
 		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.L], command= COMMAND.FOCUS_NEXT_WORKSPACE },
 		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.H], command= COMMAND.FOCUS_PREVIOUS_WORKSPACE },
 		// close window
-		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.X], command= COMMAND.CLOSE_FOCUSED_WINDOW},
+		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.X], command= COMMAND.CLOSE_FOCUSED_WINDOW },
+		// toggle floating window
+		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.Z], command= COMMAND.TOGGLE_FLOATING_WINDOW },
 		// focus window
-		new() { keys= [VK.LCONTROL, VK.H], command= COMMAND.FOCUS_LEFT_WINDOW},
-		new() { keys= [VK.LCONTROL, VK.K], command= COMMAND.FOCUS_TOP_WINDOW},
-		new() { keys= [VK.LCONTROL, VK.L], command= COMMAND.FOCUS_RIGHT_WINDOW
-		},
-		new() { keys= [VK.LCONTROL, VK.J], command= COMMAND.FOCUS_BOTTOM_WINDOW},
+		new() { keys= [VK.LCONTROL, VK.H], command= COMMAND.FOCUS_LEFT_WINDOW },
+		new() { keys= [VK.LCONTROL, VK.K], command= COMMAND.FOCUS_TOP_WINDOW },
+		new() { keys= [VK.LCONTROL, VK.L], command= COMMAND.FOCUS_RIGHT_WINDOW },
+		new() { keys= [VK.LCONTROL, VK.J], command= COMMAND.FOCUS_BOTTOM_WINDOW },
+		// shift focused window (left/right)
+		new() { keys= [VK.LMENU, VK.L], command= COMMAND.SHIFT_FOCUSED_WINDOW_RIGHT },
+		new() { keys= [VK.LMENU, VK.H], command= COMMAND.SHIFT_FOCUSED_WINDOW_LEFT },
+		// shift focused window (workspace)
+		new() { keys= [VK.LMENU, VK.LSHIFT, VK.L], command= COMMAND.SHIFT_WINDOW_NEXT_WORKSPACE },
+		new() { keys= [VK.LMENU, VK.LSHIFT, VK.H], command= COMMAND.SHIFT_WINDOW_PREVIOUS_WORKSPACE },
+		// jump to numbered workspace
+		new() { keys= [VK.LCONTROL, VK.NUM1], command= COMMAND.FOCUS_WORKSPACE_1 },
+		new() { keys= [VK.LCONTROL, VK.NUM2], command= COMMAND.FOCUS_WORKSPACE_2 },
+		new() { keys= [VK.LCONTROL, VK.NUM3], command= COMMAND.FOCUS_WORKSPACE_3 },
+		new() { keys= [VK.LCONTROL, VK.NUM4], command= COMMAND.FOCUS_WORKSPACE_4 },
+		new() { keys= [VK.LCONTROL, VK.NUM5], command= COMMAND.FOCUS_WORKSPACE_5 },
+		new() { keys= [VK.LCONTROL, VK.NUM6], command= COMMAND.FOCUS_WORKSPACE_6 },
+		new() { keys= [VK.LCONTROL, VK.NUM7], command= COMMAND.FOCUS_WORKSPACE_7 },
+		new() { keys= [VK.LCONTROL, VK.NUM8], command= COMMAND.FOCUS_WORKSPACE_8 },
+		new() { keys= [VK.LCONTROL, VK.NUM9], command= COMMAND.FOCUS_WORKSPACE_9 },
 	};
 
 	public string ToJson()

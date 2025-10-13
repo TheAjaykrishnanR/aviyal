@@ -3,6 +3,7 @@
   "outer": 5,
   "inner": 5,
   "workspaces": 9,
+  "floatingWindowSize": "800x400",
   "keymaps": [
     {
       "keys": ["LCONTROL", "LSHIFT", "L"],
@@ -62,6 +63,56 @@
 	{
       "keys": [ "LCONTROL", "LSHIFT", "Z" ],
       "command": "TOGGLE_FLOATING_WINDOW",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM1" ],
+      "command": "FOCUS_WORKSPACE_1",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM2" ],
+      "command": "FOCUS_WORKSPACE_2",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM2" ],
+      "command": "FOCUS_WORKSPACE_2",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM3" ],
+      "command": "FOCUS_WORKSPACE_3",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM4" ],
+      "command": "FOCUS_WORKSPACE_4",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM5" ],
+      "command": "FOCUS_WORKSPACE_5",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM6" ],
+      "command": "FOCUS_WORKSPACE_6",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM7" ],
+      "command": "FOCUS_WORKSPACE_7",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM8" ],
+      "command": "FOCUS_WORKSPACE_8",
+      "arguments": []
+    },
+	{
+      "keys": [ "LCONTROL", "NUM9" ],
+      "command": "FOCUS_WORKSPACE_9",
       "arguments": []
     }
   ]

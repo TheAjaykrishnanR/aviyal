@@ -6,63 +6,177 @@
   "floatingWindowSize": "800x400",
   "keymaps": [
     {
-      "keys": ["LCONTROL", "LSHIFT", "L"],
+      "keys": [
+        "LCONTROL",
+        "LSHIFT",
+        "L"
+      ],
       "command": "FOCUS_NEXT_WORKSPACE",
       "arguments": []
     },
     {
-      "keys": ["LCONTROL", "LSHIFT", "H" ],
+      "keys": [
+        "LCONTROL",
+        "LSHIFT",
+        "H"
+      ],
       "command": "FOCUS_PREVIOUS_WORKSPACE",
       "arguments": []
     },
     {
-      "keys": [ "LCONTROL", "LSHIFT", "X" ],
+      "keys": [
+        "LCONTROL",
+        "LSHIFT",
+        "X"
+      ],
       "command": "CLOSE_FOCUSED_WINDOW",
       "arguments": []
     },
     {
-      "keys": [ "LCONTROL", "H" ],
+      "keys": [
+        "LCONTROL",
+        "LSHIFT",
+        "Z"
+      ],
+      "command": "TOGGLE_FLOATING_WINDOW",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "H"
+      ],
       "command": "FOCUS_LEFT_WINDOW",
       "arguments": []
     },
     {
-      "keys": [ "LCONTROL", "K" ],
+      "keys": [
+        "LCONTROL",
+        "K"
+      ],
       "command": "FOCUS_TOP_WINDOW",
       "arguments": []
     },
     {
-      "keys": [ "LCONTROL", "L" ],
+      "keys": [
+        "LCONTROL",
+        "L"
+      ],
       "command": "FOCUS_RIGHT_WINDOW",
       "arguments": []
     },
     {
-      "keys": [ "LCONTROL", "J" ],
+      "keys": [
+        "LCONTROL",
+        "J"
+      ],
       "command": "FOCUS_BOTTOM_WINDOW",
       "arguments": []
     },
-	{
-      "keys": [ "LMENU", "L" ],
+    {
+      "keys": [
+        "LMENU",
+        "L"
+      ],
       "command": "SHIFT_FOCUSED_WINDOW_RIGHT",
       "arguments": []
     },
-	{
-      "keys": [ "LMENU", "H" ],
+    {
+      "keys": [
+        "LMENU",
+        "H"
+      ],
       "command": "SHIFT_FOCUSED_WINDOW_LEFT",
       "arguments": []
     },
-	{
-      "keys": [ "LMENU", "LSHIFT", "L" ],
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "L"
+      ],
       "command": "SHIFT_WINDOW_NEXT_WORKSPACE",
       "arguments": []
     },
-	{
-      "keys": [ "LMENU", "LSHIFT", "H" ],
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "H"
+      ],
       "command": "SHIFT_WINDOW_PREVIOUS_WORKSPACE",
       "arguments": []
     },
-	{
-      "keys": [ "LCONTROL", "LSHIFT", "Z" ],
-      "command": "TOGGLE_FLOATING_WINDOW",
+    {
+      "keys": [
+        "LCONTROL",
+        "NUM1"
+      ],
+      "command": "FOCUS_WORKSPACE_1",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "NUM2"
+      ],
+      "command": "FOCUS_WORKSPACE_2",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "NUM3"
+      ],
+      "command": "FOCUS_WORKSPACE_3",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "NUM4"
+      ],
+      "command": "FOCUS_WORKSPACE_4",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "NUM5"
+      ],
+      "command": "FOCUS_WORKSPACE_5",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "NUM6"
+      ],
+      "command": "FOCUS_WORKSPACE_6",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "NUM7"
+      ],
+      "command": "FOCUS_WORKSPACE_7",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "NUM8"
+      ],
+      "command": "FOCUS_WORKSPACE_8",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LCONTROL",
+        "NUM9"
+      ],
+      "command": "FOCUS_WORKSPACE_9",
       "arguments": []
     }
   ]
