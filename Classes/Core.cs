@@ -95,18 +95,18 @@ public class Window : IWindow
 	}
 	public async void Focus()
 	{
-		// simulate an ALT key press inorder to focus and not just flash in
-		// the taskbar
-		// https://stackoverflow.com/a/13881647
-		const uint EXTENDEDKEY = 0x1;
-		const uint KEYUP = 0x2;
-		User32.keybd_event((byte)VK.LMENU, 0x3C, EXTENDEDKEY, 0);
-		User32.keybd_event((byte)VK.LMENU, 0x3C, EXTENDEDKEY | KEYUP, 0);
+		while (this.hWnd != User32.GetForegroundWindow())
+		{
+			nint currentForegroundWnd_hWnd = User32.GetForegroundWindow();
+			User32.GetWindowThreadProcessId(currentForegroundWnd_hWnd, out uint currentForegroundWnd_threadId);
+			uint thisThread = Kernel32.GetCurrentThreadId();
 
-		User32.SetForegroundWindow(this.hWnd);
+			User32.AttachThreadInput(thisThread, currentForegroundWnd_threadId, true);
+			User32.SetForegroundWindow(this.hWnd);
+			User32.AttachThreadInput(thisThread, currentForegroundWnd_threadId, false);
 
-		// dont leave this function until focusWindow gets stable
-		await TaskEx.WaitUntil(() => this.hWnd == User32.GetForegroundWindow());
+			await Task.Delay(10);
+		}
 	}
 
 	public void Move(RECT pos)
@@ -389,7 +389,7 @@ public class WindowManager : IWindowManager
 		{
 			initWindows.Add(new(hWnd));
 		});
-		initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+		//initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		initWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
 		for (int i = 0; i < WORKSPACES; i++)

@@ -59,6 +59,7 @@ class Aviyal
 			Exception ex = (Exception)e.ExceptionObject;
 			string text = ex.Message + "\n" + ex.StackTrace;
 			Console.WriteLine(text);
+			File.WriteAllText(Paths.errorFile, text);
 			errored = true;
 		};
 	}

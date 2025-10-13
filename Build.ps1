@@ -19,6 +19,7 @@ dflat Main.cs `
 	  Classes\Config\Paths.cs `
 	  /r:Libs `
 	  /langversion:preview `
+	  /target:exe `
 	  /out Main.exe `
 
 mv Main.exe bin\Main.exe

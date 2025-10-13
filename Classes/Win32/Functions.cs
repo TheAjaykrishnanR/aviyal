@@ -185,6 +185,10 @@ public class User32
 
 	[DllImport("user32.dll", SetLastError = true)]
 	public static extern nint SetParent(nint hWndChild, nint hWndNewParent);
+
+	[DllImport("user32.dll")]
+	public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
 }
 
 public class Shell32
@@ -222,6 +226,10 @@ public class Kernel32
 	  StringBuilder lpTargetPath,
 	  uint ucchMax
 	);
+
+	[DllImport("kernel32.dll")]
+	public static extern uint GetCurrentThreadId();
+
 }
 
 public class Dwmapi
