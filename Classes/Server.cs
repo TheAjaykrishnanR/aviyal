@@ -1,153 +1,43 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
 
-public class Sender
+class Server
 {
 	Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+	int port = 6969;
+	public delegate string RequestEventHandler(string request);
+	public event RequestEventHandler REQUEST_RECEIVED = (request) => "";
 
-	static int port = 6969;
-	static IPEndPoint ip = new(IPAddress.Any, port);
-
-	public Sender()
+	public Server()
 	{
-		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-		socket.Bind(ip);
-	}
-
-	private bool connected = false;
-	int RETRY = 1000;
-	int TIMEOUT = 5000;
-	bool timeout = false;
-
-	Task connectingTask;
-
-	private string recieverIp;
-	public string RecieverIp
-	{
-		get
+		socket.Bind(new IPEndPoint(IPAddress.Any, port));
+		socket.Listen(10);
+		Console.WriteLine($"server: listening on {IPAddress.Any}:{port}");
+		Task.Run(() =>
 		{
-			return recieverIp;
-		}
-		set
-		{
-			recieverIp = value;
-			connectingTask = ConnectToReciever(IPAddress.Parse(value));
-		}
-	}
-
-	public async Task ConnectToReciever(IPAddress recieverIp)
-	{
-		IPEndPoint reciever = new(recieverIp, Reciever.RECIEVING_PORT);
-
-		System.Timers.Timer timer = new();
-		timer.Interval = TIMEOUT;
-		timer.Elapsed += (sender, e) => { timeout = true; };
-		timer.Start();
-
-		while (!connected)
-		{
-			if (timeout)
+			while (true)
 			{
-				Console.WriteLine($"[TIMEOUT] Connection attempts timedout");
-				break;
+				Socket client = socket.Accept();
+				Console.WriteLine("server: socket connected");
+				Task.Run(() =>
+				{
+					while (client.Connected)
+					{
+						byte[] buffer = new byte[1024];
+						int bytesRead = client.Receive(buffer);
+						string request = Encoding.UTF8.GetString(buffer.Take(bytesRead).ToArray());
+						string response = REQUEST_RECEIVED(request);
+						byte[] bytes = Encoding.UTF8.GetBytes(response);
+						client.Send(bytes);
+						Console.WriteLine($"server: request recieved: {request}, response: {response}");
+					}
+					Console.WriteLine("server: connection closed");
+				});
 			}
-
-			try
-			{
-				Console.WriteLine($"[EVENT] Connecting to {IPAddress.Parse(reciever.Address.ToString())} ...");
-				await socket.ConnectAsync(reciever);
-				connected = true;
-				Console.WriteLine($"[EVENT] Connected !");
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"[FAIL] {ex.Message}");
-			}
-			await Task.Delay(RETRY);
-		}
-		timer.Stop();
-		timer.Close();
-	}
-
-	public async Task Send(string text)
-	{
-		await connectingTask;
-
-		if (connected)
-		{
-			try
-			{
-				Console.WriteLine($"[EVENT] Sending message ...");
-
-				byte[] bytesToSend = Encoding.UTF8.GetBytes(jsonmessage);
-				await socket.SendAsync(bytesToSend);
-
-				Console.WriteLine($"[STATE] Message Sent, wating for reply...");
-
-				byte[] replyBytes = new byte[1024];
-				await socket.ReceiveAsync(replyBytes);
-
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"[ERROR] {ex.Message}");
-			}
-		}
-		else
-		{
-			Console.WriteLine($"[EVENT] Not connected to any recievers");
-		}
-	}
-}
-
-public class Reciever
-{
-	private Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-	private IPAddress localIPAddress = Utils.GetLANIP();
-	public static int RECIEVING_PORT = 4242;
-	private IPEndPoint localEndPoint;
-
-	public Reciever()
-	{
-		localEndPoint = new(localIPAddress, RECIEVING_PORT);
-		socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-		socket.Bind(localEndPoint);
-
-		ConnectToSender();
-	}
-
-	public async Task ConnectToSender()
-	{
-		socket.Listen();
-
-		Console.WriteLine($"[EVENT] Wating for connections");
-
-		//Socket connection = await socket.AcceptAsync();
-		List<Task> _ts = new();
-		while (true)
-		{
-			var _socket = await socket.AcceptAsync();
-			Console.WriteLine($"[EVENT] Connected !");
-			_ts.Add(Recieve(_socket));
-		}
-
-	}
-
-	public async Task Recieve(Socket connectedSocket)
-	{
-		while (true)
-		{
-			if (!connectedSocket.Connected)
-			{
-				break;
-			}
-
-			byte[] bytesRecieved = new byte[1024];
-			await connectedSocket.ReceiveAsync(bytesRecieved);
-		}
-		connectedSocket.Close();
+		});
 	}
 }

@@ -386,6 +386,7 @@ public class WindowManager : IWindowManager
 	}
 	public int WORKSPACES = 9;
 
+	Server server = new();
 	Config config;
 	public WindowManager(Config config)
 	{
@@ -396,7 +397,7 @@ public class WindowManager : IWindowManager
 		{
 			initWindows.Add(new(hWnd));
 		});
-		//initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+		initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		initWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
 		for (int i = 0; i < WORKSPACES; i++)
@@ -407,6 +408,8 @@ public class WindowManager : IWindowManager
 		// add all windows to 1st workspace
 		initWindows.ForEach(wnd => workspaces.First().windows.Add(wnd));
 		FocusWorkspace(workspaces.First());
+
+		server.REQUEST_RECEIVED += RequestReceived;
 	}
 
 	public void FocusWorkspace(Workspace wksp)
@@ -586,12 +589,49 @@ public class WindowManager : IWindowManager
 		SaveState();
 	}
 
-	public void SaveState()
+	public WindowManagerState GetState()
 	{
 		WindowManagerState state = new();
 		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => state.windows.Add(wnd!)));
+		return state;
+	}
+
+	public void SaveState()
+	{
+		var state = GetState();
+		Console.WriteLine("WRITING STATE");
 		File.WriteAllText(Paths.stateFile, state.ToJson());
 		Console.WriteLine(state.ToJson());
+	}
+
+	public string RequestReceived(string request)
+	{
+		string[] args = request.Split(" ");
+		args[args.Length - 1] = args.Last().Replace("\n", "");
+		Console.WriteLine($"arg0: {args.FirstOrDefault()}, arg1: {args.ElementAtOrDefault(1)}");
+		string? verb = args.FirstOrDefault();
+		Console.WriteLine($"verb: {verb}");
+		string response = "";
+		switch (verb)
+		{
+			case null or "":
+				break;
+			case "get":
+				Console.WriteLine($" [[[[REACHED]]]]: {args[1].Length}");
+				switch (args.ElementAtOrDefault(1))
+				{
+					case null or "":
+						break;
+					case "state":
+						response = GetState().ToJson();
+						Console.WriteLine($"response: {response}");
+						break;
+				}
+				break;
+			default:
+				break;
+		}
+		return response;
 	}
 }
 
