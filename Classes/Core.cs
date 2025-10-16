@@ -625,6 +625,7 @@ public class WindowManager : IWindowManager
 		WindowManagerState state = new();
 		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => state.windows.Add(wnd!)));
 		state.focusedWorkspaceIndex = focusedWorkspaceIndex;
+		state.workspaceCount = workspaces.Count;
 		return state;
 	}
 
@@ -654,14 +655,23 @@ public class WindowManager : IWindowManager
 			case null or "":
 				break;
 			case "get":
-				Console.WriteLine($" [[[[REACHED]]]]: {args[1].Length}");
 				switch (args.ElementAtOrDefault(1))
 				{
 					case null or "":
 						break;
 					case "state":
 						response = GetState().ToJson();
-						Console.WriteLine($"response: {response}");
+						break;
+				}
+				break;
+			case "set":
+				switch (args.ElementAtOrDefault(1))
+				{
+					case null or "":
+						break;
+					case "focusedWorkspaceIndex":
+						int index = Convert.ToInt32(args.ElementAtOrDefault(2));
+						if (index >= 0 && index <= workspaces.Count - 1) FocusWorkspace(workspaces[index]);
 						break;
 				}
 				break;

@@ -34,6 +34,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 {
 	public List<Window> windows = new();
 	public int focusedWorkspaceIndex;
+	public int workspaceCount;
 
 	public string ToJson()
 	{
@@ -51,6 +52,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 				}).ToArray()
 			),
 			["focusedWorkspaceIndex"] = focusedWorkspaceIndex.ToString(),
+			["workspaceCount"] = workspaceCount.ToString(),
 		};
 		return j.ToString();
 	}
@@ -68,6 +70,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 			}
 		);
 		state.focusedWorkspaceIndex = Convert.ToInt32(node?["focusedWorkspaceIndex"]);
+		state.workspaceCount = Convert.ToInt32(node?["workspaceCount"]);
 		return state;
 	}
 }

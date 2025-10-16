@@ -17,7 +17,7 @@ class Server
 	public Server()
 	{
 		socket.Bind(new IPEndPoint(IPAddress.Any, port));
-		socket.Listen(10);
+		socket.Listen(128);
 		Console.WriteLine($"server: listening on {IPAddress.Any}:{port}");
 		Task.Run(() =>
 		{
@@ -38,6 +38,7 @@ class Server
 						client.Send(bytes);
 						Console.WriteLine($"server: request recieved: {request}, response: {response}");
 					}
+					client.Close();
 					clients.Remove(client);
 					Console.WriteLine("server: connection closed");
 				});
@@ -47,11 +48,11 @@ class Server
 
 	public void Broadcast(string message)
 	{
+		Console.WriteLine($"[[[BROADCASTING TO {clients.Count}]]]");
 		clients?.ForEach(client =>
 		{
-			Console.WriteLine("[[[BROADCASTING]]]");
 			byte[] bytes = Encoding.UTF8.GetBytes(message);
-			client.Send(bytes);
+			if (client.Connected) client?.Send(bytes);
 		});
 	}
 }
