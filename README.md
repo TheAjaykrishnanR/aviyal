@@ -4,7 +4,8 @@
 
 ## Usage
 
-Download the latest release from [releases]() and run it.
+Download the latest release from [releases](https://github.com/TheAjaykrishnanR/aviyal/releases) and run it. 
+For live debug output, run from a terminal (`cmd.exe` or `pwsh.exe`).
 
 ## Default keybindings
 
