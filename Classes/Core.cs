@@ -576,15 +576,17 @@ public class WindowManager : IWindowManager
 	{
 		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
 
-		if (allWindows.Remove(wnd))
+		if (focusedWorkspace.windows.Contains(wnd))
 		{
-			workspaces.ForEach(wksp => wksp.Remove(wnd));
+			focusedWorkspace.Remove(wnd);
+			allWindows.Remove(wnd);
 			focusedWorkspace.Focus();
 		}
 
 		var visibleWindows = GetVisibleWindows();
-		if (focusedWorkspace.windows.Count != visibleWindows.Count)
+		if (focusedWorkspace.windows.Count > visibleWindows.Count)
 		{
+			Console.WriteLine($"WINDOW REMOVED");
 			var ghostWindows = focusedWorkspace.windows.Where(wnd => !visibleWindows.Contains(wnd)).ToList();
 			ghostWindows.ForEach(wnd => focusedWorkspace.Remove(wnd));
 			focusedWorkspace.Focus();
