@@ -267,6 +267,8 @@ public class Workspace : IWorkspace
 	{
 		Update();
 		windows?.ForEach(wnd => wnd?.Show());
+		windows?.FirstOrDefault()?.Focus();
+		Console.WriteLine($"WORKSPACEFOCUSED, WINDOW: {focusedWindowIndex}");
 	}
 
 	public void Hide()
@@ -285,9 +287,10 @@ public class Workspace : IWorkspace
 
 	public void FocusAdjacentWindow(EDGE direction)
 	{
+		Console.WriteLine($"focusing window on: {direction}, focusedWindowIndex: {focusedWindowIndex}");
 		if (focusedWindowIndex == null) return;
 		int? index = layout.GetAdjacent((int)focusedWindowIndex, direction);
-		if (index != null) windows[(int)index].Focus();
+		if (index != null) windows?[(int)index]?.Focus();
 	}
 
 	public void ShiftFocusedWindow(int shiftBy)
@@ -388,6 +391,7 @@ public class WindowManager : IWindowManager
 
 	Server server = new();
 	Config config;
+	public static bool DEBUG = false;
 	public WindowManager(Config config)
 	{
 		this.config = config;
@@ -397,7 +401,13 @@ public class WindowManager : IWindowManager
 		{
 			initWindows.Add(new(hWnd));
 		});
-		initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+		// when running in debug mode, only window containing the title "windowgen" will 
+		// be managed by the program. This is so that your ide or terminal is left free
+		// while testing
+		if (DEBUG)
+		{
+			initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+		}
 		initWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
 		for (int i = 0; i < WORKSPACES; i++)
@@ -617,13 +627,17 @@ public class WindowManager : IWindowManager
 		return state;
 	}
 
+	readonly Lock @lock = new();
 	public void SaveState()
 	{
-		var state = GetState();
-		Console.WriteLine("WRITING STATE");
-		server.Broadcast(state.ToJson());
-		File.WriteAllText(Paths.stateFile, state.ToJson());
-		Console.WriteLine(state.ToJson());
+		lock (@lock)
+		{
+			var state = GetState();
+			Console.WriteLine("WRITING STATE");
+			server.Broadcast(state.ToJson());
+			File.WriteAllText(Paths.stateFile, state.ToJson());
+			Console.WriteLine(state.ToJson());
+		}
 	}
 
 	public string RequestReceived(string request)

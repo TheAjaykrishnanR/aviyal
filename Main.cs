@@ -134,7 +134,11 @@ class Aviyal
 	{
 		switch (args.ToList().ElementAtOrDefault(0))
 		{
-			case null or "--debug":
+			case null:
+				Run();
+				break;
+			case "--debug":
+				WindowManager.DEBUG = true;
 				Run();
 				break;
 			case "--version":
