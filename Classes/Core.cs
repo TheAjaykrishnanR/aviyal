@@ -210,7 +210,7 @@ public class Workspace : IWorkspace
 			return index;
 		}
 	}
-	public ILayout layout { get; set; } = new Dwindle();
+	public ILayout layout { get; set; }
 
 	public override bool Equals(object? obj)
 	{
@@ -413,6 +413,7 @@ public class WindowManager : IWindowManager
 		for (int i = 0; i < WORKSPACES; i++)
 		{
 			Workspace wksp = new(config);
+			wksp.layout = new Dwindle(config);
 			workspaces.Add(wksp);
 		}
 		// add all windows to 1st workspace

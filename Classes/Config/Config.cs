@@ -6,7 +6,13 @@ using System.Linq;
 public class Config : IJson<Config>
 {
 	public string layout { get; set; } = "dwindle";
-	public int outer { get; set; } = 5;
+
+	// margins
+	public int left { get; set; } = 5;
+	public int top { get; set; } = 5;
+	public int right { get; set; } = 5;
+	public int bottom { get; set; } = 5;
+
 	public int inner { get; set; } = 5;
 	public int workspaces { get; set; } = 9;
 	public string floatingWindowSize { get; set; } = "800x400";
@@ -47,7 +53,10 @@ public class Config : IJson<Config>
 		JsonObject j = new()
 		{
 			["layout"] = layout,
-			["outer"] = outer,
+			["left"] = left,
+			["top"] = top,
+			["right"] = right,
+			["bottom"] = bottom,
 			["inner"] = inner,
 			["workspaces"] = workspaces,
 			["floatingWindowSize"] = floatingWindowSize,
@@ -74,7 +83,10 @@ public class Config : IJson<Config>
 		Config config = new();
 		config.layout = node["layout"].ToString();
 		config.inner = Convert.ToInt32(node["inner"].ToString());
-		config.outer = Convert.ToInt32(node["outer"].ToString());
+		config.left = Convert.ToInt32(node["left"].ToString());
+		config.top = Convert.ToInt32(node["top"].ToString());
+		config.right = Convert.ToInt32(node["right"].ToString());
+		config.bottom = Convert.ToInt32(node["bottom"].ToString());
 		config.workspaces = Convert.ToInt32(node["workspaces"].ToString());
 		config.floatingWindowSize = node["floatingWindowSize"].ToString();
 

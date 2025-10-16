@@ -1,6 +1,9 @@
 {
   "layout": "dwindle",
-  "outer": 5,
+  "left": 5,
+  "top": 25,
+  "right": 5,
+  "bottom": 5,
   "inner": 5,
   "workspaces": 9,
   "floatingWindowSize": "800x400",

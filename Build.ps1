@@ -23,4 +23,4 @@ dflat Main.cs `
 	  /target:exe `
 	  /out aviyal.exe `
 
-mv Main.exe bin\Main.exe
+mv aviyal.exe bin\aviyal.exe

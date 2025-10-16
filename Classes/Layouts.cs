@@ -50,8 +50,12 @@ public class Dwindle : ILayout
 		//return ApplyInner(ApplyOuter(fillRects.ToArray()));
 		return fillRects;
 	}
-	public int outer { get; set; } = 5;
-	public int inner { get; set; } = 5;
+
+	public int left { get; set; }
+	public int top { get; set; }
+	public int right { get; set; }
+	public int bottom { get; set; }
+	public int inner { get; set; }
 
 	RECT LeftHalf(RECT rect)
 	{
@@ -70,10 +74,10 @@ public class Dwindle : ILayout
 		(int width, int height) = Utils.GetScreenSize();
 		for (int i = 0; i < fillRects.Length; i++)
 		{
-			if (fillRects[i].Left == 0) fillRects[i].Left += outer;
-			if (fillRects[i].Top == 0) fillRects[i].Top += outer;
-			if (fillRects[i].Right == width) fillRects[i].Right -= outer;
-			if (fillRects[i].Bottom == height) fillRects[i].Bottom -= outer;
+			if (fillRects[i].Left == 0) fillRects[i].Left += left;
+			if (fillRects[i].Top == 0) fillRects[i].Top += top;
+			if (fillRects[i].Right == width) fillRects[i].Right -= right;
+			if (fillRects[i].Bottom == height) fillRects[i].Bottom -= bottom;
 		}
 		return fillRects;
 	}
@@ -84,10 +88,10 @@ public class Dwindle : ILayout
 		(int width, int height) = Utils.GetScreenSize();
 		for (int i = 0; i < fillRects.Length; i++)
 		{
-			if (fillRects[i].Left != outer) fillRects[i].Left += (int)(inner / 2);
-			if (fillRects[i].Top != outer) fillRects[i].Top += (int)(inner / 2);
-			if (fillRects[i].Right != width - outer) fillRects[i].Right -= (int)(inner / 2);
-			if (fillRects[i].Bottom != height - outer) fillRects[i].Bottom -= (int)(inner / 2);
+			if (fillRects[i].Left != left) fillRects[i].Left += (int)(inner / 2);
+			if (fillRects[i].Top != top) fillRects[i].Top += (int)(inner / 2);
+			if (fillRects[i].Right != width - right) fillRects[i].Right -= (int)(inner / 2);
+			if (fillRects[i].Bottom != height - bottom) fillRects[i].Bottom -= (int)(inner / 2);
 		}
 		return fillRects;
 	}
@@ -122,6 +126,15 @@ public class Dwindle : ILayout
 			else
 				return index + 1;
 		}
+	}
+
+	public Dwindle(Config config)
+	{
+		this.left = config.left;
+		this.right = config.right;
+		this.top = config.top;
+		this.bottom = config.bottom;
+		this.inner = config.inner;
 	}
 }
 
