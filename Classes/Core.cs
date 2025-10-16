@@ -109,6 +109,9 @@ public class Window : IWindow
 
 			await Task.Delay(10);
 		}
+		if (floating)
+			User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_TOP, 0, 0, 0, 0, SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOACTIVATE);
+		Console.WriteLine("WINDOW FOCUS FINSISHED");
 	}
 
 	public void Move(RECT pos)
@@ -312,7 +315,7 @@ public class Workspace : IWorkspace
 		wnd.floating = !wnd.floating;
 		Console.WriteLine($"[ TOGGLE FLOATING ] : {wnd.floating}, [ {config.floatingWindowSize} ]");
 		wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
-		Focus();
+		Update();
 	}
 
 	RECT GetCenterRect(int w, int h)
@@ -542,6 +545,7 @@ public class WindowManager : IWindowManager
 		workspaces[index].Add(wnd);
 		FocusWorkspace(workspaces[index]);
 		focusedWorkspace = workspaces[index];
+		wnd.Focus();
 	}
 
 	public void ShiftFocusedWindowToNextWorkspace()
@@ -567,7 +571,7 @@ public class WindowManager : IWindowManager
 		{
 			allWindows.Add(wnd);
 			focusedWorkspace.Add(wnd);
-			focusedWorkspace.Focus();
+			focusedWorkspace.Update();
 		}
 
 		SaveState();
@@ -580,7 +584,7 @@ public class WindowManager : IWindowManager
 		{
 			focusedWorkspace.Remove(wnd);
 			allWindows.Remove(wnd);
-			focusedWorkspace.Focus();
+			focusedWorkspace.Update();
 		}
 
 		var visibleWindows = GetVisibleWindows();
@@ -594,7 +598,7 @@ public class WindowManager : IWindowManager
 			Console.WriteLine($"WINDOW REMOVED");
 			var ghostWindows = focusedWorkspace.windows.Where(wnd => !visibleWindows.Contains(wnd)).ToList();
 			ghostWindows.ForEach(wnd => focusedWorkspace.Remove(wnd));
-			focusedWorkspace.Focus();
+			focusedWorkspace.Update();
 		}
 
 		SaveState();
@@ -602,23 +606,29 @@ public class WindowManager : IWindowManager
 	public void WindowMoved(Window wnd)
 	{
 		Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
-		focusedWorkspace.Focus();
 
-		SaveState();
+		var _wnd = focusedWorkspace.windows.FirstOrDefault(_wnd => _wnd == wnd);
+		if (_wnd == null) return;
 		// wnd -> window being moved
 		// cursorPos
 		// wndEnclosingCursor -> window enclosing cursor
-		User32.GetCursorPos(out POINT pt);
-		Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
-		if (wndUnderCursor == null) return;
-		focusedWorkspace.SwapWindows(wnd, wndUnderCursor);
+		if (!_wnd.floating)
+		{
+			User32.GetCursorPos(out POINT pt);
+			Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
+			if (wndUnderCursor == null) return;
+			focusedWorkspace.SwapWindows(wnd, wndUnderCursor);
+		}
+
+		focusedWorkspace.Update();
+		SaveState();
 	}
 
 	public void WindowMaximized(Window wnd)
 	{
 		Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}");
-		focusedWorkspace.Focus();
 
+		focusedWorkspace.Update();
 		SaveState();
 	}
 
@@ -627,15 +637,15 @@ public class WindowManager : IWindowManager
 		Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}");
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
 		await TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED);
-		focusedWorkspace.Focus();
 
+		focusedWorkspace.Update();
 		SaveState();
 	}
 	public void WindowRestored(Window wnd)
 	{
 		Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}");
-		focusedWorkspace.Focus();
 
+		focusedWorkspace.Update();
 		SaveState();
 	}
 
