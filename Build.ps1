@@ -1,5 +1,5 @@
 # Remove-Item -Recurse -Confirm:$false bin\*
-rm bin\Main.exe
+rm bin\aviyal.exe
 
 dflat Main.cs `
 	  Interfaces\Core.cs `
@@ -21,6 +21,6 @@ dflat Main.cs `
 	  /r:Libs `
 	  /langversion:preview `
 	  /target:exe `
-	  /out Main.exe `
+	  /out aviyal.exe `
 
 mv Main.exe bin\Main.exe
