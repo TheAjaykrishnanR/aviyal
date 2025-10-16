@@ -109,8 +109,10 @@ public class Window : IWindow
 
 			await Task.Delay(10);
 		}
-		if (floating)
-			User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_TOP, 0, 0, 0, 0, SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOACTIVATE);
+		User32.BringWindowToTop(this.hWnd);
+		Show();
+		//if (floating)
+		//User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_TOP, 0, 0, 0, 0, SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOACTIVATE);
 		Console.WriteLine("WINDOW FOCUS FINSISHED");
 	}
 

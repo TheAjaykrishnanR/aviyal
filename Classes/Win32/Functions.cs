@@ -57,6 +57,9 @@ public class User32
 	public static extern int SetForegroundWindow(nint hWnd);
 
 	[DllImport("user32.dll", SetLastError = true)]
+	public static extern int BringWindowToTop(nint hWnd);
+
+	[DllImport("user32.dll", SetLastError = true)]
 	public static extern int AllowSetForegroundWindow(uint dwProcessId);
 
 	[DllImport("user32.dll")]
