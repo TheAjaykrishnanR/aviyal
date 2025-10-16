@@ -97,20 +97,9 @@ public class Window : IWindow
 	// https://stackoverflow.com/a/62968073/14588925
 	public async void Focus()
 	{
-		while (this.hWnd != User32.GetForegroundWindow())
-		{
-			nint currentForegroundWnd_hWnd = User32.GetForegroundWindow();
-			User32.GetWindowThreadProcessId(currentForegroundWnd_hWnd, out uint currentForegroundWnd_threadId);
-			uint thisThread = Kernel32.GetCurrentThreadId();
+		User32.keybd_event(0, 0, 0, 0);
+		User32.SetForegroundWindow(this.hWnd);
 
-			User32.AttachThreadInput(thisThread, currentForegroundWnd_threadId, true);
-			User32.SetForegroundWindow(this.hWnd);
-			User32.AttachThreadInput(thisThread, currentForegroundWnd_threadId, false);
-
-			await Task.Delay(10);
-		}
-		User32.BringWindowToTop(this.hWnd);
-		Show();
 		//if (floating)
 		//User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_TOP, 0, 0, 0, 0, SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOACTIVATE);
 		Console.WriteLine("WINDOW FOCUS FINSISHED");
