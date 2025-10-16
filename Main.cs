@@ -57,6 +57,7 @@ class Aviyal
 		wndListener.WINDOW_MAXIMIZED += wm.WindowMaximized;
 		wndListener.WINDOW_MINIMIZED += wm.WindowMinimized;
 		wndListener.WINDOW_RESTORED += wm.WindowRestored;
+		wndListener.WINDOW_FOCUSED += wm.WindowFocused;
 
 		kbdListener = new(config);
 		kbdListener.HOTKEY_PRESSED += HotkeyPressed;

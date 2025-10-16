@@ -479,6 +479,8 @@ public class WindowManager : IWindowManager
 			FocusWorkspace(workspaces[next]);
 			Console.WriteLine($"NEXT, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		}
+
+		SaveState();
 	}
 
 	public void FocusPreviousWorkspace()
@@ -508,6 +510,8 @@ public class WindowManager : IWindowManager
 			FocusWorkspace(workspaces[prev]);
 			Console.WriteLine($"PREVIOUS, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		}
+
+		SaveState();
 	}
 
 	public void ShiftFocusedWindowToWorkspace(int index)
@@ -525,12 +529,16 @@ public class WindowManager : IWindowManager
 	{
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 		ShiftFocusedWindowToWorkspace(next);
+
+		SaveState();
 	}
 
 	public void ShiftFocusedWindowToPreviousWorkspace()
 	{
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
 		ShiftFocusedWindowToWorkspace(prev);
+
+		SaveState();
 	}
 
 	public void WindowAdded(Window wnd)
@@ -589,10 +597,23 @@ public class WindowManager : IWindowManager
 		SaveState();
 	}
 
+	public void WindowFocused(Window wnd)
+	{
+		Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}");
+		if (!focusedWorkspace.windows.Contains(wnd))
+		{
+			Workspace wksp = workspaces.First(wksp => wksp.windows.Contains(wnd));
+			wksp.Focus();
+		}
+
+		SaveState();
+	}
+
 	public WindowManagerState GetState()
 	{
 		WindowManagerState state = new();
 		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => state.windows.Add(wnd!)));
+		state.focusedWorkspaceIndex = focusedWorkspaceIndex;
 		return state;
 	}
 
@@ -600,6 +621,7 @@ public class WindowManager : IWindowManager
 	{
 		var state = GetState();
 		Console.WriteLine("WRITING STATE");
+		server.Broadcast(state.ToJson());
 		File.WriteAllText(Paths.stateFile, state.ToJson());
 		Console.WriteLine(state.ToJson());
 	}

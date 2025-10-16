@@ -41,6 +41,7 @@ public class WindowEventsListener
 	public event WindowEventHandler WINDOW_MAXIMIZED = (wnd) => { };
 	public event WindowEventHandler WINDOW_MINIMIZED = (wnd) => { };
 	public event WindowEventHandler WINDOW_RESTORED = (wnd) => { };
+	public event WindowEventHandler WINDOW_FOCUSED = (wnd) => { };
 
 	void winEventProc(
 		nint hWinEventHook,
@@ -93,6 +94,10 @@ public class WindowEventsListener
 					if (state == SHOWWINDOW.SW_MAXIMIZE && shown.Contains(hWnd))
 						WINDOW_MAXIMIZED(new Window(hWnd));
 					break;
+				case WINEVENT.EVENT_SYSTEM_FOREGROUND:
+					if (shown.Contains(hWnd))
+						WINDOW_FOCUSED(new Window(hWnd));
+					break;
 			}
 			Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, shown.Count: {shown.Count}");
 		}
@@ -132,5 +137,6 @@ enum WINEVENT : uint
 	EVENT_SYSTEM_MINIMIZESTART = 0x0016,
 	EVENT_SYSTEM_MINIMIZEEND = 0x0017,
 	// because windows doesnt have a maximize winevent
-	EVENT_OBJECT_LOCATIONCHANGE = 0x800B
+	EVENT_OBJECT_LOCATIONCHANGE = 0x800B,
+	EVENT_SYSTEM_FOREGROUND = 0x0003,
 }

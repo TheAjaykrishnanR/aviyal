@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using System.Collections.Generic;
 
 class Server
 {
@@ -12,6 +13,7 @@ class Server
 	public delegate string RequestEventHandler(string request);
 	public event RequestEventHandler REQUEST_RECEIVED = (request) => "";
 
+	List<Socket> clients = new();
 	public Server()
 	{
 		socket.Bind(new IPEndPoint(IPAddress.Any, port));
@@ -22,6 +24,7 @@ class Server
 			while (true)
 			{
 				Socket client = socket.Accept();
+				clients.Add(client);
 				Console.WriteLine("server: socket connected");
 				Task.Run(() =>
 				{
@@ -35,9 +38,20 @@ class Server
 						client.Send(bytes);
 						Console.WriteLine($"server: request recieved: {request}, response: {response}");
 					}
+					clients.Remove(client);
 					Console.WriteLine("server: connection closed");
 				});
 			}
+		});
+	}
+
+	public void Broadcast(string message)
+	{
+		clients?.ForEach(client =>
+		{
+			Console.WriteLine("[[[BROADCASTING]]]");
+			byte[] bytes = Encoding.UTF8.GetBytes(message);
+			client.Send(bytes);
 		});
 	}
 }

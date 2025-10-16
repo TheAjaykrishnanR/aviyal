@@ -33,6 +33,7 @@ public class Logger
 public class WindowManagerState : IJson<WindowManagerState>
 {
 	public List<Window> windows = new();
+	public int focusedWorkspaceIndex;
 
 	public string ToJson()
 	{
@@ -49,14 +50,15 @@ public class WindowManagerState : IJson<WindowManagerState>
 					};
 				}).ToArray()
 			),
+			["focusedWorkspaceIndex"] = focusedWorkspaceIndex.ToString(),
 		};
 		return j.ToString();
 	}
 
 	public WindowManagerState FromJson(string json)
 	{
-		JsonNode? node = JsonNode.Parse(json);
 		WindowManagerState state = new();
+		JsonNode? node = JsonNode.Parse(json);
 		JsonArray? _arr = node?["windows"]?.AsArray();
 		_arr?.ToList().ForEach(
 			_wnd =>
@@ -65,6 +67,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 				state.windows.Add(new Window(hWnd));
 			}
 		);
+		state.focusedWorkspaceIndex = Convert.ToInt32(node?["focusedWorkspaceIndex"]);
 		return state;
 	}
 }
