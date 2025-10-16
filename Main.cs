@@ -55,7 +55,7 @@ class Aviyal
 
 		// in order to recieve window events for windows that
 		// already exists while the application is run
-		wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
+		//wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
 		wndListener.WINDOW_ADDED += wm.WindowAdded;
 		wndListener.WINDOW_REMOVED += wm.WindowRemoved;
 		wndListener.WINDOW_MOVED += wm.WindowMoved;

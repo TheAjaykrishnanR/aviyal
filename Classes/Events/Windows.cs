@@ -67,41 +67,42 @@ public class WindowEventsListener
 			switch (msg)
 			{
 				case WINEVENT.OBJECT_CREATE:
-					created.Add(hWnd);
+					//created.Add(hWnd);
 					break;
 				case WINEVENT.OBJECT_SHOW:
-					if (created.Remove(hWnd))
-					{
-						shown.Add(hWnd);
-						WINDOW_ADDED(new Window(hWnd));
-					}
+					//if (created.Remove(hWnd))
+					//{
+					//shown.Add(hWnd);
+					WINDOW_ADDED(new Window(hWnd));
+					//}
 					break;
 				case WINEVENT.OBJECT_DESTROY:
-					if (shown.Remove(hWnd))
-						WINDOW_REMOVED(new Window(hWnd));
+					//if (shown.Remove(hWnd))
+					WINDOW_REMOVED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_SYSTEM_MOVESIZEEND:
-					if (shown.Contains(hWnd))
-						WINDOW_MOVED(new Window(hWnd));
+					//if (shown.Contains(hWnd))
+					WINDOW_MOVED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_SYSTEM_MINIMIZESTART:
-					if (shown.Contains(hWnd))
-						WINDOW_MINIMIZED(new Window(hWnd));
+					//if (shown.Contains(hWnd))
+					WINDOW_MINIMIZED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_SYSTEM_MINIMIZEEND:
-					if (shown.Contains(hWnd))
-						WINDOW_RESTORED(new Window(hWnd));
+					//if (shown.Contains(hWnd))
+					WINDOW_RESTORED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
 					WINDOWPLACEMENT wndPlmnt = new();
 					User32.GetWindowPlacement(hWnd, ref wndPlmnt);
 					SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
-					if (state == SHOWWINDOW.SW_MAXIMIZE && shown.Contains(hWnd))
+					//if (state == SHOWWINDOW.SW_MAXIMIZE && shown.Contains(hWnd))
+					if (state == SHOWWINDOW.SW_MAXIMIZE)
 						WINDOW_MAXIMIZED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_SYSTEM_FOREGROUND:
-					if (shown.Contains(hWnd))
-						WINDOW_FOCUSED(new Window(hWnd));
+					//if (shown.Contains(hWnd))
+					WINDOW_FOCUSED(new Window(hWnd));
 					break;
 			}
 			Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, shown.Count: {shown.Count}");

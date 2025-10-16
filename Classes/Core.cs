@@ -367,7 +367,7 @@ public class Workspace : IWorkspace
 
 public class WindowManager : IWindowManager
 {
-	public List<Window> initWindows { get; } = new();
+	public List<Window> allWindows { get; } = new();
 	public List<Workspace> workspaces { get; } = new();
 	public Workspace focusedWorkspace { get; private set; }
 
@@ -396,19 +396,16 @@ public class WindowManager : IWindowManager
 	{
 		this.config = config;
 
-		List<nint>? hWnds = Utils.GetAllTaskbarWindows();
-		hWnds?.ForEach(hWnd =>
-		{
-			initWindows.Add(new(hWnd));
-		});
+		allWindows = GetVisibleWindows()!;
+
 		// when running in debug mode, only window containing the title "windowgen" will 
 		// be managed by the program. This is so that your ide or terminal is left free
 		// while testing
 		if (DEBUG)
 		{
-			initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+			allWindows = allWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		}
-		initWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
+		allWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
 		for (int i = 0; i < WORKSPACES; i++)
 		{
@@ -417,10 +414,21 @@ public class WindowManager : IWindowManager
 			workspaces.Add(wksp);
 		}
 		// add all windows to 1st workspace
-		initWindows.ForEach(wnd => workspaces.First().windows.Add(wnd));
+		allWindows.ForEach(wnd => workspaces.First().windows.Add(wnd));
 		FocusWorkspace(workspaces.First());
 
 		server.REQUEST_RECEIVED += RequestReceived;
+	}
+
+	public List<Window?> GetVisibleWindows()
+	{
+		List<Window?> windows = new();
+		List<nint>? hWnds = Utils.GetAllTaskbarWindows();
+		hWnds?.ForEach(hWnd =>
+		{
+			windows.Add(new(hWnd));
+		});
+		return windows;
 	}
 
 	public void FocusWorkspace(Workspace wksp)
@@ -555,16 +563,32 @@ public class WindowManager : IWindowManager
 	public void WindowAdded(Window wnd)
 	{
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
-		focusedWorkspace.Add(wnd);
-		focusedWorkspace.Focus();
+		if (!allWindows.Contains(wnd))
+		{
+			allWindows.Add(wnd);
+			focusedWorkspace.Add(wnd);
+			focusedWorkspace.Focus();
+		}
 
 		SaveState();
 	}
 	public void WindowRemoved(Window wnd)
 	{
 		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
-		focusedWorkspace.Remove(wnd);
-		focusedWorkspace.Focus();
+
+		if (allWindows.Remove(wnd))
+		{
+			workspaces.ForEach(wksp => wksp.Remove(wnd));
+			focusedWorkspace.Focus();
+		}
+
+		var visibleWindows = GetVisibleWindows();
+		if (focusedWorkspace.windows.Count != visibleWindows.Count)
+		{
+			var ghostWindows = focusedWorkspace.windows.Where(wnd => !visibleWindows.Contains(wnd)).ToList();
+			ghostWindows.ForEach(wnd => focusedWorkspace.Remove(wnd));
+			focusedWorkspace.Focus();
+		}
 
 		SaveState();
 	}
@@ -611,11 +635,6 @@ public class WindowManager : IWindowManager
 	public void WindowFocused(Window wnd)
 	{
 		Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}");
-		if (!focusedWorkspace.windows.Contains(wnd))
-		{
-			Workspace wksp = workspaces.First(wksp => wksp.windows.Contains(wnd));
-			wksp.Focus();
-		}
 
 		SaveState();
 	}
