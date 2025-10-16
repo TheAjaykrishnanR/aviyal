@@ -584,6 +584,11 @@ public class WindowManager : IWindowManager
 		}
 
 		var visibleWindows = GetVisibleWindows();
+		// visible windows will give all alt-tab programs, even tool windows
+		// which we dont need and for whom winevents would typically not fire.
+		// That is why whe have an '>' instead of an '!='
+		// The reason we are doing all this is that for some windows such as
+		// the file explorer, win events wont fire an OBJECT_SHOW when closing
 		if (focusedWorkspace.windows.Count > visibleWindows.Count)
 		{
 			Console.WriteLine($"WINDOW REMOVED");

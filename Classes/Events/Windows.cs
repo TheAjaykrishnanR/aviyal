@@ -35,9 +35,6 @@ public class WindowEventsListener
 	int OBJID_WINDOW = 0;
 	int CHILDID_SELF = 0;
 
-	public List<nint> created = new();
-	public List<nint> shown = new();
-
 	public delegate void WindowEventHandler(Window wnd);
 
 	public event WindowEventHandler WINDOW_ADDED = (wnd) => { };
@@ -67,45 +64,34 @@ public class WindowEventsListener
 			switch (msg)
 			{
 				case WINEVENT.OBJECT_CREATE:
-					//created.Add(hWnd);
 					break;
 				case WINEVENT.OBJECT_SHOW:
-					//if (created.Remove(hWnd))
-					//{
-					//shown.Add(hWnd);
 					WINDOW_ADDED(new Window(hWnd));
-					//}
 					break;
 				case WINEVENT.OBJECT_DESTROY:
-					//if (shown.Remove(hWnd))
 					WINDOW_REMOVED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_SYSTEM_MOVESIZEEND:
-					//if (shown.Contains(hWnd))
 					WINDOW_MOVED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_SYSTEM_MINIMIZESTART:
-					//if (shown.Contains(hWnd))
 					WINDOW_MINIMIZED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_SYSTEM_MINIMIZEEND:
-					//if (shown.Contains(hWnd))
 					WINDOW_RESTORED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
 					WINDOWPLACEMENT wndPlmnt = new();
 					User32.GetWindowPlacement(hWnd, ref wndPlmnt);
 					SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
-					//if (state == SHOWWINDOW.SW_MAXIMIZE && shown.Contains(hWnd))
 					if (state == SHOWWINDOW.SW_MAXIMIZE)
 						WINDOW_MAXIMIZED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_SYSTEM_FOREGROUND:
-					//if (shown.Contains(hWnd))
 					WINDOW_FOCUSED(new Window(hWnd));
 					break;
 			}
-			Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, shown.Count: {shown.Count}");
+			Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}");
 		}
 	}
 
