@@ -44,6 +44,11 @@ public class KeyEventsListener
 	int KeyboardCallback(int code, nint wparam, nint lparam)
 	{
 		var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
+		if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY)
+		{
+			Console.WriteLine("FOREGROUND_FAKE_KEY");
+			return 1;
+		}
 		VK key = (VK)kbdStruct.vkCode;
 		uint dt = kbdStruct.time - lastKeyTime;
 		if (dt > 500) captured.Clear();
@@ -80,7 +85,7 @@ public class KeyEventsListener
 		lastKeyTime = kbdStruct.time;
 
 		if (letKeyPass) return CallNextHookEx(0, code, wparam, lparam);
-		return 1;
+		return 1; // handled
 	}
 
 	void Loop()

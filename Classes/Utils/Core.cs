@@ -15,6 +15,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Net;
 using System.ComponentModel;
+using System.Threading;
 
 public partial class Utils
 {
@@ -221,19 +222,26 @@ public partial class Utils
 		if (!User32.IsWindowVisible(hWnd)) return false;
 
 		uint exStyle = User32.GetWindowLong(hWnd, GETWINDOWLONG.GWL_EXSTYLE);
-		nint dwmOutPtr = Marshal.AllocHGlobal(sizeof(int));
-		Dwmapi.DwmGetWindowAttribute(hWnd, (uint)DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, dwmOutPtr, sizeof(int));
-		int dwmOutput = Marshal.ReadInt32(dwmOutPtr);
-		Marshal.FreeHGlobal(dwmOutPtr);
-		string className = GetClassNameFromHWND(hWnd);
-
 		if (exStyle.ContainsFlag((uint)WINDOWSTYLE.WS_EX_TOOLWINDOW)) return false;
 		//if (exStyle.ContainsFlag((uint)WINDOWSTYLE.WS_EX_APPWINDOW)) return false;
 
-		if (className == "Windows.UI.Core.CoreWindow") return false;
-		if (className == "ApplicationFrameWindow" && dwmOutput != 0) return false;
+		string className = GetClassNameFromHWND(hWnd);
+		string title = Utils.GetWindowTitleFromHWND(hWnd);
+		//if (className == "Windows.UI.Core.CoreWindow")
+		//{
+		//	if (title == "Settings") return true;
+		//	return false;
+		//}
+		//if (className == "ApplicationFrameWindow")
+		//{
+		//	return false;
+		//}
 		// ---------------------------------------------------------------
+		Dwmapi.DwmGetWindowAttribute(hWnd, (uint)DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, out uint cloak, sizeof(uint));
+		Console.WriteLine($"[CLOAK], title: {title}, class: {className}, cloak: {cloak}");
+		return cloak == 0;
 
+		/*
 		// https://devblogs.microsoft.com/oldnewthing/20071008-00/?p=24863 
 		const int GA_ROOTOWNER = 3;
 		// start at the owner window
@@ -248,6 +256,7 @@ public partial class Utils
 		}
 		// once the walk is finished hWndWalk "is" the taskbarwindow in that owner chain, now check if the window you supplied is that window
 		return hWnd == hWndWalk;
+		*/
 	}
 
 	/// <summary>

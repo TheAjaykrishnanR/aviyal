@@ -48,6 +48,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 						["hWnd"] = wnd.hWnd.ToString(),
 						["title"] = wnd.title,
 						["exe"] = wnd.exe,
+						["state"] = wnd.state.ToString(),
 					};
 				}).ToArray()
 			),
@@ -66,7 +67,8 @@ public class WindowManagerState : IJson<WindowManagerState>
 			_wnd =>
 			{
 				nint hWnd = (nint)Convert.ToInt32(_wnd?["hWnd"]?.ToString());
-				state.windows.Add(new Window(hWnd));
+				Window wnd = new(hWnd);
+				state.windows.Add(wnd);
 			}
 		);
 		state.focusedWorkspaceIndex = Convert.ToInt32(node?["focusedWorkspaceIndex"]);

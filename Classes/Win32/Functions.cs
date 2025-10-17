@@ -247,6 +247,14 @@ public class Dwmapi
 		nint pvAttribute,
 		uint cbAttribute
 	);
+
+	[DllImport("dwmapi.dll", SetLastError = true)]
+	public static extern int DwmGetWindowAttribute(
+		nint hWnd,
+		uint dwAttribute,
+		out uint pvAttribute,
+		uint cbAttribute
+	);
 }
 
 public class Psapi
