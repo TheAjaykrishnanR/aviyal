@@ -565,8 +565,10 @@ public class WindowManager : IWindowManager
 			focusedWorkspace.Update();
 		}
 
+		CleanGhostWindows();
 		SaveState();
 	}
+
 	public void WindowRemoved(Window wnd)
 	{
 		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
@@ -578,6 +580,12 @@ public class WindowManager : IWindowManager
 			focusedWorkspace.Update();
 		}
 
+		CleanGhostWindows();
+		SaveState();
+	}
+
+	public void CleanGhostWindows()
+	{
 		var visibleWindows = GetVisibleWindows();
 		// visible windows will give all alt-tab programs, even tool windows
 		// which we dont need and for whom winevents would typically not fire.
@@ -591,9 +599,8 @@ public class WindowManager : IWindowManager
 			ghostWindows.ForEach(wnd => focusedWorkspace.Remove(wnd));
 			focusedWorkspace.Update();
 		}
-
-		SaveState();
 	}
+
 	public void WindowMoved(Window wnd)
 	{
 		Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
@@ -612,6 +619,7 @@ public class WindowManager : IWindowManager
 		}
 
 		focusedWorkspace.Update();
+		CleanGhostWindows();
 		SaveState();
 	}
 
@@ -620,6 +628,7 @@ public class WindowManager : IWindowManager
 		Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}");
 
 		focusedWorkspace.Update();
+		CleanGhostWindows();
 		SaveState();
 	}
 
@@ -630,6 +639,7 @@ public class WindowManager : IWindowManager
 		await TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED);
 
 		focusedWorkspace.Update();
+		CleanGhostWindows();
 		SaveState();
 	}
 	public void WindowRestored(Window wnd)
@@ -637,6 +647,7 @@ public class WindowManager : IWindowManager
 		Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}");
 
 		focusedWorkspace.Update();
+		CleanGhostWindows();
 		SaveState();
 	}
 
@@ -644,6 +655,7 @@ public class WindowManager : IWindowManager
 	{
 		Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}");
 
+		CleanGhostWindows();
 		SaveState();
 	}
 
