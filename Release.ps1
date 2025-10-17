@@ -6,6 +6,7 @@ dflat Main.cs `
 	  Classes\Core.cs `
 	  Classes\Layouts.cs `
 	  Classes\Server.cs `
+	  Classes\Globals.cs `
 	  Classes\Win32\Functions.cs `
 	  Classes\Win32\Structs.cs `
 	  Classes\Win32\Delegates.cs `
