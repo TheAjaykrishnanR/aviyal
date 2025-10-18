@@ -586,7 +586,11 @@ public class WindowManager : IWindowManager
 	bool ShouldWindowBeIgnored(Window wnd)
 	{
 		if (wnd.className.Contains("#32770")) return true;
-		if (Utils.GetStylesFromHwnd(wnd.hWnd).Contains("WS_POPUP")) return true;
+		List<string> styles = Utils.GetStylesFromHwnd(wnd.hWnd);
+		if (styles.Contains("WS_POPUP") ||
+			styles.Contains("WS_EX_TOOLWINDOW") ||
+			styles.Contains("WS_DLGFRAME")
+		) return true;
 		return false;
 	}
 
