@@ -494,9 +494,9 @@ public class WindowManager : IWindowManager
 		Console.WriteLine($"total: {sw.ElapsedMilliseconds} ms");
 	}
 
-	public void FocusNextWorkspace()
+	public async void FocusNextWorkspace()
 	{
-		SuppressEvents(() =>
+		await SuppressEvents(() =>
 		{
 			int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 			int prev = focusedWorkspaceIndex > 0 ? focusedWorkspaceIndex - 1 : workspaces.Count - 1;
@@ -529,9 +529,9 @@ public class WindowManager : IWindowManager
 		SaveState();
 	}
 
-	public void FocusPreviousWorkspace()
+	public async void FocusPreviousWorkspace()
 	{
-		SuppressEvents(() =>
+		await SuppressEvents(() =>
 		{
 			int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 			int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
@@ -576,9 +576,9 @@ public class WindowManager : IWindowManager
 	}
 
 	bool suppressEvents = false;
-	void SuppressEvents(Action func)
+	Task SuppressEvents(Action func)
 	{
-		Task.Run(async () =>
+		return Task.Run(async () =>
 		{
 			suppressEvents = true;
 			func();
@@ -587,18 +587,18 @@ public class WindowManager : IWindowManager
 		});
 	}
 
-	public void ShiftFocusedWindowToNextWorkspace()
+	public async void ShiftFocusedWindowToNextWorkspace()
 	{
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
-		SuppressEvents(() => ShiftFocusedWindowToWorkspace(next));
+		await SuppressEvents(() => ShiftFocusedWindowToWorkspace(next));
 
 		SaveState();
 	}
 
-	public void ShiftFocusedWindowToPreviousWorkspace()
+	public async void ShiftFocusedWindowToPreviousWorkspace()
 	{
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
-		SuppressEvents(() => ShiftFocusedWindowToWorkspace(prev));
+		await SuppressEvents(() => ShiftFocusedWindowToWorkspace(prev));
 
 		SaveState();
 	}
