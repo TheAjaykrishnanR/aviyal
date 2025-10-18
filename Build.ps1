@@ -17,6 +17,7 @@ dflat Main.cs `
 	  Classes\Utils\Logger.cs `
 	  Classes\Events\Keys.cs `
 	  Classes\Events\Windows.cs `
+	  Classes\Events\Mouse.cs `
 	  Classes\Config\Config.cs `
 	  Classes\Config\Paths.cs `
 	  /r:Libs `

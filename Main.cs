@@ -19,6 +19,7 @@ class Aviyal
 	WindowManager wm;
 	WindowEventsListener wndListener = new();
 	KeyEventsListener kbdListener;
+	MouseEventsListener mouseListener = new();
 
 	Dictionary<COMMAND, Action> actions { get; }
 
@@ -67,6 +68,9 @@ class Aviyal
 		kbdListener = new(config);
 		kbdListener.HOTKEY_PRESSED += HotkeyPressed;
 
+		mouseListener.MOUSE_DOWN += MouseDown;
+		mouseListener.MOUSE_UP += MouseUp;
+
 		// just make all windows reappear if crashes
 		AppDomain currentDomain = AppDomain.CurrentDomain;
 		currentDomain.UnhandledException += (s, e) =>
@@ -88,6 +92,9 @@ class Aviyal
 		if (keymap.command == COMMAND.EXEC) Exec(keymap.arguments);
 		else actions[keymap.command]?.Invoke();
 	}
+
+	public void MouseDown() => wm.mouseDown = true;
+	public void MouseUp() => wm.mouseDown = false;
 
 	public void Exec(List<string> args)
 	{

@@ -725,9 +725,12 @@ public class WindowManager : IWindowManager
 		CleanGhostWindows();
 		SaveState();
 	}
+
+	public bool mouseDown { get; set; } = false;
 	public void WindowRestored(Window wnd)
 	{
 		if (suppressEvents) return;
+		if (mouseDown) return;
 
 		Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
