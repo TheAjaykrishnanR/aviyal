@@ -49,6 +49,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 						["title"] = wnd.title,
 						["exe"] = wnd.exe,
 						["state"] = wnd.state.ToString(),
+						["className"] = wnd.className.ToString(),
 					};
 				}).ToArray()
 			),

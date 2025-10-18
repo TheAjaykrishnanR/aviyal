@@ -40,7 +40,6 @@ public class KeyEventsListener
 	}
 
 	uint lastKeyTime = 0;
-	private readonly Lock _lock = new();
 	int KeyboardCallback(int code, nint wparam, nint lparam)
 	{
 		var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
@@ -56,19 +55,17 @@ public class KeyEventsListener
 		switch ((WINDOWMESSAGE)wparam)
 		{
 			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */:
-				lock (_lock)
+				if (!captured.Contains(key)) captured.Add(key);
+				foreach (Keymap keymap in keymaps)
 				{
-					if (!captured.Contains(key)) captured.Add(key);
-					foreach (Keymap keymap in keymaps)
+					if (Utils.ListContentEqual<VK>(captured, keymap.keys))
 					{
-						if (Utils.ListContentEqual<VK>(captured, keymap.keys))
-						{
-							Log(captured, dt, "HOTKEY_PRESSED");
-							Log(keymap.keys, dt, "HOTKEY_PRESSED");
-							HOTKEY_PRESSED(keymap);
-							letKeyPass = false;
-							break;
-						}
+						Log(captured, dt, "HOTKEY_PRESSED");
+						Log(keymap.keys, dt, "HOTKEY_PRESSED");
+						HOTKEY_PRESSED(keymap);
+
+						letKeyPass = false;
+						break;
 					}
 				}
 				break;

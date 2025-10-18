@@ -1,10 +1,10 @@
 {
   "layout": "dwindle",
-  "left": 5,
-  "top": 25,
-  "right": 5,
-  "bottom": 5,
-  "inner": 5,
+  "left": 10,
+  "top": 40,
+  "right": 10,
+  "bottom": 10,
+  "inner": 10,
   "workspaces": 9,
   "floatingWindowSize": "800x400",
   "keymaps": [

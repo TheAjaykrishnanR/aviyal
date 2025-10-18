@@ -45,7 +45,6 @@ public class WindowEventsListener
 	public event WindowEventHandler WINDOW_RESTORED = (wnd) => { };
 	public event WindowEventHandler WINDOW_FOCUSED = (wnd) => { };
 
-	readonly Lock @lock = new();
 
 	void winEventProc(
 		nint hWinEventHook,
@@ -64,47 +63,44 @@ public class WindowEventsListener
 		)
 		{
 			Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}");
-			lock (@lock)
-			{
 
-				switch (msg)
-				{
-					case WINEVENT.OBJECT_CREATE:
-						break;
-					case WINEVENT.OBJECT_SHOW:
-						Console.WriteLine($"WINDOW_ADDED: {hWnd}");
+			switch (msg)
+			{
+				case WINEVENT.OBJECT_CREATE:
+					break;
+				case WINEVENT.OBJECT_SHOW:
+					Console.WriteLine($"WINDOW_ADDED: {hWnd}");
+					WINDOW_ADDED(new Window(hWnd));
+					break;
+				case WINEVENT.OBJECT_DESTROY:
+					WINDOW_REMOVED(new Window(hWnd));
+					break;
+				case WINEVENT.EVENT_SYSTEM_MOVESIZEEND:
+					WINDOW_MOVED(new Window(hWnd));
+					break;
+				case WINEVENT.EVENT_SYSTEM_MINIMIZESTART:
+					WINDOW_MINIMIZED(new Window(hWnd));
+					break;
+				case WINEVENT.EVENT_SYSTEM_MINIMIZEEND:
+					WINDOW_RESTORED(new Window(hWnd));
+					break;
+				case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
+					WINDOWPLACEMENT wndPlmnt = new();
+					User32.GetWindowPlacement(hWnd, ref wndPlmnt);
+					SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
+					if (state == SHOWWINDOW.SW_MAXIMIZE)
+					{
+						WINDOW_MAXIMIZED(new Window(hWnd)); // to catch windows that might not send OBJECT_SHOW
 						WINDOW_ADDED(new Window(hWnd));
-						break;
-					case WINEVENT.OBJECT_DESTROY:
-						WINDOW_REMOVED(new Window(hWnd));
-						break;
-					case WINEVENT.EVENT_SYSTEM_MOVESIZEEND:
-						WINDOW_MOVED(new Window(hWnd));
-						break;
-					case WINEVENT.EVENT_SYSTEM_MINIMIZESTART:
-						WINDOW_MINIMIZED(new Window(hWnd));
-						break;
-					case WINEVENT.EVENT_SYSTEM_MINIMIZEEND:
-						WINDOW_RESTORED(new Window(hWnd));
-						break;
-					case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
-						WINDOWPLACEMENT wndPlmnt = new();
-						User32.GetWindowPlacement(hWnd, ref wndPlmnt);
-						SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
-						if (state == SHOWWINDOW.SW_MAXIMIZE)
-						{
-							WINDOW_MAXIMIZED(new Window(hWnd)); // to catch windows that might not send OBJECT_SHOW
-							WINDOW_ADDED(new Window(hWnd));
-						}
-						break;
-					case WINEVENT.EVENT_SYSTEM_FOREGROUND:
-						WINDOW_FOCUSED(new Window(hWnd));
-						break;
-					case WINEVENT.EVENT_OBJECT_UNCLOAKED:
-						Console.WriteLine("WINDOW UNCLOAKED");
-						WINDOW_ADDED(new Window(hWnd));
-						break;
-				}
+					}
+					break;
+				case WINEVENT.EVENT_SYSTEM_FOREGROUND:
+					WINDOW_FOCUSED(new Window(hWnd));
+					break;
+				case WINEVENT.EVENT_OBJECT_UNCLOAKED:
+					Console.WriteLine("WINDOW UNCLOAKED");
+					WINDOW_ADDED(new Window(hWnd));
+					break;
 			}
 		}
 	}

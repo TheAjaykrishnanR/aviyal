@@ -121,11 +121,7 @@ public class Window : IWindow
 			false => (nint)SWPZORDER.HWND_BOTTOM
 		};
 
-		while (!RectEqual(rect, pos))
-		{
-			User32.SetWindowPos(this.hWnd, zorder, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
-			Thread.Sleep(1);
-		}
+		User32.SetWindowPos(this.hWnd, zorder, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
 	}
 
 	bool RectEqual(RECT a, RECT b)
@@ -508,7 +504,7 @@ public class WindowManager : IWindowManager
 				FocusWorkspace(workspaces[next]);
 				Console.WriteLine($"NEXT, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 			}
-		}).Wait();
+		});
 
 		SaveState();
 	}
@@ -542,7 +538,7 @@ public class WindowManager : IWindowManager
 				FocusWorkspace(workspaces[prev]);
 				Console.WriteLine($"PREVIOUS, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 			}
-		}).Wait();
+		});
 
 		SaveState();
 	}
@@ -560,18 +556,21 @@ public class WindowManager : IWindowManager
 	}
 
 	bool suppressEvents = false;
-	async Task SuppressEvents(Action func)
+	void SuppressEvents(Action func)
 	{
-		suppressEvents = true;
-		func();
-		await Task.Delay(50);
-		suppressEvents = false;
+		Task.Run(async () =>
+		{
+			suppressEvents = true;
+			func();
+			await Task.Delay(50);
+			suppressEvents = false;
+		});
 	}
 
 	public void ShiftFocusedWindowToNextWorkspace()
 	{
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
-		SuppressEvents(() => ShiftFocusedWindowToWorkspace(next)).Wait();
+		SuppressEvents(() => ShiftFocusedWindowToWorkspace(next));
 
 		SaveState();
 	}
@@ -579,16 +578,22 @@ public class WindowManager : IWindowManager
 	public void ShiftFocusedWindowToPreviousWorkspace()
 	{
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
-		SuppressEvents(() => ShiftFocusedWindowToWorkspace(prev)).Wait();
+		SuppressEvents(() => ShiftFocusedWindowToWorkspace(prev));
 
 		SaveState();
 	}
 
-	readonly Lock @eventLock = new();
+	bool ShouldWindowBeIgnored(Window wnd)
+	{
+		if (wnd.className.Contains("#32770")) return true;
+		if (Utils.GetStylesFromHwnd(wnd.hWnd).Contains("WS_POPUP")) return true;
+		return false;
+	}
 
 	public void WindowAdded(Window wnd)
 	{
 		if (suppressEvents) return;
+		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
