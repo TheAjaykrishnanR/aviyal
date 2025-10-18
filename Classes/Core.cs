@@ -614,8 +614,7 @@ public class WindowManager : IWindowManager
 		if (!styles.Contains("WS_THICKFRAME")) return true;
 		if (!Environment.IsPrivilegedProcess)
 		{
-			if (wnd?.elevated == null) return true;
-			else if ((bool)wnd.elevated) return true;
+			if (wnd.elevated != null) if ((bool)wnd.elevated) return true;
 		}
 		return false;
 	}
@@ -623,7 +622,12 @@ public class WindowManager : IWindowManager
 	public void WindowAdded(Window wnd)
 	{
 		if (suppressEvents) return;
-		if (ShouldWindowBeIgnored(wnd)) return;
+		if (ShouldWindowBeIgnored(wnd))
+		{
+			Console.WriteLine($"IGNORING WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+			return;
+		}
+
 
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 

@@ -45,7 +45,6 @@ public class WindowEventsListener
 	public event WindowEventHandler WINDOW_RESTORED = (wnd) => { };
 	public event WindowEventHandler WINDOW_FOCUSED = (wnd) => { };
 
-
 	void winEventProc(
 		nint hWinEventHook,
 		WINEVENT msg,
