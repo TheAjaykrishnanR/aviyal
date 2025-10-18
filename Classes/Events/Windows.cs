@@ -91,14 +91,16 @@ public class WindowEventsListener
 					if (state == SHOWWINDOW.SW_MAXIMIZE)
 					{
 						WINDOW_MAXIMIZED(new Window(hWnd)); // to catch windows that might not send OBJECT_SHOW
-						WINDOW_ADDED(new Window(hWnd));
+					}
+					if (state == SHOWWINDOW.SW_SHOWNORMAL)
+					{
+						WINDOW_RESTORED(new Window(hWnd));
 					}
 					break;
 				case WINEVENT.EVENT_SYSTEM_FOREGROUND:
 					WINDOW_FOCUSED(new Window(hWnd));
 					break;
 				case WINEVENT.EVENT_OBJECT_UNCLOAKED:
-					Console.WriteLine("WINDOW UNCLOAKED");
 					WINDOW_ADDED(new Window(hWnd));
 					break;
 			}

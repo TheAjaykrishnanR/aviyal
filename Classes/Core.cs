@@ -59,12 +59,14 @@ public class Window : IWindow
 	}
 	public bool floating { get; set; } = false;
 
-	public bool elevated
+	public bool? elevated
 	{
 		get
 		{
+			if (exe == null) return null;
 			string _exe = new FileInfo(exe).Name;
-			Process _p = Process.GetProcessesByName(_exe).First();
+			Process? _p = Process.GetProcessesByName(_exe).FirstOrDefault();
+			if (_p == null) return null;
 			try
 			{
 				_ = _p.Handle;
@@ -610,7 +612,11 @@ public class WindowManager : IWindowManager
 			styles.Contains("WS_DLGFRAME")
 		) return true;
 		if (!styles.Contains("WS_THICKFRAME")) return true;
-		if (wnd.elevated) return true;
+		if (!Environment.IsPrivilegedProcess)
+		{
+			if (wnd?.elevated == null) return true;
+			else if ((bool)wnd.elevated) return true;
+		}
 		return false;
 	}
 
