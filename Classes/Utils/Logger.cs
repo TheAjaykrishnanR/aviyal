@@ -50,6 +50,8 @@ public class WindowManagerState : IJson<WindowManagerState>
 						["exe"] = wnd.exe,
 						["state"] = wnd.state.ToString(),
 						["className"] = wnd.className.ToString(),
+						["elevated"] = wnd.elevated.ToString(),
+						["tileable"] = wnd.tileable.ToString(),
 					};
 				}).ToArray()
 			),

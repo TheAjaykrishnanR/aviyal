@@ -58,22 +58,23 @@ public class Window : IWindow
 		}
 	}
 	public bool floating { get; set; } = false;
+	public bool tileable { get; set; } = true;
 
-	public bool? elevated
+	public bool elevated
 	{
 		get
 		{
-			if (exe == null) return null;
-			string _exe = new FileInfo(exe).Name;
+			string _exe = new FileInfo(exe).Name.Replace(".exe", "");
+			Console.WriteLine($"checking elevation of {_exe}");
 			Process? _p = Process.GetProcessesByName(_exe).FirstOrDefault();
-			if (_p == null) return null;
 			try
 			{
-				_ = _p.Handle;
+				_ = _p?.Handle;
 				return false;
 			}
-			catch
+			catch (Exception ex)
 			{
+				Console.WriteLine(ex.Message);
 				return true;
 			}
 		}
@@ -279,6 +280,7 @@ public class Workspace : IWorkspace
 
 		List<Window?> nonFloating = windows
 		.Where(wnd => wnd?.floating == false)
+		.Where(wnd => wnd?.tileable == true)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
 		.ToList();
@@ -429,6 +431,9 @@ public class WindowManager : IWindowManager
 		this.config = config;
 
 		initWindows = GetVisibleWindows()!;
+		initWindows = initWindows
+					  .Where(wnd => !ShouldWindowBeIgnored(wnd))
+					  .ToList();
 
 		// when running in debug mode, only window containing the title "windowgen" will 
 		// be managed by the program. This is so that your ide or terminal is left free
@@ -611,25 +616,33 @@ public class WindowManager : IWindowManager
 		SaveState();
 	}
 
+	// filter out immovable and windows that should never be interacted with
 	bool ShouldWindowBeIgnored(Window wnd)
 	{
-		if (wnd.className.Contains("#32770")) return true;
 		if (
 			wnd.styles.Contains("WS_EX_TOOLWINDOW") ||
 			wnd.styles.Contains("WS_DLGFRAME")
 		) return true;
-		if (!wnd.styles.Contains("WS_THICKFRAME")) return true;
-		if (!Environment.IsPrivilegedProcess)
-		{
-			if (wnd.elevated != null) if ((bool)wnd.elevated) return true;
-		}
+
+		if (!Environment.IsPrivilegedProcess && wnd.elevated) return true;
+
 		return false;
 	}
 
 	bool ShouldWindowBeFloating(Window wnd)
 	{
 		if (wnd.styles.Contains("WS_POPUP")) return true;
+		if (wnd.className.Contains("#32770")) return true; // dialogs
 		return false;
+	}
+
+	bool ShouldWindowBeTileable(Window wnd)
+	{
+		if (!wnd.styles.Contains("WS_THICKFRAME")) return false; // non resizeable window
+		if (wnd.className.Contains("OperationStatusWindow") || // copy, paste status windows
+			wnd.className.Contains("DS_MODALFRAME")
+			) return false;
+		return true;
 	}
 
 	public void WindowAdded(Window wnd)
@@ -640,7 +653,8 @@ public class WindowManager : IWindowManager
 			Console.WriteLine($"IGNORING WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 			return;
 		}
-		if (ShouldWindowBeFloating(wnd)) wnd.floating = true;
+		if (ShouldWindowBeFloating(wnd)) wnd.floating = true; else wnd.floating = false;
+		if (ShouldWindowBeTileable(wnd)) wnd.tileable = true; else wnd.tileable = false;
 
 
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
@@ -692,6 +706,7 @@ public class WindowManager : IWindowManager
 		}
 	}
 
+	// window handlers must always check window properties of the already stated
 	public void WindowMoved(Window wnd)
 	{
 		if (suppressEvents) return;
@@ -703,7 +718,7 @@ public class WindowManager : IWindowManager
 		// wnd -> window being moved
 		// cursorPos
 		// wndEnclosingCursor -> window enclosing cursor
-		if (!_wnd.floating)
+		if (!_wnd.floating && _wnd.tileable)
 		{
 			User32.GetCursorPos(out POINT pt);
 			Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);

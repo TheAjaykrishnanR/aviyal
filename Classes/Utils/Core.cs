@@ -30,6 +30,14 @@ public partial class Utils
 				styleList.Add(style.ToString());
 			}
 		}
+		DIALOGSTYLE d_styles = (DIALOGSTYLE)(styleUInt);
+		foreach (DIALOGSTYLE d_style in Enum.GetValues(typeof(DIALOGSTYLE)))
+		{
+			if (d_styles.HasFlag(d_style))
+			{
+				styleList.Add(d_style.ToString());
+			}
+		}
 		return styleList;
 	}
 

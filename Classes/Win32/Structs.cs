@@ -287,4 +287,13 @@ public struct _SYSTEM_MEMORY_USAGE_INFORMATION
 	public long PeakCommitmentBytes;
 }
 
+/// <summary>
+/// used by SYSTEM_INFORMATION_CLASS.SystemProcessInformation
+/// https://ntdoc.m417z.com/system_process_information
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct _SYSTEM_PROCESS_INFORMATION
+{
+
+}
 
