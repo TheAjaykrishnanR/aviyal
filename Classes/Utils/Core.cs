@@ -423,6 +423,22 @@ public partial class Utils
 		}
 		return true;
 	}
+
+	/// <summary>
+	/// Check if another process is elevated without doing the open handle exception
+	/// bullshit
+	/// </summary>
+	public static bool IsProcessElevated(int pid)
+	{
+		const int PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+		nint handle = Kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+		const int TOKEN_QUERY = 0x0008;
+		Advapi32.OpenProcessToken(handle, TOKEN_QUERY, out nint tokenHandle);
+		TOKEN_ELEVATION info = new();
+		Advapi32.GetTokenInformation(tokenHandle, TOKEN_INFORMATION_CLASS.TokenElevation, ref info, sizeof(uint), out uint returnLength);
+		if (info.TokenIsElevated == 0) return false;
+		return true;
+	}
 }
 
 public class _Window

@@ -12,6 +12,7 @@ class _
 		wnd.Title = "windowgen";
 		wnd.Background = Utils.BrushFromHex(args[0]);
 		wnd.ShowActivated = false;
+		//wnd.ResizeMode = ResizeMode.NoResize;
 		nint hWnd = new WindowInteropHelper(wnd).EnsureHandle();
 		wnd.Loaded += (s, e) =>
 		{

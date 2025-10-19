@@ -99,9 +99,6 @@ public class User32
 	[DllImport("user32.dll", SetLastError = true)]
 	public static extern bool UnregisterClass(string className, nint hInstance);
 
-	[DllImport("kernel32.dll", SetLastError = true)]
-	public static extern nint GetModuleHandle(string moduleName);
-
 	[DllImport("user32.dll", SetLastError = true)]
 	public static extern nint DefWindowProc(nint hWnd, WINDOWMESSAGE uMsg, nint wParam, nint lParam);
 
@@ -233,6 +230,15 @@ public class Kernel32
 	[DllImport("kernel32.dll")]
 	public static extern uint GetCurrentThreadId();
 
+}
+
+public class Advapi32
+{
+	[DllImport("advapi32.dll", SetLastError = true)]
+	public static extern int OpenProcessToken(nint handle, uint processAccess, out nint tokenHandle);
+
+	[DllImport("advapi32.dll", SetLastError = true)]
+	public static extern int GetTokenInformation(nint handle, TOKEN_INFORMATION_CLASS informationClass, ref TOKEN_ELEVATION info, uint infoSize, out uint returnLength);
 }
 
 public class Dwmapi

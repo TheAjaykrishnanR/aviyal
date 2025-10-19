@@ -60,23 +60,22 @@ public class Window : IWindow
 	public bool floating { get; set; } = false;
 	public bool tileable { get; set; } = true;
 
-	public bool elevated
+	public int pid
 	{
 		get
 		{
 			string _exe = new FileInfo(exe).Name.Replace(".exe", "");
 			Console.WriteLine($"checking elevation of {_exe}");
 			Process? _p = Process.GetProcessesByName(_exe).FirstOrDefault();
-			try
-			{
-				_ = _p?.Handle;
-				return false;
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.Message);
-				return true;
-			}
+			return _p.Id;
+		}
+	}
+
+	public bool elevated
+	{
+		get
+		{
+			return Utils.IsProcessElevated(pid);
 		}
 	}
 
@@ -616,7 +615,7 @@ public class WindowManager : IWindowManager
 		SaveState();
 	}
 
-	// filter out immovable and windows that should never be interacted with
+	// filter out windows that should never be interacted with
 	bool ShouldWindowBeIgnored(Window wnd)
 	{
 		if (
@@ -631,8 +630,8 @@ public class WindowManager : IWindowManager
 
 	bool ShouldWindowBeFloating(Window wnd)
 	{
-		if (wnd.styles.Contains("WS_POPUP")) return true;
-		if (wnd.className.Contains("#32770")) return true; // dialogs
+		//if (wnd.styles.Contains("WS_POPUP")) return true;
+		//if (wnd.className.Contains("#32770")) return true; // dialogs
 		return false;
 	}
 
