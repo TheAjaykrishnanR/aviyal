@@ -79,6 +79,14 @@ public class Window : IWindow
 		}
 	}
 
+	public List<string> styles
+	{
+		get
+		{
+			return Utils.GetStylesFromHwnd(this.hWnd);
+		}
+	}
+
 	public override bool Equals(object? obj)
 	{
 		//if (base.Equals(obj)) return true;
@@ -606,16 +614,21 @@ public class WindowManager : IWindowManager
 	bool ShouldWindowBeIgnored(Window wnd)
 	{
 		if (wnd.className.Contains("#32770")) return true;
-		List<string> styles = Utils.GetStylesFromHwnd(wnd.hWnd);
-		if (styles.Contains("WS_POPUP") ||
-			styles.Contains("WS_EX_TOOLWINDOW") ||
-			styles.Contains("WS_DLGFRAME")
+		if (
+			wnd.styles.Contains("WS_EX_TOOLWINDOW") ||
+			wnd.styles.Contains("WS_DLGFRAME")
 		) return true;
-		if (!styles.Contains("WS_THICKFRAME")) return true;
+		if (!wnd.styles.Contains("WS_THICKFRAME")) return true;
 		if (!Environment.IsPrivilegedProcess)
 		{
 			if (wnd.elevated != null) if ((bool)wnd.elevated) return true;
 		}
+		return false;
+	}
+
+	bool ShouldWindowBeFloating(Window wnd)
+	{
+		if (wnd.styles.Contains("WS_POPUP")) return true;
 		return false;
 	}
 
@@ -627,6 +640,7 @@ public class WindowManager : IWindowManager
 			Console.WriteLine($"IGNORING WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 			return;
 		}
+		if (ShouldWindowBeFloating(wnd)) wnd.floating = true;
 
 
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");

@@ -15,6 +15,7 @@ public interface IWindow
 	public RECT rect { get; }
 	public SHOWWINDOW state { get; }
 	public bool floating { get; set; }
+	public List<string> styles { get; }
 
 	public void Hide();
 	public void Show();
