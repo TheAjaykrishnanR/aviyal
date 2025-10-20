@@ -679,6 +679,8 @@ public class WindowManager : IWindowManager
 
 		if (!Environment.IsPrivilegedProcess && wnd.elevated) return true;
 
+		if (wnd.className.Contains("MicrosoftWindowsTooltip")) return true;
+
 		return false;
 	}
 
