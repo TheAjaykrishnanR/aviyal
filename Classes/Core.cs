@@ -300,7 +300,6 @@ public class Workspace : IWorkspace
 		windows?.ForEach(wnd => wnd?.Show());
 		if (lastFocusedWindow == null)
 		{
-
 			var wnd = windows?.FirstOrDefault();
 			lastFocusedWindow = wnd;
 			wnd?.Focus();
