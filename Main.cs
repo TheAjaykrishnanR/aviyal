@@ -133,9 +133,7 @@ class Aviyal
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("Unable to parse json config file.");
-				Console.WriteLine(ex.Message);
-				Console.WriteLine(ex.StackTrace);
+				Logger.Error(ex, "Unable to parse json config file");
 				config = new();
 			}
 		}

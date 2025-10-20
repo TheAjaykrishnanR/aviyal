@@ -14,7 +14,7 @@
 	  "method": "equals",
 	  "identifierType": "windowProcess",
 	  "identifier": "Flow.Launcher"
-	}
+	},
   ],
   "keymaps": [
     {

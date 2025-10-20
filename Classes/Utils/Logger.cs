@@ -28,6 +28,13 @@ public class Logger
 	{
 		foreach (var arr in array) Log(arr);
 	}
+
+	public static void Error(Exception ex, string? customMessage = null)
+	{
+		string text = $"\n{ex.Message}\n{ex.StackTrace}";
+		Console.WriteLine($"{customMessage}: {text}");
+		User32.MessageBox(0, text, customMessage ?? "Error", 0);
+	}
 }
 
 public class WindowManagerState : IJson<WindowManagerState>
