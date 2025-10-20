@@ -1,4 +1,5 @@
 # Remove-Item -Recurse -Confirm:$false bin\*
+clear
 rm bin\aviyal.exe
 
 dflat Main.cs `

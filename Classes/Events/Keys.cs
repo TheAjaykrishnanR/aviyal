@@ -10,12 +10,15 @@ using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
 
-public class KeyEventsListener
+public class KeyEventsListener : IDisposable
 {
 	delegate int KeyboardProc(int code, nint wparam, nint lparam);
 
 	[DllImport("user32.dll", SetLastError = true)]
 	static extern nint SetWindowsHookExA(int idHook, KeyboardProc lpfn, nint hmod, uint dwThreadId);
+
+	[DllImport("user32.dll", SetLastError = true)]
+	static extern int UnhookWindowsHookEx(nint hhook);
 
 	[DllImport("user32.dll", SetLastError = true)]
 	static extern int CallNextHookEx(nint hhk, int nCode, nint wparam, nint lparam);
@@ -94,14 +97,16 @@ public class KeyEventsListener
 		}
 	}
 
+	nint hhook;
+	bool running = true;
 	void Loop()
 	{
 		const int WH_KEYBOARD_LL = 13;
 		// hmod = 0, hook function is in code
 		// dwThreadId = 0, hook all threads
-		nint hhook = SetWindowsHookExA(WH_KEYBOARD_LL, KeyboardCallback, Process.GetCurrentProcess().MainModule.BaseAddress, 0);
+		hhook = SetWindowsHookExA(WH_KEYBOARD_LL, KeyboardCallback, Process.GetCurrentProcess().MainModule.BaseAddress, 0);
 		// always use a message pump, instead of: while(Console.ReadLine() != ":q") { }
-		while (true)
+		while (running)
 		{
 			int _ = GetMessage(out uint msg, 0, 0, 0);
 			TranslateMessage(ref msg);
@@ -119,6 +124,12 @@ public class KeyEventsListener
 
 		thread = new(Loop);
 		thread.Start();
+	}
+
+	public void Dispose()
+	{
+		UnhookWindowsHookEx(hhook);
+		running = false;
 	}
 }
 

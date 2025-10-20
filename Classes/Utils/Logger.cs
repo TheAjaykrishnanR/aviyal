@@ -58,6 +58,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 						["state"] = wnd.state.ToString(),
 						["className"] = wnd.className.ToString(),
 						["elevated"] = wnd.elevated.ToString(),
+						["floating"] = wnd.floating.ToString(),
 						["tileable"] = wnd.tileable.ToString(),
 					};
 				}).ToArray()

@@ -22,9 +22,9 @@ public class Config : IJson<Config>
 	public int workspaces { get; set; } = 9;
 	public string floatingWindowSize { get; set; } = "800x400";
 	public bool workspaceAnimations = false;
+	public int serverPort = 6969;
 
 	public List<WindowRule> rules = new();
-
 	public List<Keymap> keymaps = new() {
 		// focus workspaces
 		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.L], command= COMMAND.FOCUS_NEXT_WORKSPACE },
@@ -54,6 +54,8 @@ public class Config : IJson<Config>
 		new() { keys= [VK.LCONTROL, VK.NUM7], command= COMMAND.FOCUS_WORKSPACE_7 },
 		new() { keys= [VK.LCONTROL, VK.NUM8], command= COMMAND.FOCUS_WORKSPACE_8 },
 		new() { keys= [VK.LCONTROL, VK.NUM9], command= COMMAND.FOCUS_WORKSPACE_9 },
+
+		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.R], command= COMMAND.RESTART },
 	};
 
 	public string ToJson()
@@ -68,6 +70,7 @@ public class Config : IJson<Config>
 			["inner"] = inner,
 			["workspaces"] = workspaces,
 			["floatingWindowSize"] = floatingWindowSize,
+			["serverPort"] = serverPort,
 			["rules"] = new JsonArray(
 				rules.Select(
 					rule => new JsonObject()
@@ -108,6 +111,7 @@ public class Config : IJson<Config>
 		config.bottom = Convert.ToInt32(node["bottom"].ToString());
 		config.workspaces = Convert.ToInt32(node["workspaces"].ToString());
 		config.floatingWindowSize = node["floatingWindowSize"].ToString();
+		config.serverPort = Convert.ToInt32(node["serverPort"].ToString());
 
 		config.rules = new();
 		JsonArray _rules = node["rules"].AsArray();

@@ -27,21 +27,8 @@ public class Window : IWindow
 			return Utils.GetClassNameFromHWND(this.hWnd);
 		}
 	}
-	public string? exe
-	{
-		get
-		{
-			return Utils.GetExePathFromHWND(this.hWnd);
-		}
-	}
-	public string exeName
-	{
-		get
-		{
-			if (exe == null) return "";
-			return new FileInfo(exe).Name.Replace(".exe", "");
-		}
-	}
+	public string? exe { get; set; }
+	public string exeName { get; set; }
 
 	public RECT rect // absolute position
 	{
@@ -216,6 +203,9 @@ public class Window : IWindow
 	public Window(nint hWnd)
 	{
 		this.hWnd = hWnd;
+
+		this.exe = Utils.GetExePathFromHWND(this.hWnd);
+		this.exeName = @$"{exe}"?.Split(@"\").Last().Replace(".exe", "");
 	}
 }
 
@@ -429,7 +419,7 @@ public class WindowManager : IWindowManager
 	}
 	public int WORKSPACES = 9;
 
-	Server server = new();
+	//Server server = new();
 	Config config;
 	public static bool DEBUG = false;
 	public WindowManager(Config config)
@@ -460,8 +450,6 @@ public class WindowManager : IWindowManager
 		// add all windows to 1st workspace
 		initWindows.ForEach(wnd => workspaces.First().windows.Add(wnd));
 		FocusWorkspace(workspaces.First());
-
-		server.REQUEST_RECEIVED += RequestReceived;
 	}
 
 	public List<Window?> GetVisibleWindows()
@@ -643,8 +631,7 @@ public class WindowManager : IWindowManager
 				"windowClass" => wnd.className,
 				_ => ""
 			};
-
-			if (condition(wndAttribute, rule.identifier)) return true;
+			return condition(wndAttribute, rule.identifier);
 		}
 		return false;
 	}
@@ -720,29 +707,20 @@ public class WindowManager : IWindowManager
 
 	void ApplyConfigsToWindow(Window wnd)
 	{
-		if (ShouldWindowBeFloating(wnd)) wnd.floating = true; else wnd.floating = false;
+		if (ShouldWindowBeFloating(wnd)) wnd.floating = true; else { wnd.floating = false; }
 		if (ShouldWindowBeTileable(wnd)) wnd.tileable = true; else wnd.tileable = false;
 	}
 
 	public void WindowAdded(Window wnd)
 	{
 		if (suppressEvents) return;
-		if (ShouldWindowBeIgnored(wnd))
-		{
-			Console.WriteLine($"IGNORING WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
-			return;
-		}
+		if (GetAlreadyStoredWindow(wnd) != null) return;
+		if (ShouldWindowBeIgnored(wnd)) return;
+
 		ApplyConfigsToWindow(wnd);
-
-
-		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
-
-		foreach (var wksp in workspaces)
-			if (wksp.windows.Contains(wnd))
-				return;
-
 		focusedWorkspace.Add(wnd);
 		focusedWorkspace.Update();
+		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 
 		CleanGhostWindows();
 		SaveState();
@@ -753,10 +731,9 @@ public class WindowManager : IWindowManager
 	// listener gives a blank window that only matches the stateless properties
 	// call this in all event handlers that deal with windows events of windows
 	// that already exist in the workspace so basically every one except WindowAdded
-	Window GetAlreadyStoredWindow(Window wnd)
+	Window? GetAlreadyStoredWindow(Window wnd)
 	{
-		var _wnd = focusedWorkspace.windows.FirstOrDefault(_wnd => _wnd == wnd);
-		return _wnd;
+		return focusedWorkspace.windows.FirstOrDefault(_wnd => _wnd == wnd);
 	}
 
 	public void WindowRemoved(Window wnd)
@@ -777,7 +754,7 @@ public class WindowManager : IWindowManager
 		SaveState();
 	}
 
-	// window handlers must always check window properties of the already stated
+	// window handlers must always check window properties of the already stored windows
 	public void WindowMoved(Window wnd)
 	{
 		if (suppressEvents) return;
@@ -874,12 +851,21 @@ public class WindowManager : IWindowManager
 		lock (@lock)
 		{
 			var state = GetState();
-			Console.WriteLine("WRITING STATE");
-			server.Broadcast(state.ToJson());
-			File.WriteAllText(Paths.stateFile, state.ToJson());
-			Console.WriteLine(state.ToJson());
+			WINDOW_MANAGER_MESSAGE_SENT(state.ToJson());
+			try
+			{
+				File.WriteAllText(Paths.stateFile, state.ToJson());
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+			}
+			Console.WriteLine($"SaveState():\n{state.ToJson()}");
 		}
 	}
+
+	public delegate void WindowManagerMessageHandler(string message);
+	public event WindowManagerMessageHandler WINDOW_MANAGER_MESSAGE_SENT = (message) => { };
 
 	public string RequestReceived(string request)
 	{

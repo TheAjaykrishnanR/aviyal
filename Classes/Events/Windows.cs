@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-public class WindowEventsListener
+public class WindowEventsListener : IDisposable
 {
 	delegate void WINEVENTPROC(
 		nint hWinEventHook,
@@ -31,6 +31,9 @@ public class WindowEventsListener
 		uint idThread,
 		uint dwFlags
 	);
+
+	[DllImport("user32.dll", SetLastError = true)]
+	static extern int UnhookWinEvent(nint hhook);
 
 	int OBJID_WINDOW = 0;
 	int CHILDID_SELF = 0;
@@ -68,7 +71,7 @@ public class WindowEventsListener
 				dt = dwmsEventTime - lastTime;
 				lastTime = dwmsEventTime;
 
-				Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}");
+				//Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}");
 
 				switch (msg)
 				{
@@ -117,14 +120,16 @@ public class WindowEventsListener
 	}
 
 	public Thread thread;
+	nint hhook;
+	bool running = true;
 	public void Loop()
 	{
 		uint WINEVENT_OUTOFCONTEXT = 0;
 		Console.WriteLine("SetWinEventHook...");
-		nint ret = SetWinEventHook(0x00000001, 0x7FFFFFFF, 0, winEventProc, 0, 0, WINEVENT_OUTOFCONTEXT | 0x0001 | 0x0002);
-		Console.WriteLine($"hook: {ret}");
+		hhook = SetWinEventHook(0x00000001, 0x7FFFFFFF, 0, winEventProc, 0, 0, WINEVENT_OUTOFCONTEXT | 0x0001 | 0x0002);
+		Console.WriteLine($"hook: {hhook}");
 		// message loop
-		while (true)
+		while (running)
 		{
 			int _ = User32.GetMessage(out MSG msg, 0, 0, 0);
 			User32.TranslateMessage(ref msg);
@@ -136,6 +141,12 @@ public class WindowEventsListener
 	{
 		thread = new(Loop);
 		thread.Start();
+	}
+
+	public void Dispose()
+	{
+		UnhookWinEvent(hhook);
+		running = false;
 	}
 }
 

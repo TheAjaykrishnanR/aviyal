@@ -10,12 +10,15 @@ using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
 
-public class MouseEventsListener
+public class MouseEventsListener : IDisposable
 {
 	delegate int MouseProc(int code, nint wparam, nint lparam);
 
 	[DllImport("user32.dll", SetLastError = true)]
 	static extern nint SetWindowsHookExA(int idHook, MouseProc lpfn, nint hmod, uint dwThreadId);
+
+	[DllImport("user32.dll", SetLastError = true)]
+	static extern int UnhookWindowsHookEx(nint hhook);
 
 	[DllImport("user32.dll", SetLastError = true)]
 	static extern int CallNextHookEx(nint hhk, int nCode, nint wparam, nint lparam);
@@ -49,6 +52,8 @@ public class MouseEventsListener
 		}
 	}
 
+	nint hhook;
+	bool running = true;
 	void Loop()
 	{
 		const int WH_MOUSE_LL = 14;
@@ -56,7 +61,7 @@ public class MouseEventsListener
 		// dwThreadId = 0, hook all threads
 		nint hhook = SetWindowsHookExA(WH_MOUSE_LL, MouseCallback, Process.GetCurrentProcess().MainModule.BaseAddress, 0);
 		// always use a message pump, instead of: while(Console.ReadLine() != ":q") { }
-		while (true)
+		while (running)
 		{
 			int _ = GetMessage(out uint msg, 0, 0, 0);
 			TranslateMessage(ref msg);
@@ -73,6 +78,12 @@ public class MouseEventsListener
 	{
 		thread = new(Loop);
 		thread.Start();
+	}
+
+	public void Dispose()
+	{
+		UnhookWindowsHookEx(hhook);
+		running = false;
 	}
 }
 

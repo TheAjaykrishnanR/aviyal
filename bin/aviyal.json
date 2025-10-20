@@ -7,6 +7,7 @@
   "inner": 10,
   "workspaces": 9,
   "floatingWindowSize": "800x400",
+  "serverPort": 6969,
   "rules": 
   [
 	{
@@ -195,6 +196,15 @@
         "NUM9"
       ],
       "command": "FOCUS_WORKSPACE_9",
+      "arguments": []
+    },
+	{
+      "keys": [
+        "LCONTROL",
+        "LSHIFT",
+		"R"
+      ],
+      "command": "RESTART",
       "arguments": []
     }
   ]

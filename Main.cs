@@ -11,12 +11,16 @@ using System.Drawing;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 
-class Aviyal
+class Aviyal : IDisposable
 {
 	static string ver = "0.1.0";
+	static Aviyal? aviyal;
 
 	WindowManager wm;
+	Server server;
+
 	WindowEventsListener wndListener = new();
 	KeyEventsListener kbdListener;
 	MouseEventsListener mouseListener = new();
@@ -26,6 +30,7 @@ class Aviyal
 	public Aviyal(Config config)
 	{
 		wm = new(config);
+		server = new(config);
 
 		actions = new()
 		{
@@ -52,8 +57,12 @@ class Aviyal
 			{ COMMAND.FOCUS_WORKSPACE_7, () => wm.FocusWorkspace(wm.workspaces[6]) },
 			{ COMMAND.FOCUS_WORKSPACE_8, () => wm.FocusWorkspace(wm.workspaces[7]) },
 			{ COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(wm.workspaces[8]) },
+
+			{ COMMAND.RESTART, () => Restart() },
 		};
 
+		server.REQUEST_RECEIVED += wm.RequestReceived;
+		wm.WINDOW_MANAGER_MESSAGE_SENT += (message) => server.Broadcast(message);
 		// in order to recieve window events for windows that
 		// already exists while the application is run
 		//wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
@@ -85,6 +94,31 @@ class Aviyal
 			File.WriteAllText(Paths.errorFile, text);
 			errored = true;
 		};
+	}
+
+	public void Dispose()
+	{
+		// instances wont be disposed if event handlers are still attached 
+		// found out the hard way when couldnt figure out why previous instance
+		// configuration persisted onto the next. Turns out it was one of these
+		// old event handlers still setting window attributes
+		server.REQUEST_RECEIVED -= wm.RequestReceived;
+		wm.WINDOW_MANAGER_MESSAGE_SENT -= (message) => server.Broadcast(message);
+		wndListener.WINDOW_ADDED -= wm.WindowAdded;
+		wndListener.WINDOW_REMOVED -= wm.WindowRemoved;
+		wndListener.WINDOW_MOVED -= wm.WindowMoved;
+		wndListener.WINDOW_MAXIMIZED -= wm.WindowMaximized;
+		wndListener.WINDOW_MINIMIZED -= wm.WindowMinimized;
+		wndListener.WINDOW_RESTORED -= wm.WindowRestored;
+		wndListener.WINDOW_FOCUSED -= wm.WindowFocused;
+		kbdListener.HOTKEY_PRESSED -= HotkeyPressed;
+		mouseListener.MOUSE_DOWN -= MouseDown;
+		mouseListener.MOUSE_UP -= MouseUp;
+
+		server.Dispose(); // release the previous socket
+		wndListener.Dispose();
+		kbdListener.Dispose();
+		mouseListener.Dispose();
 	}
 
 	public void HotkeyPressed(Keymap keymap)
@@ -123,10 +157,13 @@ class Aviyal
 			return;
 		}
 
+		Console.WriteLine($"Running aviyal instance, reload count: {reloadCount}");
+
 		Config config = null;
 		if (File.Exists(Paths.configFile))
 		{
 			string jsonString = File.ReadAllText(Paths.configFile);
+			Console.WriteLine(jsonString);
 			try
 			{
 				config = Config.FromJson(jsonString);
@@ -145,21 +182,41 @@ class Aviyal
 		}
 
 		Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
-		Aviyal aviyal = new(config);
-		while (Console.ReadLine() != ":q" && !errored) { }
+
+		aviyal?.Dispose();
+		aviyal = new(config);
 	}
 
 	static bool errored = false;
+	static bool running = false;
+	static int reloadCount = 0;
+	static void Loop()
+	{
+		do
+		{
+			if (!running)
+			{
+				Run();
+				running = true;
+				reloadCount++;
+			}
+			Thread.Sleep(1);
+		}
+		while (!errored);
+	}
+
+	static void Restart() => running = false;
+
 	static void Main(string[] args)
 	{
 		switch (args.ToList().ElementAtOrDefault(0))
 		{
 			case null:
-				Run();
+				Loop();
 				break;
 			case "--debug":
 				WindowManager.DEBUG = true;
-				Run();
+				Loop();
 				break;
 			case "--version":
 				Console.WriteLine($"AVIYAL VERSION: {ver}");
@@ -199,4 +256,6 @@ public enum COMMAND
 	FOCUS_WORKSPACE_7,
 	FOCUS_WORKSPACE_8,
 	FOCUS_WORKSPACE_9,
+
+	RESTART,
 }

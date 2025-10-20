@@ -11,16 +11,17 @@ using System.Net;
 using System.Net.Sockets;
 using System.Collections.Generic;
 
-class Server
+public class Server : IDisposable
 {
 	Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-	int port = 6969;
+	int port;
 	public delegate string RequestEventHandler(string request);
 	public event RequestEventHandler REQUEST_RECEIVED = (request) => "";
 
 	List<Socket> clients = new();
-	public Server()
+	public Server(Config config)
 	{
+		port = config.serverPort;
 		socket.Bind(new IPEndPoint(IPAddress.Any, port));
 		socket.Listen(128);
 		Console.WriteLine($"server: listening on {IPAddress.Any}:{port}");
@@ -59,5 +60,17 @@ class Server
 			byte[] bytes = Encoding.UTF8.GetBytes(message);
 			if (client.Connected) client?.Send(bytes);
 		});
+	}
+
+	// necessary for hot reloading (restarting)
+	public void Dispose()
+	{
+		clients?.ForEach(client =>
+		{
+			client?.Close();
+			client?.Dispose();
+		});
+		socket?.Close();
+		socket?.Dispose();
 	}
 }
