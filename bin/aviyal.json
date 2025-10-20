@@ -7,6 +7,15 @@
   "inner": 10,
   "workspaces": 9,
   "floatingWindowSize": "800x400",
+  "rules": 
+  [
+	{
+	  "type": "ignore",
+	  "method": "equals",
+	  "identifierType": "windowProcess",
+	  "identifier": "Flow.Launcher"
+	}
+  ],
   "keymaps": [
     {
       "keys": [

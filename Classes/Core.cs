@@ -34,6 +34,13 @@ public class Window : IWindow
 			return Utils.GetExePathFromHWND(this.hWnd);
 		}
 	}
+	public string exeName
+	{
+		get
+		{
+			return new FileInfo(exe).Name.Replace(".exe", "");
+		}
+	}
 
 	public RECT rect // absolute position
 	{
@@ -64,10 +71,8 @@ public class Window : IWindow
 	{
 		get
 		{
-			string _exe = new FileInfo(exe).Name.Replace(".exe", "");
-			Console.WriteLine($"checking elevation of {_exe}");
-			Process? _p = Process.GetProcessesByName(_exe).FirstOrDefault();
-			return _p.Id;
+			Process? _p = Process.GetProcessesByName(exeName).FirstOrDefault();
+			return _p == null ? 0 : _p.Id;
 		}
 	}
 
@@ -75,6 +80,7 @@ public class Window : IWindow
 	{
 		get
 		{
+			Console.WriteLine($"checking elevation of {title}: {Utils.IsProcessElevated(pid)}");
 			return Utils.IsProcessElevated(pid);
 		}
 	}
@@ -615,13 +621,55 @@ public class WindowManager : IWindowManager
 		SaveState();
 	}
 
+	bool IsWindowInConfigRules(Window wnd, string ruleType)
+	{
+		var rules = config.rules.Where(rule => rule.type == ruleType).ToList();
+
+		foreach (var rule in rules)
+		{
+			Func<string, string, bool> condition = rule.method switch
+			{
+				"equals" => (wndAttribute, identifier) => wndAttribute == identifier,
+				"contains" => (wndAttribute, identifier) => wndAttribute.Contains(identifier),
+				_ => (x, y) => false
+			};
+
+			string wndAttribute = rule.identifierType switch
+			{
+				"windowProcess" => wnd.exeName,
+				"windowTitle" => wnd.title,
+				"windowClass" => wnd.className,
+				_ => ""
+			};
+
+			if (condition(wndAttribute, rule.identifier)) return true;
+		}
+		return false;
+	}
+
 	// filter out windows that should never be interacted with
 	bool ShouldWindowBeIgnored(Window wnd)
 	{
+		if (IsWindowInConfigRules(wnd, "ignore"))
+		{
+			Console.WriteLine($"ignoring {wnd.title} due to config rules");
+			return true;
+		}
+
 		if (
 			wnd.styles.Contains("WS_EX_TOOLWINDOW") ||
-			wnd.styles.Contains("WS_DLGFRAME")
+			wnd.styles.Contains("WS_CHILD")
 		) return true;
+
+		// all normal top level windows must have either "WS_OVERLAPPED" - OR - "WS_POPUP"
+		// so kick out windows that dont have neither
+		if (!wnd.styles.Contains("WS_OVERLAPPED") &&
+		   !wnd.styles.Contains("WS_POPUP")
+		)
+		{
+			Console.WriteLine($"IGNORE WINDOW: {wnd.title}, class: {wnd.className}");
+			return true;
+		}
 
 		if (!Environment.IsPrivilegedProcess && wnd.elevated) return true;
 
@@ -630,17 +678,21 @@ public class WindowManager : IWindowManager
 
 	bool ShouldWindowBeFloating(Window wnd)
 	{
-		//if (wnd.styles.Contains("WS_POPUP")) return true;
-		//if (wnd.className.Contains("#32770")) return true; // dialogs
+		if (wnd.className.Contains("#32770")) return true; // dialogs
 		return false;
 	}
 
 	bool ShouldWindowBeTileable(Window wnd)
 	{
+
+
 		if (!wnd.styles.Contains("WS_THICKFRAME")) return false; // non resizeable window
 		if (wnd.className.Contains("OperationStatusWindow") || // copy, paste status windows
 			wnd.className.Contains("DS_MODALFRAME")
 			) return false;
+		if (wnd.rect.Bottom - wnd.rect.Top < 50 ||
+			wnd.rect.Right - wnd.rect.Left < 50
+			) return false; // dont tile very small windows
 		return true;
 	}
 
@@ -672,6 +724,7 @@ public class WindowManager : IWindowManager
 	public void WindowRemoved(Window wnd)
 	{
 		if (suppressEvents) return;
+		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
@@ -709,6 +762,7 @@ public class WindowManager : IWindowManager
 	public void WindowMoved(Window wnd)
 	{
 		if (suppressEvents) return;
+		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
@@ -733,6 +787,7 @@ public class WindowManager : IWindowManager
 	public void WindowMaximized(Window wnd)
 	{
 		if (suppressEvents) return;
+		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
@@ -744,6 +799,7 @@ public class WindowManager : IWindowManager
 	public void WindowMinimized(Window wnd)
 	{
 		if (suppressEvents) return;
+		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
@@ -758,6 +814,7 @@ public class WindowManager : IWindowManager
 	public void WindowRestored(Window wnd)
 	{
 		if (suppressEvents) return;
+		if (ShouldWindowBeIgnored(wnd)) return;
 		if (mouseDown) return;
 
 		Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
@@ -770,6 +827,7 @@ public class WindowManager : IWindowManager
 	public void WindowFocused(Window wnd)
 	{
 		if (suppressEvents) return;
+		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 

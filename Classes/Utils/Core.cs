@@ -19,33 +19,23 @@ using System.Threading;
 
 public partial class Utils
 {
-	public static List<string> GetStyleListFromUInt(uint styleUInt)
-	{
-		WINDOWSTYLE styles = (WINDOWSTYLE)styleUInt;
-		List<string> styleList = new();
-		foreach (WINDOWSTYLE style in Enum.GetValues(typeof(WINDOWSTYLE)))
-		{
-			if (styles.HasFlag(style))
-			{
-				styleList.Add(style.ToString());
-			}
-		}
-		DIALOGSTYLE d_styles = (DIALOGSTYLE)(styleUInt);
-		foreach (DIALOGSTYLE d_style in Enum.GetValues(typeof(DIALOGSTYLE)))
-		{
-			if (d_styles.HasFlag(d_style))
-			{
-				styleList.Add(d_style.ToString());
-			}
-		}
-		return styleList;
-	}
-
 	public static List<string> GetStylesFromHwnd(nint hWnd)
 	{
-		uint stylesUInt = User32.GetWindowLong(hWnd, GETWINDOWLONG.GWL_STYLE);
-		//Logger.Log($"GetStylesFromHwnd(): {Marshal.GetLastWin32Error()}");
-		return GetStyleListFromUInt(stylesUInt);
+		uint dwStyles = User32.GetWindowLong(hWnd, GETWINDOWLONG.GWL_STYLE);
+		List<string> styles = new();
+		foreach (var name in Enum.GetNames<WINDOWSTYLE>())
+		{
+			WINDOWSTYLE style = Enum.Parse<WINDOWSTYLE>(name);
+			if (style == WINDOWSTYLE.WS_OVERLAPPED)
+			{
+				if ((dwStyles & ((uint)WINDOWSTYLE.WS_POPUP | (uint)WINDOWSTYLE.WS_CHILD)) == 0) styles.Add(name);
+			}
+			else
+			{
+				if ((dwStyles & (uint)style) != 0) styles.Add(name);
+			}
+		}
+		return styles;
 	}
 
 	public static bool IsContextMenu(nint hWnd)
@@ -230,7 +220,7 @@ public partial class Utils
 		if (!User32.IsWindowVisible(hWnd)) return false;
 
 		uint exStyle = User32.GetWindowLong(hWnd, GETWINDOWLONG.GWL_EXSTYLE);
-		if (exStyle.ContainsFlag((uint)WINDOWSTYLE.WS_EX_TOOLWINDOW)) return false;
+		if (exStyle.ContainsFlag((uint)WINDOWSTYLEEX.WS_EX_TOOLWINDOW)) return false;
 		//if (exStyle.ContainsFlag((uint)WINDOWSTYLE.WS_EX_APPWINDOW)) return false;
 
 		string className = GetClassNameFromHWND(hWnd);
@@ -358,7 +348,7 @@ public partial class Utils
 		return User32.SetWindowLong(
 			hWnd,
 			(int)GETWINDOWLONG.GWL_EXSTYLE,
-			(int)((exStyles | (uint)WINDOWSTYLE.WS_EX_TOOLWINDOW) & ~(uint)WINDOWSTYLE.WS_EX_APPWINDOW)
+			(int)((exStyles | (uint)WINDOWSTYLEEX.WS_EX_TOOLWINDOW) & ~(uint)WINDOWSTYLEEX.WS_EX_APPWINDOW)
 		);
 	}
 
@@ -376,7 +366,7 @@ public partial class Utils
 	{
 		User32.SetWindowPos(hWnd, (nint)(SWPZORDER.HWND_BOTTOM), 0, 0, 0, 0, SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
 		uint exStyles = User32.GetWindowLong(hWnd, GETWINDOWLONG.GWL_EXSTYLE);
-		User32.SetWindowLong(hWnd, (int)GETWINDOWLONG.GWL_EXSTYLE, (int)(exStyles | (uint)WINDOWSTYLE.WS_EX_NOACTIVATE));
+		User32.SetWindowLong(hWnd, (int)GETWINDOWLONG.GWL_EXSTYLE, (int)(exStyles | (uint)WINDOWSTYLEEX.WS_EX_NOACTIVATE));
 	}
 
 	/// <summary>

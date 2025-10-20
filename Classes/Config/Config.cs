@@ -22,6 +22,9 @@ public class Config : IJson<Config>
 	public int workspaces { get; set; } = 9;
 	public string floatingWindowSize { get; set; } = "800x400";
 	public bool workspaceAnimations = false;
+
+	public List<WindowRule> rules = new();
+
 	public List<Keymap> keymaps = new() {
 		// focus workspaces
 		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.L], command= COMMAND.FOCUS_NEXT_WORKSPACE },
@@ -65,6 +68,17 @@ public class Config : IJson<Config>
 			["inner"] = inner,
 			["workspaces"] = workspaces,
 			["floatingWindowSize"] = floatingWindowSize,
+			["rules"] = new JsonArray(
+				rules.Select(
+					rule => new JsonObject()
+					{
+						["type"] = rule.type,
+						["method"] = rule.method,
+						["identifierType"] = rule.identifierType,
+						["identifier"] = rule.identifier
+					}
+				).ToArray()
+			),
 			["keymaps"] = new JsonArray(
 				keymaps.Select(
 					keymap => new JsonObject()
@@ -94,6 +108,20 @@ public class Config : IJson<Config>
 		config.bottom = Convert.ToInt32(node["bottom"].ToString());
 		config.workspaces = Convert.ToInt32(node["workspaces"].ToString());
 		config.floatingWindowSize = node["floatingWindowSize"].ToString();
+
+		config.rules = new();
+		JsonArray _rules = node["rules"].AsArray();
+		_rules.ToList().ForEach(_rule =>
+		{
+			WindowRule rule = new();
+
+			rule.type = _rule["type"].ToString();
+			rule.method = _rule["method"].ToString();
+			rule.identifierType = _rule["identifierType"].ToString();
+			rule.identifier = _rule["identifier"].ToString();
+
+			config.rules.Add(rule);
+		});
 
 		config.keymaps = new();
 		JsonArray _keymaps = node["keymaps"].AsArray();
@@ -125,4 +153,11 @@ public class Config : IJson<Config>
 	}
 }
 
+public class WindowRule
+{
+	public string type; // ignore, notiling, startfloating
+	public string method; // equals, contains
+	public string identifierType; // windowProcess, windowTitle, windowClass
+	public string identifier; // search string
+}
 
