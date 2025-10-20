@@ -59,7 +59,7 @@ public class MouseEventsListener : IDisposable
 		const int WH_MOUSE_LL = 14;
 		// hmod = 0, hook function is in code
 		// dwThreadId = 0, hook all threads
-		nint hhook = SetWindowsHookExA(WH_MOUSE_LL, MouseCallback, Process.GetCurrentProcess().MainModule.BaseAddress, 0);
+		hhook = SetWindowsHookExA(WH_MOUSE_LL, MouseCallback, Process.GetCurrentProcess().MainModule.BaseAddress, 0);
 		// always use a message pump, instead of: while(Console.ReadLine() != ":q") { }
 		while (running)
 		{
