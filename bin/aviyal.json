@@ -14,6 +14,12 @@
 	  "method": "equals",
 	  "identifierType": "windowProcess",
 	  "identifier": "Flow.Launcher"
+	},
+	{
+	  "type": "floating",
+	  "method": "equals",
+	  "identifierType": "windowProcess",
+	  "identifier": "explorer"
 	}
   ],
   "keymaps": [

@@ -440,6 +440,7 @@ public class WindowManager : IWindowManager
 		initWindows = initWindows
 					  .Where(wnd => !ShouldWindowBeIgnored(wnd))
 					  .ToList();
+		initWindows.ForEach(wnd => ApplyConfigsToWindow(wnd));
 
 		// when running in debug mode, only window containing the title "windowgen" will 
 		// be managed by the program. This is so that your ide or terminal is left free
@@ -679,6 +680,7 @@ public class WindowManager : IWindowManager
 
 	bool ShouldWindowBeFloating(Window wnd)
 	{
+		if (IsWindowInConfigRules(wnd, "floating")) return true;
 		if (wnd.className.Contains("#32770")) return true; // dialogs
 		return false;
 	}
@@ -716,6 +718,12 @@ public class WindowManager : IWindowManager
 		}
 	}
 
+	void ApplyConfigsToWindow(Window wnd)
+	{
+		if (ShouldWindowBeFloating(wnd)) wnd.floating = true; else wnd.floating = false;
+		if (ShouldWindowBeTileable(wnd)) wnd.tileable = true; else wnd.tileable = false;
+	}
+
 	public void WindowAdded(Window wnd)
 	{
 		if (suppressEvents) return;
@@ -724,8 +732,7 @@ public class WindowManager : IWindowManager
 			Console.WriteLine($"IGNORING WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 			return;
 		}
-		if (ShouldWindowBeFloating(wnd)) wnd.floating = true; else wnd.floating = false;
-		if (ShouldWindowBeTileable(wnd)) wnd.tileable = true; else wnd.tileable = false;
+		ApplyConfigsToWindow(wnd);
 
 
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");

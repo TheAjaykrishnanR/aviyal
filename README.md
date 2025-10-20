@@ -25,7 +25,7 @@ By default `9` workspaces are initialized.
 ## Configuration
 
 Configuration file `aviyal.json` will be created at first run. You can modify the default settings there,
-including adding new keybindings etc
+including adding new keybindings etc. Look at the example config file [here]().
 
 ## Building
 
