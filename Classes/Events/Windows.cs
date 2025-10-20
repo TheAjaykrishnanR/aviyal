@@ -46,6 +46,8 @@ public class WindowEventsListener
 	public event WindowEventHandler WINDOW_FOCUSED = (wnd) => { };
 
 	readonly Lock @eventLock = new();
+	uint dt = 0;
+	uint lastTime = 0;
 	void winEventProc(
 		nint hWinEventHook,
 		WINEVENT msg,
@@ -57,11 +59,15 @@ public class WindowEventsListener
 	{
 		if (
 			idObject == OBJID_WINDOW &&
-			idChild == CHILDID_SELF &&
+			idChild == CHILDID_SELF
+		//&& !Utils.GetStylesFromHwnd(hWnd).Contains("WS_CHILD")
 		)
 		{
 			lock (@eventLock)
 			{
+				dt = dwmsEventTime - lastTime;
+				lastTime = dwmsEventTime;
+
 				Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}");
 
 				switch (msg)
@@ -85,6 +91,7 @@ public class WindowEventsListener
 						WINDOW_RESTORED(new Window(hWnd));
 						break;
 					case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
+						if (dt < 200) break; // give some breathing time
 						WINDOWPLACEMENT wndPlmnt = new();
 						User32.GetWindowPlacement(hWnd, ref wndPlmnt);
 						SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
