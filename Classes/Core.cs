@@ -679,7 +679,17 @@ public class WindowManager : IWindowManager
 
 		if (!Environment.IsPrivilegedProcess && wnd.elevated) return true;
 
-		if (wnd.className.Contains("MicrosoftWindowsTooltip")) return true;
+		// tooltips
+		// https://learn.microsoft.com/en-us/windows/win32/controls/common-control-window-classes
+		if (wnd.className.Contains("MicrosoftWindowsTooltip") ||
+			wnd.className.Contains("tooltips_class32")
+			) return true;
+
+		// menus
+		// https://learn.microsoft.com/en-us/windows/win32/winmsg/about-window-classes
+		if (wnd.className.Contains("#32768") ||
+			wnd.className.Contains("#32772")
+			) return true;
 
 		return false;
 	}
