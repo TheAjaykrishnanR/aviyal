@@ -92,6 +92,7 @@ public class WindowEventsListener
 						break;
 					case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
 						if (dt < 200) break; // give some breathing time
+											 // because if dont serious trouble with delayed effects
 						WINDOWPLACEMENT wndPlmnt = new();
 						User32.GetWindowPlacement(hWnd, ref wndPlmnt);
 						SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
