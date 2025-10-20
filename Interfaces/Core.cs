@@ -11,7 +11,7 @@ public interface IWindow
 	public nint hWnd { get; }
 	public string title { get; }
 	public string className { get; }
-	public string exe { get; }
+	public string? exe { get; }
 	public RECT rect { get; }
 	public SHOWWINDOW state { get; }
 	public bool floating { get; set; }

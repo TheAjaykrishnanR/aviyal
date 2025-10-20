@@ -27,7 +27,7 @@ public class Window : IWindow
 			return Utils.GetClassNameFromHWND(this.hWnd);
 		}
 	}
-	public string exe
+	public string? exe
 	{
 		get
 		{
@@ -38,6 +38,7 @@ public class Window : IWindow
 	{
 		get
 		{
+			if (exe == null) return "";
 			return new FileInfo(exe).Name.Replace(".exe", "");
 		}
 	}
@@ -685,7 +686,6 @@ public class WindowManager : IWindowManager
 	bool ShouldWindowBeTileable(Window wnd)
 	{
 
-
 		if (!wnd.styles.Contains("WS_THICKFRAME")) return false; // non resizeable window
 		if (wnd.className.Contains("OperationStatusWindow") || // copy, paste status windows
 			wnd.className.Contains("DS_MODALFRAME")
@@ -694,6 +694,26 @@ public class WindowManager : IWindowManager
 			wnd.rect.Right - wnd.rect.Left < 50
 			) return false; // dont tile very small windows
 		return true;
+	}
+
+	public void CleanGhostWindows()
+	{
+		var visibleWindows = GetVisibleWindows();
+		// visible windows will give all alt-tab programs, even tool windows
+		// which we dont need and for whom winevents would typically not fire.
+		// That is why whe have an '>' instead of an '!='
+		// The reason we are doing all this is that for some windows such as
+		// the file explorer, win events wont fire an OBJECT_SHOW when closing
+		if (focusedWorkspace.windows.Count > visibleWindows.Count)
+		{
+			var ghostWindows = focusedWorkspace.windows.Where(wnd => !visibleWindows.Contains(wnd)).ToList();
+			ghostWindows.ForEach(wnd =>
+			{
+				Console.WriteLine($"REMOVING GHOST: {wnd.title}, {wnd.hWnd}, {wnd.className}");
+				focusedWorkspace.Remove(wnd);
+			});
+			focusedWorkspace.Update();
+		}
 	}
 
 	public void WindowAdded(Window wnd)
@@ -721,9 +741,21 @@ public class WindowManager : IWindowManager
 		SaveState();
 	}
 
+	// search for the window in our workspace and give a local reference that
+	// has all the valid states set, the window instance emmitted by window event
+	// listener gives a blank window that only matches the stateless properties
+	// call this in all event handlers that deal with windows events of windows
+	// that already exist in the workspace so basically every one except WindowAdded
+	Window GetAlreadyStoredWindow(Window wnd)
+	{
+		var _wnd = focusedWorkspace.windows.FirstOrDefault(_wnd => _wnd == wnd);
+		return _wnd;
+	}
+
 	public void WindowRemoved(Window wnd)
 	{
 		if (suppressEvents) return;
+		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
@@ -738,40 +770,21 @@ public class WindowManager : IWindowManager
 		SaveState();
 	}
 
-	public void CleanGhostWindows()
-	{
-		var visibleWindows = GetVisibleWindows();
-		// visible windows will give all alt-tab programs, even tool windows
-		// which we dont need and for whom winevents would typically not fire.
-		// That is why whe have an '>' instead of an '!='
-		// The reason we are doing all this is that for some windows such as
-		// the file explorer, win events wont fire an OBJECT_SHOW when closing
-		if (focusedWorkspace.windows.Count > visibleWindows.Count)
-		{
-			var ghostWindows = focusedWorkspace.windows.Where(wnd => !visibleWindows.Contains(wnd)).ToList();
-			ghostWindows.ForEach(wnd =>
-			{
-				Console.WriteLine($"REMOVING GHOST: {wnd.title}, {wnd.hWnd}, {wnd.className}");
-				focusedWorkspace.Remove(wnd);
-			});
-			focusedWorkspace.Update();
-		}
-	}
-
 	// window handlers must always check window properties of the already stated
 	public void WindowMoved(Window wnd)
 	{
 		if (suppressEvents) return;
+		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
-		var _wnd = focusedWorkspace.windows.FirstOrDefault(_wnd => _wnd == wnd);
-		if (_wnd == null) return;
+		//var _wnd = focusedWorkspace.windows.FirstOrDefault(_wnd => _wnd == wnd);
+		//if (_wnd == null) return;
 		// wnd -> window being moved
 		// cursorPos
 		// wndEnclosingCursor -> window enclosing cursor
-		if (!_wnd.floating && _wnd.tileable)
+		if (!wnd.floating && wnd.tileable)
 		{
 			User32.GetCursorPos(out POINT pt);
 			Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
@@ -787,6 +800,7 @@ public class WindowManager : IWindowManager
 	public void WindowMaximized(Window wnd)
 	{
 		if (suppressEvents) return;
+		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
@@ -799,6 +813,7 @@ public class WindowManager : IWindowManager
 	public void WindowMinimized(Window wnd)
 	{
 		if (suppressEvents) return;
+		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
@@ -814,6 +829,7 @@ public class WindowManager : IWindowManager
 	public void WindowRestored(Window wnd)
 	{
 		if (suppressEvents) return;
+		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if (mouseDown) return;
 
@@ -827,6 +843,7 @@ public class WindowManager : IWindowManager
 	public void WindowFocused(Window wnd)
 	{
 		if (suppressEvents) return;
+		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
 		Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
