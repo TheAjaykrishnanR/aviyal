@@ -58,7 +58,6 @@ public class WindowEventsListener
 		if (
 			idObject == OBJID_WINDOW &&
 			idChild == CHILDID_SELF &&
-			!Utils.GetStylesFromHwnd(hWnd).Contains("WS_CHILD")
 		)
 		{
 			lock (@eventLock)
