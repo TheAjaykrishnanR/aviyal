@@ -59,6 +59,7 @@ class Aviyal : IDisposable
 			{ COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(wm.workspaces[8]) },
 
 			{ COMMAND.RESTART, () => Restart() },
+			{ COMMAND.UPDATE, () => wm.focusedWorkspace.Update() },
 		};
 
 		server.REQUEST_RECEIVED += wm.RequestReceived;
@@ -258,4 +259,5 @@ public enum COMMAND
 	FOCUS_WORKSPACE_9,
 
 	RESTART,
+	UPDATE,
 }
