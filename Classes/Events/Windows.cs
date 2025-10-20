@@ -71,7 +71,7 @@ public class WindowEventsListener : IDisposable
 				dt = dwmsEventTime - lastTime;
 				lastTime = dwmsEventTime;
 
-				//Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}");
+				Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, dt: {dt}");
 
 				switch (msg)
 				{
@@ -94,8 +94,7 @@ public class WindowEventsListener : IDisposable
 						WINDOW_RESTORED(new Window(hWnd));
 						break;
 					case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
-						if (dt < 200) break; // give some breathing time
-											 // because if dont serious trouble with delayed effects
+						Console.WriteLine($"window restore check, dt:{dt}");
 						WINDOWPLACEMENT wndPlmnt = new();
 						User32.GetWindowPlacement(hWnd, ref wndPlmnt);
 						SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
