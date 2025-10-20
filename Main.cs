@@ -127,7 +127,17 @@ class Aviyal
 		if (File.Exists(Paths.configFile))
 		{
 			string jsonString = File.ReadAllText(Paths.configFile);
-			config = Config.FromJson(jsonString);
+			try
+			{
+				config = Config.FromJson(jsonString);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("Unable to parse json config file.");
+				Console.WriteLine(ex.Message);
+				Console.WriteLine(ex.StackTrace);
+				config = new();
+			}
 		}
 		else
 		{
