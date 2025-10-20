@@ -293,11 +293,20 @@ public class Workspace : IWorkspace
 		}
 	}
 
+	Window? lastFocusedWindow = null;
 	public void Focus()
 	{
 		Update();
 		windows?.ForEach(wnd => wnd?.Show());
-		windows?.FirstOrDefault()?.Focus();
+		if (lastFocusedWindow == null)
+		{
+
+			var wnd = windows?.FirstOrDefault();
+			lastFocusedWindow = wnd;
+			wnd?.Focus();
+		}
+		else lastFocusedWindow.Focus();
+
 		Console.WriteLine($"WORKSPACEFOCUSED, WINDOW: {focusedWindowIndex}");
 	}
 
@@ -739,19 +748,25 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeTileable(wnd)) wnd.tileable = true; else wnd.tileable = false;
 	}
 
+	readonly Lock @addLock = new();
 	public void WindowAdded(Window wnd)
 	{
 		if (suppressEvents) return;
 		if (GetAlreadyStoredWindow(wnd) != null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
-		ApplyConfigsToWindow(wnd);
-		focusedWorkspace.Add(wnd);
-		if (wnd.floating) focusedWorkspace.ApplyFloatingSize(wnd);
-		focusedWorkspace.Update();
-		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		// Add() and CleanGhostWindows() can cause windows to be re added if they
+		// occur while the other hasnt completed, so lock them
+		lock (@addLock)
+		{
+			ApplyConfigsToWindow(wnd);
+			focusedWorkspace.Add(wnd);
+			if (wnd.floating) focusedWorkspace.ApplyFloatingSize(wnd);
+			focusedWorkspace.Update();
+			Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+			CleanGhostWindows();
+		}
 
-		CleanGhostWindows();
 		SaveState();
 	}
 
@@ -779,7 +794,7 @@ public class WindowManager : IWindowManager
 			focusedWorkspace.Update();
 		}
 
-		CleanGhostWindows();
+		//CleanGhostWindows();
 		SaveState();
 	}
 
@@ -806,7 +821,7 @@ public class WindowManager : IWindowManager
 		}
 
 		focusedWorkspace.Update();
-		CleanGhostWindows();
+		//CleanGhostWindows();
 		SaveState();
 	}
 
@@ -819,7 +834,7 @@ public class WindowManager : IWindowManager
 		Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		focusedWorkspace.Update();
-		CleanGhostWindows();
+		//CleanGhostWindows();
 		SaveState();
 	}
 
@@ -834,7 +849,7 @@ public class WindowManager : IWindowManager
 		TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED).Wait();
 
 		focusedWorkspace.Update();
-		CleanGhostWindows();
+		//CleanGhostWindows();
 		SaveState();
 	}
 
@@ -849,7 +864,7 @@ public class WindowManager : IWindowManager
 		Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		focusedWorkspace.Update();
-		CleanGhostWindows();
+		//CleanGhostWindows();
 		SaveState();
 	}
 
@@ -861,7 +876,7 @@ public class WindowManager : IWindowManager
 
 		Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
-		CleanGhostWindows();
+		//CleanGhostWindows();
 		SaveState();
 	}
 
