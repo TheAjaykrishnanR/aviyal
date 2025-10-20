@@ -281,6 +281,7 @@ public class Workspace : IWorkspace
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
 		.ToList();
 
+		// non floating
 		if (nonFloating.Count == 0) return;
 
 		RECT[] relRects = layout.GetRects(nonFloating.Count);
@@ -335,13 +336,18 @@ public class Workspace : IWorkspace
 		Focus();
 	}
 
-	public void ToggleFloating()
+	public void ApplyFloatingSize(Window wnd)
 	{
-		var wnd = focusedWindow;
+		wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
+	}
+
+	public void ToggleFloating(Window? wnd = null)
+	{
+		if (wnd == null) wnd = focusedWindow;
 		if (wnd == null) return;
 		wnd.floating = !wnd.floating;
 		Console.WriteLine($"[ TOGGLE FLOATING ] : {wnd.floating}, [ {config.floatingWindowSize} ]");
-		wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
+		if (wnd.floating) ApplyFloatingSize(wnd);
 		Update();
 	}
 
@@ -645,6 +651,10 @@ public class WindowManager : IWindowManager
 			return true;
 		}
 
+		// not required actually because WINDOW_ADDED only fires on OBJECT_SHOW
+		// however adding for completeness
+		if (!wnd.styles.Contains("WS_VISIBLE")) return true;
+
 		if (
 			wnd.styles.Contains("WS_EX_TOOLWINDOW") ||
 			wnd.styles.Contains("WS_CHILD")
@@ -652,6 +662,7 @@ public class WindowManager : IWindowManager
 
 		// all normal top level windows must have either "WS_OVERLAPPED" - OR - "WS_POPUP"
 		// so kick out windows that dont have neither
+		// WS_OVERLAPPED is the default style with which you get a normal window
 		if (!wnd.styles.Contains("WS_OVERLAPPED") &&
 		   !wnd.styles.Contains("WS_POPUP")
 		)
@@ -659,6 +670,12 @@ public class WindowManager : IWindowManager
 			Console.WriteLine($"IGNORE WINDOW: {wnd.title}, class: {wnd.className}");
 			return true;
 		}
+
+		if (wnd.className.Contains("#32770") &&
+			!wnd.styles.Contains("WS_SYSMENU") &&
+			(wnd.rect.Bottom - wnd.rect.Top < 50 ||
+			 wnd.rect.Right - wnd.rect.Left < 50)
+			) return true; // dialogs
 
 		if (!Environment.IsPrivilegedProcess && wnd.elevated) return true;
 
@@ -668,7 +685,6 @@ public class WindowManager : IWindowManager
 	bool ShouldWindowBeFloating(Window wnd)
 	{
 		if (IsWindowInConfigRules(wnd, "floating")) return true;
-		if (wnd.className.Contains("#32770")) return true; // dialogs
 		return false;
 	}
 
@@ -719,6 +735,7 @@ public class WindowManager : IWindowManager
 
 		ApplyConfigsToWindow(wnd);
 		focusedWorkspace.Add(wnd);
+		if (wnd.floating) focusedWorkspace.ApplyFloatingSize(wnd);
 		focusedWorkspace.Update();
 		Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 
