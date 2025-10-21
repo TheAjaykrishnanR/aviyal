@@ -954,7 +954,7 @@ public class WindowManager : IWindowManager
 			}
 			catch (Exception ex)
 			{
-				//Console.WriteLine(ex.Message);
+				Console.WriteLine(ex.Message);
 			}
 			Console.WriteLine($"lastAction: {lastAction}\n{state.ToJson()}");
 		}
