@@ -28,8 +28,31 @@ public class Window : IWindow
 			return Utils.GetClassNameFromHWND(this.hWnd);
 		}
 	}
-	public string? exe { get; set; }
-	public string exeName { get; set; }
+	public string? exe
+	{
+		get
+		{
+			// EnumWindowProcess() is hella expensive, and anyway exe wont change
+			// for a process once its found
+			if (field == null)
+			{
+				field = Utils.GetExePathFromHWND(this.hWnd) ??
+						Utils.EnumWindowProcesses()
+						.FirstOrDefault(wndProcess => wndProcess
+										.windows.Select(wndp => wndp.hWnd)
+						.Contains(this.hWnd))?
+						.process.MainModule?.FileName;
+			}
+			return field;
+		}
+	}
+	public string exeName
+	{
+		get
+		{
+			return @$"{exe}"?.Split(@"\").Last().Replace(".exe", "")!;
+		}
+	}
 
 	public RECT rect // absolute position
 	{
@@ -213,9 +236,6 @@ public class Window : IWindow
 	public Window(nint hWnd)
 	{
 		this.hWnd = hWnd;
-
-		this.exe = Utils.GetExePathFromHWND(this.hWnd);
-		this.exeName = @$"{exe}"?.Split(@"\").Last().Replace(".exe", "");
 	}
 }
 
@@ -660,7 +680,7 @@ public class WindowManager : IWindowManager
 				"windowClass" => wnd.className,
 				_ => ""
 			};
-			return condition(wndAttribute, rule.identifier);
+			if (condition(wndAttribute, rule.identifier)) return true;
 		}
 		return false;
 	}
@@ -726,6 +746,9 @@ public class WindowManager : IWindowManager
 
 	bool ShouldWindowBeFloating(Window wnd)
 	{
+		// despite window rules dont apply floating to dialog windows
+		if (wnd.className.Contains("#32770")) return false;
+
 		if (IsWindowInConfigRules(wnd, "floating")) return true;
 		return false;
 	}
@@ -767,7 +790,11 @@ public class WindowManager : IWindowManager
 
 	void ApplyConfigsToWindow(Window wnd)
 	{
-		if (ShouldWindowBeFloating(wnd)) wnd.floating = true; else { wnd.floating = false; }
+		if (ShouldWindowBeFloating(wnd)) wnd.floating = true;
+		else
+		{
+			wnd.floating = false;
+		}
 		if (ShouldWindowBeTileable(wnd)) wnd.tileable = true; else wnd.tileable = false;
 	}
 
@@ -791,7 +818,7 @@ public class WindowManager : IWindowManager
 		}
 
 		CleanGhostWindows();
-		SaveState($"WindowAdded, wnd: {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, border: {wnd.borderThickness}");
+		SaveState($"WindowAdded, wnd: {wnd.title}, exe: {wnd.exe}");
 	}
 
 	// search for the window in our workspace and give a local reference that

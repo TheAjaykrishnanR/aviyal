@@ -21,6 +21,12 @@
 	  "method": "equals",
 	  "identifierType": "windowProcess",
 	  "identifier": "explorer"
+	},
+	{
+	  "type": "floating",
+	  "method": "equals",
+	  "identifierType": "windowProcess",
+	  "identifier": "One Photo Viewer"
 	}
   ],
   "keymaps": [

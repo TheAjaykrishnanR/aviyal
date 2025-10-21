@@ -171,8 +171,9 @@ public partial class Utils
 		/// </summary>
 		SYSTEM_PROCESS_ID_INFORMATION info = new() { ProcessId = (nint)processId, ImageName = new() { Length = 0, MaximumLength = 256, Buffer = Marshal.AllocHGlobal(512) } };
 		int result = Ntdll.NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS.SystemProcessIdInformation, ref info, (uint)Marshal.SizeOf<SYSTEM_PROCESS_ID_INFORMATION>(), out uint returnLength);
-		string exePath = Marshal.PtrToStringUni(info.ImageName.Buffer);
+		string? exePath = Marshal.PtrToStringUni(info.ImageName.Buffer);
 		Marshal.FreeHGlobal(info.ImageName.Buffer);
+		if (exePath == null) return null;
 
 		// List all device paths
 		List<string> driveDevicePaths = new();
