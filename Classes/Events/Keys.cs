@@ -56,7 +56,7 @@ public class KeyEventsListener : IDisposable
 			var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
 			if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY)
 			{
-				Console.WriteLine("FOREGROUND_FAKE_KEY");
+				//Console.WriteLine("FOREGROUND_FAKE_KEY");
 				return 1;
 			}
 			VK key = (VK)kbdStruct.vkCode;
@@ -71,10 +71,11 @@ public class KeyEventsListener : IDisposable
 					{
 						if (Utils.ListContentEqual<VK>(captured, keymap.keys))
 						{
-							Log(captured, dt, "HOTKEY_PRESSED");
-							Log(keymap.keys, dt, "HOTKEY_PRESSED");
+							//Log(captured, dt, "HOTKEY_PRESSED");
+							//Log(keymap.keys, dt, "HOTKEY_PRESSED");
 							HOTKEY_PRESSED(keymap);
 
+							captured.Clear();
 							letKeyPass = false;
 							break;
 						}
@@ -84,12 +85,8 @@ public class KeyEventsListener : IDisposable
 					captured.Remove(key);
 					break;
 			}
-			Console.WriteLine($"KEY: {key}, MSG: {(WINDOWMESSAGE)wparam}");
-			if (captured.SequenceEqual([VK.LMENU, VK.LSHIFT, VK.L]))
-			{
-				Console.WriteLine("HOTKEY PRESSED");
-			}
-			Log(captured, dt);
+			//Console.WriteLine($"KEY: {key}, MSG: {(WINDOWMESSAGE)wparam}");
+			//Log(captured, dt);
 			lastKeyTime = kbdStruct.time;
 
 			if (letKeyPass) return CallNextHookEx(0, code, wparam, lparam);

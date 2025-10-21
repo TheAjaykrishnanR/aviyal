@@ -47,7 +47,7 @@ public class MouseEventsListener : IDisposable
 					MOUSE_UP();
 					break;
 			}
-			//Console.WriteLine($"mouseEvent: {(WINDOWMESSAGE)wparam}");
+			////Console.WriteLine($"mouseEvent: {(WINDOWMESSAGE)wparam}");
 			return CallNextHookEx(0, code, wparam, lparam);
 		}
 	}

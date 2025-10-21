@@ -124,6 +124,7 @@ class Aviyal : IDisposable
 
 	public void HotkeyPressed(Keymap keymap)
 	{
+		Console.WriteLine($"Hotekey Pressed: {keymap.command}");
 		if (keymap.command == COMMAND.EXEC) Exec(keymap.arguments);
 		else actions[keymap.command]?.Invoke();
 	}

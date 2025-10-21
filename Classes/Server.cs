@@ -54,7 +54,7 @@ public class Server : IDisposable
 
 	public void Broadcast(string message)
 	{
-		Console.WriteLine($"[[[BROADCASTING TO {clients.Count}]]]");
+		//Console.WriteLine($"[[[BROADCASTING TO {clients.Count}]]]");
 		clients?.ForEach(client =>
 		{
 			byte[] bytes = Encoding.UTF8.GetBytes(message);

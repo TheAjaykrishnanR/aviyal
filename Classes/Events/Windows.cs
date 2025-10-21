@@ -71,14 +71,14 @@ public class WindowEventsListener : IDisposable
 				dt = dwmsEventTime - lastTime;
 				lastTime = dwmsEventTime;
 
-				Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, dt: {dt}");
+				//Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, dt: {dt}");
 
 				switch (msg)
 				{
 					case WINEVENT.OBJECT_CREATE:
 						break;
 					case WINEVENT.OBJECT_SHOW:
-						Console.WriteLine($"WINDOW_ADDED: {hWnd}");
+						//Console.WriteLine($"WINDOW_ADDED: {hWnd}");
 						WINDOW_ADDED(new Window(hWnd));
 						break;
 					case WINEVENT.OBJECT_DESTROY:
@@ -94,7 +94,7 @@ public class WindowEventsListener : IDisposable
 						WINDOW_RESTORED(new Window(hWnd));
 						break;
 					case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
-						Console.WriteLine($"window restore check, dt:{dt}");
+						//Console.WriteLine($"window restore check, dt:{dt}");
 						WINDOWPLACEMENT wndPlmnt = new();
 						User32.GetWindowPlacement(hWnd, ref wndPlmnt);
 						SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
@@ -124,9 +124,9 @@ public class WindowEventsListener : IDisposable
 	public void Loop()
 	{
 		uint WINEVENT_OUTOFCONTEXT = 0;
-		Console.WriteLine("SetWinEventHook...");
+		//Console.WriteLine("SetWinEventHook...");
 		hhook = SetWinEventHook(0x00000001, 0x7FFFFFFF, 0, winEventProc, 0, 0, WINEVENT_OUTOFCONTEXT | 0x0001 | 0x0002);
-		Console.WriteLine($"hook: {hhook}");
+		//Console.WriteLine($"hook: {hhook}");
 		// message loop
 		while (running)
 		{

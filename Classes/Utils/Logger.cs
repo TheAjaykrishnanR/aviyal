@@ -60,6 +60,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 						["elevated"] = wnd.elevated.ToString(),
 						["floating"] = wnd.floating.ToString(),
 						["tileable"] = wnd.tileable.ToString(),
+						["workspace"] = wnd.workspace.ToString(),
 					};
 				}).ToArray()
 			),

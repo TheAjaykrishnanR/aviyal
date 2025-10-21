@@ -236,7 +236,7 @@ public partial class Utils
 		//}
 		// ---------------------------------------------------------------
 		Dwmapi.DwmGetWindowAttribute(hWnd, (uint)DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, out uint cloak, sizeof(uint));
-		Console.WriteLine($"[CLOAK], title: {title}, class: {className}, cloak: {cloak}");
+		//Console.WriteLine($"[CLOAK], title: {title}, class: {className}, cloak: {cloak}");
 		return cloak == 0;
 
 		/*
@@ -324,7 +324,7 @@ public partial class Utils
 	{
 		nint hMon = User32.MonitorFromPoint(new POINT() { X = 0, Y = 0 }, 0x01);
 		Shcore.GetDpiForMonitor(hMon, MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out uint dpiX, out uint dpiY);
-		Console.WriteLine($"dpiX: {dpiX}, dpiY: {dpiY}");
+		//Console.WriteLine($"dpiX: {dpiX}, dpiY: {dpiY}");
 		return dpiX / 96.0f;
 	}
 
@@ -332,7 +332,7 @@ public partial class Utils
 	//{
 	//	nint hMon = User32.MonitorFromPoint(new POINT() { X = 0, Y = 0 }, 0x01);
 	//	Shcore.GetScaleFactorForMonitor(hMon, out DEVICE_SCALE_FACTOR scale);
-	//	Console.WriteLine($"SCALE: {scale}, hMon: {hMon}");
+	//	//Console.WriteLine($"SCALE: {scale}, hMon: {hMon}");
 	//	return ((double)scale) / 100;
 	//}
 
@@ -379,7 +379,7 @@ public partial class Utils
 		int screenHeight = User32.GetSystemMetrics(1);
 		screenWidth = (int)(screenWidth);
 		screenHeight = (int)(screenHeight);
-		Console.WriteLine($"[{screenWidth}x{screenHeight}], scale: {scale}");
+		//Console.WriteLine($"[{screenWidth}x{screenHeight}], scale: {scale}");
 		return (screenWidth, screenHeight);
 	}
 

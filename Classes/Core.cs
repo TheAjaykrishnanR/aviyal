@@ -11,6 +11,7 @@ using System.Linq;
 
 public class Window : IWindow
 {
+	public int workspace;
 	public nint hWnd { get; }
 	public string title
 	{
@@ -48,7 +49,7 @@ public class Window : IWindow
 			WINDOWPLACEMENT wndPlmnt = new();
 			User32.GetWindowPlacement(this.hWnd, ref wndPlmnt);
 			var state = (SHOWWINDOW)wndPlmnt.showCmd;
-			Console.WriteLine($"state: {state}");
+			//Console.WriteLine($"state: {state}");
 			return state;
 		}
 	}
@@ -68,7 +69,7 @@ public class Window : IWindow
 	{
 		get
 		{
-			Console.WriteLine($"checking elevation of {title}: {Utils.IsProcessElevated(pid)}");
+			//Console.WriteLine($"checking elevation of {title}: {Utils.IsProcessElevated(pid)}");
 			return Utils.IsProcessElevated(pid);
 		}
 	}
@@ -106,7 +107,7 @@ public class Window : IWindow
 		int attr = 0;
 		if (!flag) attr = 1;
 		int res = Dwmapi.DwmSetWindowAttribute(this.hWnd, DWMWINDOWATTRIBUTE.DWMWA_TRANSITIONS_FORCEDISABLED, ref attr, sizeof(int));
-		//Console.WriteLine($"ToggleAnimation(): {res}");
+		////Console.WriteLine($"ToggleAnimation(): {res}");
 	}
 
 	public void Hide()
@@ -167,13 +168,13 @@ public class Window : IWindow
 	public RECT GetFrameMargin()
 	{
 		User32.GetWindowRect(this.hWnd, out RECT rect);
-		Console.WriteLine($"GWR [L: {rect.Left} R: {rect.Right} T: {rect.Top} B:{rect.Bottom}]");
+		//Console.WriteLine($"GWR [L: {rect.Left} R: {rect.Right} T: {rect.Top} B:{rect.Bottom}]");
 		int size = Marshal.SizeOf<RECT>();
 		nint rectPtr = Marshal.AllocHGlobal(size);
 		Dwmapi.DwmGetWindowAttribute(this.hWnd, (uint)DWMWINDOWATTRIBUTE.DWMWA_EXTENDED_FRAME_BOUNDS, rectPtr, (uint)size);
 		RECT rect2 = Marshal.PtrToStructure<RECT>(rectPtr);
 		Marshal.FreeHGlobal(rectPtr);
-		Console.WriteLine($"DWM [L: {rect2.Left} R: {rect2.Right} T: {rect2.Top} B:{rect2.Bottom}]");
+		//Console.WriteLine($"DWM [L: {rect2.Left} R: {rect2.Right} T: {rect2.Top} B:{rect2.Bottom}]");
 		// scale dwm rect2 to take into account display scaling
 		double scale = Utils.GetDisplayScaling();
 
@@ -272,7 +273,7 @@ public class Workspace : IWorkspace
 
 	public void Update()
 	{
-		windows.ForEach(wnd => Console.WriteLine($"WND IS NULL: {wnd == null}"));
+		//windows.ForEach(wnd => //Console.WriteLine($"WND IS NULL: {wnd == null}"));
 
 		List<Window?> nonFloating = windows
 		.Where(wnd => wnd?.floating == false)
@@ -306,7 +307,7 @@ public class Workspace : IWorkspace
 		}
 		else lastFocusedWindow.Focus();
 
-		Console.WriteLine($"WORKSPACEFOCUSED, WINDOW: {focusedWindowIndex}");
+		//Console.WriteLine($"WORKSPACEFOCUSED, WINDOW: {focusedWindowIndex}");
 	}
 
 	public void Hide()
@@ -325,7 +326,7 @@ public class Workspace : IWorkspace
 
 	public void FocusAdjacentWindow(EDGE direction)
 	{
-		Console.WriteLine($"focusing window on: {direction}, focusedWindowIndex: {focusedWindowIndex}");
+		//Console.WriteLine($"focusing window on: {direction}, focusedWindowIndex: {focusedWindowIndex}");
 		if (focusedWindowIndex == null) return;
 		int? index = layout.GetAdjacent((int)focusedWindowIndex, direction);
 		if (index != null) windows?[(int)index]?.Focus();
@@ -337,7 +338,7 @@ public class Workspace : IWorkspace
 		int? index = focusedWindowIndex;
 		if (index == null) return;
 		index += shiftBy;
-		Console.WriteLine($"SHIFTING");
+		//Console.WriteLine($"SHIFTING");
 		if (index < 0 || index > windows.Count - 1) return;
 		windows.Remove(_fwnd);
 		windows.Insert((int)index, _fwnd);
@@ -354,7 +355,7 @@ public class Workspace : IWorkspace
 		if (wnd == null) wnd = focusedWindow;
 		if (wnd == null) return;
 		wnd.floating = !wnd.floating;
-		Console.WriteLine($"[ TOGGLE FLOATING ] : {wnd.floating}, [ {config.floatingWindowSize} ]");
+		//Console.WriteLine($"[ TOGGLE FLOATING ] : {wnd.floating}, [ {config.floatingWindowSize} ]");
 		if (wnd.floating) ApplyFloatingSize(wnd);
 		Update();
 	}
@@ -453,7 +454,7 @@ public class WindowManager : IWindowManager
 		{
 			initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		}
-		initWindows.ForEach(wnd => Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
+		//initWindows.ForEach(wnd => //Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
 		for (int i = 0; i < WORKSPACES; i++)
 		{
@@ -462,7 +463,11 @@ public class WindowManager : IWindowManager
 			workspaces.Add(wksp);
 		}
 		// add all windows to 1st workspace
-		initWindows.ForEach(wnd => workspaces.First().windows.Add(wnd));
+		initWindows.ForEach(wnd =>
+		{
+			wnd.workspace = 0;
+			workspaces.First().windows.Add(wnd);
+		});
 		FocusWorkspace(workspaces.First());
 	}
 
@@ -509,16 +514,16 @@ public class WindowManager : IWindowManager
 			wksp.Move(GetX(startX, endX, frames, i), null);
 			int wait = (int)(i * dt - sw.ElapsedMilliseconds);
 			wait = wait < 0 ? 0 : wait;
-			Console.WriteLine($"{i}. wait: {wait}");
+			//Console.WriteLine($"{i}. wait: {wait}");
 			await Task.Delay(wait);
 		}
 		sw.Stop();
-		Console.WriteLine($"total: {sw.ElapsedMilliseconds} ms");
+		//Console.WriteLine($"total: {sw.ElapsedMilliseconds} ms");
 	}
 
-	public async void FocusNextWorkspace()
+	public void FocusNextWorkspace()
 	{
-		await SuppressEvents(() =>
+		SuppressEvents(() =>
 		{
 			int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 			int prev = focusedWorkspaceIndex > 0 ? focusedWorkspaceIndex - 1 : workspaces.Count - 1;
@@ -544,16 +549,16 @@ public class WindowManager : IWindowManager
 			else
 			{
 				FocusWorkspace(workspaces[next]);
-				Console.WriteLine($"NEXT, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+				//Console.WriteLine($"FOCUSING NEXT WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 			}
 		});
 
-		SaveState();
+		SaveState("FocusNextWorkspace");
 	}
 
-	public async void FocusPreviousWorkspace()
+	public void FocusPreviousWorkspace()
 	{
-		await SuppressEvents(() =>
+		SuppressEvents(() =>
 		{
 			int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 			int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
@@ -578,11 +583,11 @@ public class WindowManager : IWindowManager
 			else
 			{
 				FocusWorkspace(workspaces[prev]);
-				Console.WriteLine($"PREVIOUS, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+				//Console.WriteLine($"FOCUSING PREVIOUS WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 			}
 		});
 
-		SaveState();
+		SaveState("FocusPreviousWorkspace");
 	}
 
 	public void ShiftFocusedWindowToWorkspace(int index)
@@ -591,6 +596,7 @@ public class WindowManager : IWindowManager
 		Window? wnd = focusedWorkspace.focusedWindow;
 		if (wnd == null) return;
 		focusedWorkspace.Remove(wnd);
+		wnd.workspace = index;
 		workspaces[index].Add(wnd);
 		FocusWorkspace(workspaces[index]);
 		focusedWorkspace = workspaces[index];
@@ -598,31 +604,31 @@ public class WindowManager : IWindowManager
 	}
 
 	bool suppressEvents = false;
-	Task SuppressEvents(Action func)
+	void SuppressEvents(Action func)
 	{
-		return Task.Run(async () =>
+		lock (@addLock)
 		{
 			suppressEvents = true;
 			func();
-			await Task.Delay(50);
+			Thread.Sleep(100);
 			suppressEvents = false;
-		});
+		}
 	}
 
-	public async void ShiftFocusedWindowToNextWorkspace()
+	public void ShiftFocusedWindowToNextWorkspace()
 	{
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
-		await SuppressEvents(() => ShiftFocusedWindowToWorkspace(next));
+		SuppressEvents(() => ShiftFocusedWindowToWorkspace(next));
 
-		SaveState();
+		SaveState("ShiftWindowToNextWorkspace");
 	}
 
-	public async void ShiftFocusedWindowToPreviousWorkspace()
+	public void ShiftFocusedWindowToPreviousWorkspace()
 	{
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
-		await SuppressEvents(() => ShiftFocusedWindowToWorkspace(prev));
+		SuppressEvents(() => ShiftFocusedWindowToWorkspace(prev));
 
-		SaveState();
+		SaveState("ShiftWindowToPreviousWorkspace");
 	}
 
 	bool IsWindowInConfigRules(Window wnd, string ruleType)
@@ -655,7 +661,7 @@ public class WindowManager : IWindowManager
 	{
 		if (IsWindowInConfigRules(wnd, "ignore"))
 		{
-			Console.WriteLine($"ignoring {wnd.title} due to config rules");
+			//Console.WriteLine($"ignoring {wnd.title} due to config rules");
 			return true;
 		}
 
@@ -675,17 +681,17 @@ public class WindowManager : IWindowManager
 		   !wnd.styles.Contains("WS_POPUP")
 		)
 		{
-			Console.WriteLine($"IGNORE WINDOW: {wnd.title}, class: {wnd.className}");
+			//Console.WriteLine($"IGNORE WINDOW: {wnd.title}, class: {wnd.className}");
 			return true;
 		}
+
+		if (wnd.className == null || wnd.className == "") return true;
 
 		if (wnd.className.Contains("#32770") &&
 			!wnd.styles.Contains("WS_SYSMENU") &&
 			(wnd.rect.Bottom - wnd.rect.Top < 50 ||
 			 wnd.rect.Right - wnd.rect.Left < 50)
 			) return true; // dialogs
-
-		if (!Environment.IsPrivilegedProcess && wnd.elevated) return true;
 
 		// tooltips
 		// https://learn.microsoft.com/en-us/windows/win32/controls/common-control-window-classes
@@ -699,6 +705,8 @@ public class WindowManager : IWindowManager
 			wnd.className.Contains("#32772")
 			) return true;
 
+		if (!Environment.IsPrivilegedProcess && wnd.elevated) return true;
+
 		return false;
 	}
 
@@ -710,7 +718,6 @@ public class WindowManager : IWindowManager
 
 	bool ShouldWindowBeTileable(Window wnd)
 	{
-
 		if (!wnd.styles.Contains("WS_THICKFRAME")) return false; // non resizeable window
 		if (wnd.className.Contains("OperationStatusWindow") || // copy, paste status windows
 			wnd.className.Contains("DS_MODALFRAME")
@@ -723,21 +730,24 @@ public class WindowManager : IWindowManager
 
 	public void CleanGhostWindows()
 	{
-		var visibleWindows = GetVisibleWindows();
-		// visible windows will give all alt-tab programs, even tool windows
-		// which we dont need and for whom winevents would typically not fire.
-		// That is why whe have an '>' instead of an '!='
-		// The reason we are doing all this is that for some windows such as
-		// the file explorer, win events wont fire an OBJECT_SHOW when closing
-		if (focusedWorkspace.windows.Count > visibleWindows.Count)
+		lock (@addLock)
 		{
-			var ghostWindows = focusedWorkspace.windows.Where(wnd => !visibleWindows.Contains(wnd)).ToList();
-			ghostWindows.ForEach(wnd =>
+			var visibleWindows = GetVisibleWindows();
+			// visible windows will give all alt-tab programs, even tool windows
+			// which we dont need and for whom winevents would typically not fire.
+			// That is why whe have an '>' instead of an '!='
+			// The reason we are doing all this is that for some windows such as
+			// the file explorer, win events wont fire an OBJECT_SHOW when closing
+			if (focusedWorkspace.windows.Count > visibleWindows.Count)
 			{
-				Console.WriteLine($"REMOVING GHOST: {wnd.title}, {wnd.hWnd}, {wnd.className}");
-				focusedWorkspace.Remove(wnd);
-			});
-			focusedWorkspace.Update();
+				var ghostWindows = focusedWorkspace.windows.Where(wnd => !visibleWindows.Contains(wnd)).ToList();
+				ghostWindows.ForEach(wnd => focusedWorkspace.Remove(wnd));
+				focusedWorkspace.Update();
+			}
+
+			// windows that have been added but has gone bad and should be removed
+			var rottenWindows = focusedWorkspace.windows.Where(wnd => ShouldWindowBeIgnored(wnd)).ToList();
+			rottenWindows.ForEach(wnd => focusedWorkspace.Remove(wnd));
 		}
 	}
 
@@ -751,7 +761,7 @@ public class WindowManager : IWindowManager
 	public void WindowAdded(Window wnd)
 	{
 		if (suppressEvents) return;
-		if (GetAlreadyStoredWindow(wnd) != null) return;
+		foreach (var wksp in workspaces) if (wksp.windows.Contains(wnd)) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
 		// Add() and CleanGhostWindows() can cause windows to be re added if they
@@ -759,14 +769,15 @@ public class WindowManager : IWindowManager
 		lock (@addLock)
 		{
 			ApplyConfigsToWindow(wnd);
+			wnd.workspace = focusedWorkspaceIndex;
 			focusedWorkspace.Add(wnd);
 			if (wnd.floating) focusedWorkspace.ApplyFloatingSize(wnd);
 			focusedWorkspace.Update();
-			Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
-			CleanGhostWindows();
+			//Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 		}
 
-		SaveState();
+		CleanGhostWindows();
+		SaveState("WindowAdded");
 	}
 
 	// search for the window in our workspace and give a local reference that
@@ -785,7 +796,7 @@ public class WindowManager : IWindowManager
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
-		Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		if (focusedWorkspace.windows.Contains(wnd))
 		{
@@ -793,8 +804,8 @@ public class WindowManager : IWindowManager
 			focusedWorkspace.Update();
 		}
 
-		//CleanGhostWindows();
-		SaveState();
+		CleanGhostWindows();
+		SaveState("WindowRemoved");
 	}
 
 	// window handlers must always check window properties of the already stored windows
@@ -804,7 +815,7 @@ public class WindowManager : IWindowManager
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
-		Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		//var _wnd = focusedWorkspace.windows.FirstOrDefault(_wnd => _wnd == wnd);
 		//if (_wnd == null) return;
@@ -820,8 +831,8 @@ public class WindowManager : IWindowManager
 		}
 
 		focusedWorkspace.Update();
-		//CleanGhostWindows();
-		SaveState();
+		CleanGhostWindows();
+		SaveState("WindowMoved");
 	}
 
 	public void WindowMaximized(Window wnd)
@@ -830,11 +841,11 @@ public class WindowManager : IWindowManager
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
-		Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		focusedWorkspace.Update();
-		//CleanGhostWindows();
-		SaveState();
+		CleanGhostWindows();
+		SaveState("WindowMaximized");
 	}
 
 	public void WindowMinimized(Window wnd)
@@ -843,13 +854,13 @@ public class WindowManager : IWindowManager
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
-		Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
 		TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED).Wait();
 
 		focusedWorkspace.Update();
-		//CleanGhostWindows();
-		SaveState();
+		CleanGhostWindows();
+		SaveState("WindowMinimized");
 	}
 
 	public bool mouseDown { get; set; } = false;
@@ -860,11 +871,11 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if (mouseDown) return;
 
-		Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		focusedWorkspace.Update();
-		//CleanGhostWindows();
-		SaveState();
+		CleanGhostWindows();
+		SaveState("WindowRestored");
 	}
 
 	public void WindowFocused(Window wnd)
@@ -873,10 +884,10 @@ public class WindowManager : IWindowManager
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
-		Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
-		//CleanGhostWindows();
-		SaveState();
+		CleanGhostWindows();
+		SaveState("WindowFocused");
 	}
 
 	public WindowManagerState GetState()
@@ -889,7 +900,7 @@ public class WindowManager : IWindowManager
 	}
 
 	readonly Lock @lock = new();
-	public void SaveState()
+	public void SaveState(string? lastAction = null)
 	{
 		lock (@lock)
 		{
@@ -901,9 +912,9 @@ public class WindowManager : IWindowManager
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine(ex.Message);
+				//Console.WriteLine(ex.Message);
 			}
-			Console.WriteLine($"SaveState():\n{state.ToJson()}");
+			Console.WriteLine($"lastAction: {lastAction}\n{state.ToJson()}");
 		}
 	}
 
@@ -914,9 +925,9 @@ public class WindowManager : IWindowManager
 	{
 		string[] args = request.Split(" ");
 		args[args.Length - 1] = args.Last().Replace("\n", "");
-		Console.WriteLine($"arg0: {args.FirstOrDefault()}, arg1: {args.ElementAtOrDefault(1)}");
+		//Console.WriteLine($"arg0: {args.FirstOrDefault()}, arg1: {args.ElementAtOrDefault(1)}");
 		string? verb = args.FirstOrDefault();
-		Console.WriteLine($"verb: {verb}");
+		//Console.WriteLine($"verb: {verb}");
 		string response = "";
 		switch (verb)
 		{
