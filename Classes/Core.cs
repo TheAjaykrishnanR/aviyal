@@ -442,7 +442,7 @@ public class Workspace : IWorkspace
 public class WindowManager : IWindowManager
 {
 	public List<Window>? initWindows { get; set; } // initWindows := initial set of windows to start the WM with
-	public List<Workspace> workspaces { get; } = new();
+	public List<Workspace?> workspaces { get; } = new();
 	public Workspace focusedWorkspace { get; private set; }
 
 	public int focusedWorkspaceIndex
@@ -501,9 +501,9 @@ public class WindowManager : IWindowManager
 		this.initWindows.ForEach(wnd =>
 		{
 			wnd.workspace = 0;
-			workspaces.First().windows.Add(wnd);
+			workspaces.FirstOrDefault()?.windows.Add(wnd);
 		});
-		FocusWorkspace(workspaces.First());
+		FocusWorkspace(workspaces?.FirstOrDefault()!);
 	}
 
 	public List<Window?> GetVisibleWindows()
@@ -765,9 +765,6 @@ public class WindowManager : IWindowManager
 		if (wnd.className.Contains("OperationStatusWindow") || // copy, paste status windows
 			wnd.className.Contains("DS_MODALFRAME")
 			) return false;
-		if (wnd.rect.Bottom - wnd.rect.Top < 50 ||
-			wnd.rect.Right - wnd.rect.Left < 50
-			) return false; // dont tile very small windows
 		return true;
 	}
 
@@ -784,23 +781,23 @@ public class WindowManager : IWindowManager
 			if (focusedWorkspace.windows.Count > visibleWindows.Count)
 			{
 				var ghostWindows = focusedWorkspace.windows.Where(wnd => !visibleWindows.Contains(wnd)).ToList();
-				ghostWindows.ForEach(wnd => focusedWorkspace.Remove(wnd));
+				ghostWindows.ForEach(wnd => focusedWorkspace.Remove(wnd!));
 				focusedWorkspace.Update();
 			}
 
 			// windows that have been added but has gone bad and should be removed
-			var rottenWindows = focusedWorkspace.windows.Where(wnd => ShouldWindowBeIgnored(wnd)).ToList();
-			rottenWindows.ForEach(wnd => focusedWorkspace.Remove(wnd));
+			var rottenWindows = focusedWorkspace.windows.Where(wnd => ShouldWindowBeIgnored(wnd!)).ToList();
+			rottenWindows.ForEach(wnd => focusedWorkspace.Remove(wnd!));
+
+			// after cleaning just reapply configs to all windows, this is because just like 
+			// rotten windows, a window's style could change over time
+			focusedWorkspace.windows.ForEach(wnd => ApplyConfigsToWindow(wnd!));
 		}
 	}
 
 	void ApplyConfigsToWindow(Window wnd)
 	{
-		if (ShouldWindowBeFloating(wnd)) wnd.floating = true;
-		else
-		{
-			wnd.floating = false;
-		}
+		if (ShouldWindowBeFloating(wnd)) wnd.floating = true; else wnd.floating = false;
 		if (ShouldWindowBeTileable(wnd)) wnd.tileable = true; else wnd.tileable = false;
 	}
 
@@ -808,7 +805,7 @@ public class WindowManager : IWindowManager
 	{
 		List<Window?> windows = new();
 		foreach (var wksp in workspaces)
-			foreach (var wnd in wksp.windows)
+			foreach (var wnd in wksp!.windows)
 				windows.Add(wnd);
 		return windows;
 	}
@@ -817,7 +814,18 @@ public class WindowManager : IWindowManager
 	public void WindowAdded(Window wnd)
 	{
 		if (suppressEvents) return;
-		foreach (var wksp in workspaces) if (wksp.windows.Contains(wnd)) return;
+		foreach (var wksp in workspaces)
+			if (wksp!.windows.Contains(wnd))
+			{
+				// This is for cases where an already added window gets focused without direct interaction
+				// for eg say you click a link on your terminal and your default browser is open
+				// in another workspace. The reason why we are handling it here instead of
+				// WindowFocused is because the event emmited is OBJECT_SHOW rather than
+				// EVENT_FOREGROUND_CHANGED
+				if (wksp != focusedWorkspace) FocusWorkspace(wksp);
+				return;
+			}
+
 		if (ShouldWindowBeIgnored(wnd)) return;
 
 		// Add() and CleanGhostWindows() can cause windows to be re added if they
@@ -935,27 +943,34 @@ public class WindowManager : IWindowManager
 		SaveState($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
 	}
 
+	Workspace? GetWindowWorkspace(Window wnd)
+	{
+		return workspaces.FirstOrDefault(wksp => wksp!.windows.Contains(wnd));
+	}
+
 	public void WindowFocused(Window wnd)
 	{
 		if (suppressEvents) return;
-		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
+		if ((wnd = GetAlreadyStoredWindow(wnd)!) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 
 		//Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
+		focusedWorkspace.Update();
 		CleanGhostWindows();
-		SaveState("WindowFocused");
+		SaveState($"WindowFocused, {wnd.title}, {wnd.tileable}");
 	}
 
 	public WindowManagerState GetState()
 	{
 		WindowManagerState state = new();
-		workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => state.windows.Add(wnd!)));
+		GetAllWindows().ForEach(wnd => state.windows.Add(wnd!));
 		state.focusedWorkspaceIndex = focusedWorkspaceIndex;
 		state.workspaceCount = workspaces.Count;
 		return state;
 	}
 
+	int stateCounter = 0;
 	readonly Lock @lock = new();
 	public void SaveState(string? lastAction = null)
 	{
@@ -971,7 +986,7 @@ public class WindowManager : IWindowManager
 			{
 				Console.WriteLine(ex.Message);
 			}
-			Console.WriteLine($"lastAction: {lastAction}\n{state.ToJson()}");
+			Console.WriteLine($"{stateCounter++}. lastAction: {lastAction}\n{state.ToJson()}");
 		}
 	}
 
