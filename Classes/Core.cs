@@ -82,6 +82,15 @@ public class Window : IWindow
 		}
 	}
 
+	public int borderThickness
+	{
+		get
+		{
+			User32.GetWindowInfo(this.hWnd, out WINDOWINFO info);
+			return info.cxWindowBorders;
+		}
+	}
+
 	public override bool Equals(object? obj)
 	{
 		//if (base.Equals(obj)) return true;
@@ -659,12 +668,6 @@ public class WindowManager : IWindowManager
 	// filter out windows that should never be interacted with
 	bool ShouldWindowBeIgnored(Window wnd)
 	{
-		if (IsWindowInConfigRules(wnd, "ignore"))
-		{
-			//Console.WriteLine($"ignoring {wnd.title} due to config rules");
-			return true;
-		}
-
 		// not required actually because WINDOW_ADDED only fires on OBJECT_SHOW
 		// however adding for completeness
 		if (!wnd.styles.Contains("WS_VISIBLE")) return true;
@@ -705,7 +708,18 @@ public class WindowManager : IWindowManager
 			wnd.className.Contains("#32772")
 			) return true;
 
+		// filter out windows without the normal/default border thickness
+		const int SM_CXSIZEFRAME = 32;
+		if (wnd.borderThickness < User32.GetSystemMetrics(SM_CXSIZEFRAME))
+			return true;
+
 		if (!Environment.IsPrivilegedProcess && wnd.elevated) return true;
+
+		if (IsWindowInConfigRules(wnd, "ignore"))
+		{
+			//Console.WriteLine($"ignoring {wnd.title} due to config rules");
+			return true;
+		}
 
 		return false;
 	}
@@ -777,7 +791,7 @@ public class WindowManager : IWindowManager
 		}
 
 		CleanGhostWindows();
-		SaveState("WindowAdded");
+		SaveState($"WindowAdded, wnd: {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, border: {wnd.borderThickness}");
 	}
 
 	// search for the window in our workspace and give a local reference that
@@ -866,6 +880,7 @@ public class WindowManager : IWindowManager
 	public bool mouseDown { get; set; } = false;
 	public void WindowRestored(Window wnd)
 	{
+
 		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
@@ -875,7 +890,7 @@ public class WindowManager : IWindowManager
 
 		focusedWorkspace.Update();
 		CleanGhostWindows();
-		SaveState("WindowRestored");
+		SaveState($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
 	}
 
 	public void WindowFocused(Window wnd)

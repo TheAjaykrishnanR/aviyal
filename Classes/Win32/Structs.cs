@@ -305,3 +305,18 @@ public struct TOKEN_ELEVATION
 	public uint TokenIsElevated;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct WINDOWINFO
+{
+	public uint cbSize;
+	public RECT rcWindow;
+	public RECT rcClient;
+	public uint dwStyle;
+	public uint dwExStyle;
+	public uint dwWindowStatus;
+	public int cxWindowBorders;
+	public int cyWindowBorders;
+	public ushort atomWindowType;
+	public ushort wCreatorVersion;
+}
+

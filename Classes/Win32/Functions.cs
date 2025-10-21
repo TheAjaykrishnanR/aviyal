@@ -20,6 +20,9 @@ public class User32
 	[DllImport("user32.dll", SetLastError = true)]
 	public static extern int GetWindowText(nint hWnd, StringBuilder lpString, int nMaxCount);
 
+	[DllImport("user32.dll")]
+	public static extern int GetWindowInfo(nint hWnd, out WINDOWINFO info);
+
 	[DllImport("user32.dll", SetLastError = true)]
 	public static extern int SetWindowPos(nint hWnd, nint hWndInsertAfter, int x, int y, int cx, int cy, SETWINDOWPOS uFlags);
 
