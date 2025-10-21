@@ -213,6 +213,27 @@ class Aviyal : IDisposable
 
 	static void Restart() => running = false;
 
+	static void Restore(string? file = null)
+	{
+		string restoreFile;
+		if (file != null)
+			restoreFile = new FileInfo(file).FullName;
+		else
+			restoreFile = Paths.stateFile;
+		if (!File.Exists(restoreFile))
+		{
+			Console.WriteLine($"State file: {restoreFile} not found!");
+			return;
+		}
+		WindowManagerState state = WindowManagerState.FromJson(File.ReadAllText(restoreFile));
+		Console.WriteLine($"Found {state.windows.Count} windows in {restoreFile}");
+		state.windows.ForEach(wnd =>
+		{
+			Console.WriteLine($"Restoring {wnd.title}, hWnd: {wnd.hWnd}");
+			wnd.Show();
+		});
+	}
+
 	static void Main(string[] args)
 	{
 		switch (args.ToList().ElementAtOrDefault(0))
@@ -225,9 +246,39 @@ class Aviyal : IDisposable
 				Loop();
 				break;
 			case "--version":
-				Console.WriteLine($"AVIYAL VERSION: {ver}");
+				Console.WriteLine($"Aviyal version: {ver}");
 				break;
 			case "--help":
+				Console.WriteLine(
+@"
+,_______________________________,
+|   Aviyal Window Manager |__|__|
+|___ver_0.1.0-alpha_______|__|__|
+|Author:  Ajaykrishnan.R  |\/ \/|
+|/\/\/\/\/\/\/\/\/\/\/\/\/|/\_/\|
+|________C# .NET 10_______|++++++
+|////////////////////////////////
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+Aviyal is a window manager that dynamically tiles your windows, organizes them inside workspaces,
+navigation through keybindings, and more :)
+
+aviyal: https://github.com/TheAjaykrishnanR/aviyal
+dflat: https://github.com/TheAjaykrishnanR/dflat
+
+USAGE: aviyal <--options> <--arguments>
+
+available options:
+
+--help:     prints this help text
+--debug:    flag for running the program in debug mode. Only special windows are tiled.
+--version:  prints the version
+--restore:  restores windows from a previous state. Useful when crashed and windows are hidden.
+"
+				);
+				break;
+			case "--restore":
+				Restore(args.ToList().ElementAtOrDefault(1));
 				break;
 		}
 	}

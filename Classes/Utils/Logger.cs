@@ -71,7 +71,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 		return j.ToString();
 	}
 
-	public WindowManagerState FromJson(string json)
+	public static WindowManagerState FromJson(string json)
 	{
 		WindowManagerState state = new();
 		JsonNode? node = JsonNode.Parse(json);
@@ -84,8 +84,8 @@ public class WindowManagerState : IJson<WindowManagerState>
 				state.windows.Add(wnd);
 			}
 		);
-		state.focusedWorkspaceIndex = Convert.ToInt32(node?["focusedWorkspaceIndex"]);
-		state.workspaceCount = Convert.ToInt32(node?["workspaceCount"]);
+		state.focusedWorkspaceIndex = Convert.ToInt32(node?["focusedWorkspaceIndex"].ToString());
+		state.workspaceCount = Convert.ToInt32(node?["workspaceCount"].ToString());
 		return state;
 	}
 }
