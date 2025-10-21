@@ -19,6 +19,8 @@ For live debug output, run from a terminal (`cmd.exe` or `pwsh.exe`).
 - `SHIFT WINDOW PREVIOUS WORKSPACE`: `LMENU (ALT), LSHIFT, H`
 - `SWAP WINDOW RIGHT`: `LMENU (ALT), L`
 - `SWAP WINDOW LEFT`: `LMENU (ALT), H`
+- `RESTART APPLICATION`: `LCONTROL, LSHIFT, R` (hot reload for config)
+- `REFRESH TILING`: `LCONTROL, LSHIFT, U`
 
 By default `9` workspaces are initialized.
 
