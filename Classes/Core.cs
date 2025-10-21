@@ -441,7 +441,7 @@ public class Workspace : IWorkspace
 
 public class WindowManager : IWindowManager
 {
-	public List<Window> initWindows { get; } = new();
+	public List<Window>? initWindows { get; set; } // initWindows := initial set of windows to start the WM with
 	public List<Workspace> workspaces { get; } = new();
 	public Workspace focusedWorkspace { get; private set; }
 
@@ -469,19 +469,25 @@ public class WindowManager : IWindowManager
 	public WindowManager(Config config)
 	{
 		this.config = config;
+	}
 
-		initWindows = GetVisibleWindows()!;
-		initWindows = initWindows
-					  .Where(wnd => !ShouldWindowBeIgnored(wnd))
-					  .ToList();
-		initWindows.ForEach(wnd => ApplyConfigsToWindow(wnd));
+	public void Start()
+	{
+		if (initWindows == null)
+		{
+			this.initWindows = GetVisibleWindows()!;
+			this.initWindows = this.initWindows
+						  .Where(wnd => !ShouldWindowBeIgnored(wnd))
+						  .ToList();
+			this.initWindows.ForEach(wnd => ApplyConfigsToWindow(wnd));
+		}
 
 		// when running in debug mode, only window containing the title "windowgen" will 
 		// be managed by the program. This is so that your ide or terminal is left free
 		// while testing
 		if (DEBUG)
 		{
-			initWindows = initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+			this.initWindows = this.initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		}
 		//initWindows.ForEach(wnd => //Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
@@ -492,7 +498,7 @@ public class WindowManager : IWindowManager
 			workspaces.Add(wksp);
 		}
 		// add all windows to 1st workspace
-		initWindows.ForEach(wnd =>
+		this.initWindows.ForEach(wnd =>
 		{
 			wnd.workspace = 0;
 			workspaces.First().windows.Add(wnd);
@@ -798,6 +804,15 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeTileable(wnd)) wnd.tileable = true; else wnd.tileable = false;
 	}
 
+	public List<Window?> GetAllWindows()
+	{
+		List<Window?> windows = new();
+		foreach (var wksp in workspaces)
+			foreach (var wnd in wksp.windows)
+				windows.Add(wnd);
+		return windows;
+	}
+
 	readonly Lock @addLock = new();
 	public void WindowAdded(Window wnd)
 	{
@@ -828,7 +843,7 @@ public class WindowManager : IWindowManager
 	// that already exist in the workspace so basically every one except WindowAdded
 	Window? GetAlreadyStoredWindow(Window wnd)
 	{
-		return focusedWorkspace.windows.FirstOrDefault(_wnd => _wnd == wnd);
+		return focusedWorkspace?.windows?.FirstOrDefault(_wnd => _wnd == wnd);
 	}
 
 	public void WindowRemoved(Window wnd)

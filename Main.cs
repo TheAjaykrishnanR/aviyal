@@ -18,12 +18,12 @@ class Aviyal : IDisposable
 	static string ver = "0.1.0";
 	static Aviyal? aviyal;
 
-	WindowManager wm;
-	Server server;
+	public WindowManager wm;
+	public Server server;
 
-	WindowEventsListener wndListener = new();
-	KeyEventsListener kbdListener;
-	MouseEventsListener mouseListener = new();
+	public WindowEventsListener wndListener = new();
+	public KeyEventsListener kbdListener;
+	public MouseEventsListener mouseListener = new();
 
 	Dictionary<COMMAND, Action> actions { get; }
 
@@ -185,8 +185,12 @@ class Aviyal : IDisposable
 
 		Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
 
+		// collect windows to restore when reloaded (when reloaded all windows will be put to workspace 0)
+		var windows = aviyal?.wm.GetAllWindows();
 		aviyal?.Dispose();
 		aviyal = new(config);
+		aviyal.wm.initWindows = windows!;
+		aviyal.wm.Start();
 	}
 
 	static bool errored = false;
