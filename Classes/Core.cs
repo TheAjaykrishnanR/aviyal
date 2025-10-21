@@ -97,11 +97,19 @@ public class Window : IWindow
 		}
 	}
 
-	public List<string> styles
+	public WINDOWSTYLE styles
 	{
 		get
 		{
-			return Utils.GetStylesFromHwnd(this.hWnd);
+			return (WINDOWSTYLE)User32.GetWindowLong(this.hWnd, GETWINDOWLONG.GWL_STYLE);
+		}
+	}
+
+	public WINDOWSTYLEEX exStyles
+	{
+		get
+		{
+			return (WINDOWSTYLEEX)User32.GetWindowLong(this.hWnd, GETWINDOWLONG.GWL_EXSTYLE);
 		}
 	}
 
@@ -696,28 +704,22 @@ public class WindowManager : IWindowManager
 	{
 		// not required actually because WINDOW_ADDED only fires on OBJECT_SHOW
 		// however adding for completeness
-		if (!wnd.styles.Contains("WS_VISIBLE")) return true;
-
-		if (
-			wnd.styles.Contains("WS_EX_TOOLWINDOW") ||
-			wnd.styles.Contains("WS_CHILD")
-		) return true;
+		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_VISIBLE)) return true;
+		if (wnd.styles.HasFlag(WINDOWSTYLE.WS_CHILD)) return true;
 
 		// all normal top level windows must have either "WS_OVERLAPPED" - OR - "WS_POPUP"
 		// so kick out windows that dont have neither
 		// WS_OVERLAPPED is the default style with which you get a normal window
-		if (!wnd.styles.Contains("WS_OVERLAPPED") &&
-		   !wnd.styles.Contains("WS_POPUP")
-		)
-		{
-			//Console.WriteLine($"IGNORE WINDOW: {wnd.title}, class: {wnd.className}");
-			return true;
-		}
+		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_OVERLAPPED) &&
+		   !wnd.styles.HasFlag(WINDOWSTYLE.WS_POPUP)
+		) return true;
+
+		if (wnd.exStyles.HasFlag(WINDOWSTYLEEX.WS_EX_TOOLWINDOW)) return true;
 
 		if (wnd.className == null || wnd.className == "") return true;
 
 		if (wnd.className.Contains("#32770") &&
-			!wnd.styles.Contains("WS_SYSMENU") &&
+			!wnd.styles.HasFlag(WINDOWSTYLE.WS_SYSMENU) &&
 			(wnd.rect.Bottom - wnd.rect.Top < 50 ||
 			 wnd.rect.Right - wnd.rect.Left < 50)
 			) return true; // dialogs
@@ -761,7 +763,7 @@ public class WindowManager : IWindowManager
 
 	bool ShouldWindowBeTileable(Window wnd)
 	{
-		if (!wnd.styles.Contains("WS_THICKFRAME")) return false; // non resizeable window
+		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_THICKFRAME)) return false; // non resizeable window
 		if (wnd.className.Contains("OperationStatusWindow") || // copy, paste status windows
 			wnd.className.Contains("DS_MODALFRAME")
 			) return false;
@@ -788,10 +790,6 @@ public class WindowManager : IWindowManager
 			// windows that have been added but has gone bad and should be removed
 			var rottenWindows = focusedWorkspace.windows.Where(wnd => ShouldWindowBeIgnored(wnd!)).ToList();
 			rottenWindows.ForEach(wnd => focusedWorkspace.Remove(wnd!));
-
-			// after cleaning just reapply configs to all windows, this is because just like 
-			// rotten windows, a window's style could change over time
-			focusedWorkspace.windows.ForEach(wnd => ApplyConfigsToWindow(wnd!));
 		}
 	}
 
@@ -813,6 +811,7 @@ public class WindowManager : IWindowManager
 	readonly Lock @addLock = new();
 	public void WindowAdded(Window wnd)
 	{
+		if (ShouldWindowBeIgnored(wnd)) return;
 		if (suppressEvents) return;
 		foreach (var wksp in workspaces)
 			if (wksp!.windows.Contains(wnd))
@@ -825,8 +824,6 @@ public class WindowManager : IWindowManager
 				if (wksp != focusedWorkspace) FocusWorkspace(wksp);
 				return;
 			}
-
-		if (ShouldWindowBeIgnored(wnd)) return;
 
 		// Add() and CleanGhostWindows() can cause windows to be re added if they
 		// occur while the other hasnt completed, so lock them
@@ -841,7 +838,7 @@ public class WindowManager : IWindowManager
 		}
 
 		CleanGhostWindows();
-		SaveState($"WindowAdded, wnd: {wnd.title}, exe: {wnd.exe}");
+		SaveState($"WindowAdded, wnd: {wnd.title}, exe: {wnd.exe}, tileable: {wnd.tileable}");
 	}
 
 	// search for the window in our workspace and give a local reference that
@@ -856,9 +853,9 @@ public class WindowManager : IWindowManager
 
 	public void WindowRemoved(Window wnd)
 	{
+		if (ShouldWindowBeIgnored(wnd)) return;
 		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
-		if (ShouldWindowBeIgnored(wnd)) return;
 
 		//Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
@@ -875,9 +872,9 @@ public class WindowManager : IWindowManager
 	// window handlers must always check window properties of the already stored windows
 	public void WindowMoved(Window wnd)
 	{
+		if (ShouldWindowBeIgnored(wnd)) return;
 		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
-		if (ShouldWindowBeIgnored(wnd)) return;
 
 		//Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
@@ -901,9 +898,9 @@ public class WindowManager : IWindowManager
 
 	public void WindowMaximized(Window wnd)
 	{
+		if (ShouldWindowBeIgnored(wnd)) return;
 		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
-		if (ShouldWindowBeIgnored(wnd)) return;
 
 		//Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
@@ -914,9 +911,9 @@ public class WindowManager : IWindowManager
 
 	public void WindowMinimized(Window wnd)
 	{
+		if (ShouldWindowBeIgnored(wnd)) return;
 		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
-		if (ShouldWindowBeIgnored(wnd)) return;
 
 		//Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
@@ -931,9 +928,9 @@ public class WindowManager : IWindowManager
 	public void WindowRestored(Window wnd)
 	{
 
+		if (ShouldWindowBeIgnored(wnd)) return;
 		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
-		if (ShouldWindowBeIgnored(wnd)) return;
 		if (mouseDown) return;
 
 		//Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
@@ -950,9 +947,9 @@ public class WindowManager : IWindowManager
 
 	public void WindowFocused(Window wnd)
 	{
+		if (ShouldWindowBeIgnored(wnd)) return;
 		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)!) == null) return;
-		if (ShouldWindowBeIgnored(wnd)) return;
 
 		//Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 

@@ -16,7 +16,8 @@ public interface IWindow
 	public SHOWWINDOW state { get; }
 	public bool floating { get; set; }
 	public bool tileable { get; set; }
-	public List<string> styles { get; }
+	public WINDOWSTYLE styles { get; }
+	public WINDOWSTYLEEX exStyles { get; }
 
 	public void Hide();
 	public void Show();
