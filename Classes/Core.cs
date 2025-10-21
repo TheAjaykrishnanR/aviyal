@@ -178,13 +178,7 @@ public class Window : IWindow
 		pos.Right -= margin.Right;
 		pos.Bottom -= margin.Bottom;
 
-		nint zorder = floating switch
-		{
-			true => (nint)SWPZORDER.HWND_TOP,
-			false => (nint)SWPZORDER.HWND_BOTTOM
-		};
-
-		User32.SetWindowPos(this.hWnd, zorder, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOACTIVATE);
+		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOZORDER | SETWINDOWPOS.SWP_NOACTIVATE);
 	}
 
 	bool RectEqual(RECT a, RECT b)
@@ -203,6 +197,11 @@ public class Window : IWindow
 	public void SetBottom()
 	{
 		User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_BOTTOM, 0, 0, 0, 0, SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
+	}
+
+	public void SetFront()
+	{
+		User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_TOP, 0, 0, 0, 0, SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
 	}
 
 	public RECT GetFrameMargin()
