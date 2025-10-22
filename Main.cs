@@ -230,6 +230,7 @@ class Aviyal : IDisposable
 		state.windows.ForEach(wnd =>
 		{
 			Console.WriteLine($"Restoring {wnd.title}, hWnd: {wnd.hWnd}");
+			wnd.Move(0, 0);
 			wnd.Show();
 		});
 	}

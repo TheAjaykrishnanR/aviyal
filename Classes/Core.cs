@@ -169,6 +169,14 @@ public class Window : IWindow
 		User32.SetForegroundWindow(this.hWnd);
 	}
 
+	SETWINDOWPOS moveFlags =
+		SETWINDOWPOS.SWP_NOSENDCHANGING |
+		SETWINDOWPOS.SWP_NOCOPYBITS |
+		SETWINDOWPOS.SWP_ASYNCWINDOWPOS |
+		SETWINDOWPOS.SWP_NOACTIVATE |
+		SETWINDOWPOS.SWP_NOZORDER |
+		SETWINDOWPOS.SWP_NOREDRAW;
+
 	public void Move(RECT pos)
 	{
 		// remove frame bounds
@@ -177,13 +185,6 @@ public class Window : IWindow
 		pos.Top -= margin.Top;
 		pos.Right -= margin.Right;
 		pos.Bottom -= margin.Bottom;
-
-		SETWINDOWPOS moveFlags =
-			SETWINDOWPOS.SWP_NOSENDCHANGING |
-			SETWINDOWPOS.SWP_NOCOPYBITS |
-			SETWINDOWPOS.SWP_ASYNCWINDOWPOS |
-			SETWINDOWPOS.SWP_NOACTIVATE |
-			SETWINDOWPOS.SWP_NOZORDER;
 
 		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, moveFlags);
 	}
@@ -198,7 +199,9 @@ public class Window : IWindow
 
 	public void Move(int? x, int? y)
 	{
-		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
+		SETWINDOWPOS slideFlag = moveFlags | SETWINDOWPOS.SWP_NOSIZE;
+
+		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, slideFlag);
 	}
 
 	public void SetBottom()
