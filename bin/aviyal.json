@@ -6,6 +6,7 @@
   "bottom": 10,
   "inner": 10,
   "workspaces": 9,
+  "workspaceAnimations": true,
   "floatingWindowSize": "800x400",
   "serverPort": 6969,
   "rules": 

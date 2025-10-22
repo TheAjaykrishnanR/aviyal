@@ -178,7 +178,14 @@ public class Window : IWindow
 		pos.Right -= margin.Right;
 		pos.Bottom -= margin.Bottom;
 
-		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, SETWINDOWPOS.SWP_NOZORDER | SETWINDOWPOS.SWP_NOACTIVATE);
+		SETWINDOWPOS moveFlags =
+			SETWINDOWPOS.SWP_NOSENDCHANGING |
+			SETWINDOWPOS.SWP_NOCOPYBITS |
+			SETWINDOWPOS.SWP_ASYNCWINDOWPOS |
+			SETWINDOWPOS.SWP_NOACTIVATE |
+			SETWINDOWPOS.SWP_NOZORDER;
+
+		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, moveFlags);
 	}
 
 	bool RectEqual(RECT a, RECT b)

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
 public class KeyEventsListener : IDisposable
@@ -35,11 +36,11 @@ public class KeyEventsListener : IDisposable
 	List<VK> captured = new();
 	List<Keymap> keymaps = new();
 
-	void Log(List<VK> keys, uint dt = 0, string prefix = "")
+	void Log(List<VK> keys, uint dt = 0, VK? key = null, string prefix = "")
 	{
 		Console.Write($"{prefix}[");
 		keys.ForEach(key => Console.Write($"{key}, "));
-		Console.Write($"] {dt}ms\n");
+		Console.Write($"], {dt}ms, lasKey: {lastKey}, letKeyPass: {letKeyPass}, key: {key}\n");
 	}
 
 	// we use locking because future keys if allowed to go through the callback proc
@@ -47,8 +48,10 @@ public class KeyEventsListener : IDisposable
 	// consequences such as clearing the captured collection. However this is not
 	// required for the window events as no such lists exists for that and we can
 	// adopt a fire and forget mechanism for them
-	readonly Lock @eventLock = new();
+	private readonly Lock @eventLock = new();
 	uint lastKeyTime = 0;
+	VK? lastKey; // the trailing key of a hotkey action -> H in Ctrl+Shift+H
+	bool letKeyPass = true;
 	int KeyboardCallback(int code, nint wparam, nint lparam)
 	{
 		lock (@eventLock)
@@ -60,34 +63,44 @@ public class KeyEventsListener : IDisposable
 				return 1;
 			}
 			VK key = (VK)kbdStruct.vkCode;
+			//Console.WriteLine($"START, Key: {key}, {(WINDOWMESSAGE)wparam}");
 			uint dt = kbdStruct.time - lastKeyTime;
 			if (dt > 500) captured.Clear();
-			bool letKeyPass = true;
+			letKeyPass = true;
 			switch ((WINDOWMESSAGE)wparam)
 			{
 				case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */:
 					if (!captured.Contains(key)) captured.Add(key);
+					//Log(captured, dt);
 					foreach (Keymap keymap in keymaps)
 					{
 						if (Utils.ListContentEqual<VK>(captured, keymap.keys))
 						{
 							//Log(captured, dt, "HOTKEY_PRESSED");
 							//Log(keymap.keys, dt, "HOTKEY_PRESSED");
-							HOTKEY_PRESSED(keymap);
-
-							captured.Clear();
+							lastKey = key;
 							letKeyPass = false;
+							captured.Clear();
+
+							Task.Run(() => HOTKEY_PRESSED(keymap));
+
 							break;
 						}
 					}
 					break;
 				case WINDOWMESSAGE.WM_KEYUP:
+					if (key == lastKey)
+					{
+						letKeyPass = false;
+						lastKey = null;
+					}
 					captured.Remove(key);
 					break;
 			}
 			//Console.WriteLine($"KEY: {key}, MSG: {(WINDOWMESSAGE)wparam}");
-			//Log(captured, dt);
 			lastKeyTime = kbdStruct.time;
+			//Console.WriteLine($"key: {key}, {(WINDOWMESSAGE)wparam}, pass: {letKeyPass}");
+			//Console.WriteLine($"END, Key: {key}, {(WINDOWMESSAGE)wparam}");
 
 			if (letKeyPass) return CallNextHookEx(0, code, wparam, lparam);
 			return 1; // handled
