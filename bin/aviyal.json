@@ -134,7 +134,7 @@
     },
     {
       "keys": [
-        "LCONTROL",
+        "LMENU",
         "NUM1"
       ],
       "command": "FOCUS_WORKSPACE_1",
@@ -142,7 +142,7 @@
     },
     {
       "keys": [
-        "LCONTROL",
+        "LMENU",
         "NUM2"
       ],
       "command": "FOCUS_WORKSPACE_2",
@@ -150,7 +150,7 @@
     },
     {
       "keys": [
-        "LCONTROL",
+        "LMENU",
         "NUM3"
       ],
       "command": "FOCUS_WORKSPACE_3",
@@ -158,7 +158,7 @@
     },
     {
       "keys": [
-        "LCONTROL",
+        "LMENU",
         "NUM4"
       ],
       "command": "FOCUS_WORKSPACE_4",
@@ -166,7 +166,7 @@
     },
     {
       "keys": [
-        "LCONTROL",
+        "LMENU",
         "NUM5"
       ],
       "command": "FOCUS_WORKSPACE_5",
@@ -174,7 +174,7 @@
     },
     {
       "keys": [
-        "LCONTROL",
+        "LMENU",
         "NUM6"
       ],
       "command": "FOCUS_WORKSPACE_6",
@@ -182,7 +182,7 @@
     },
     {
       "keys": [
-        "LCONTROL",
+        "LMENU",
         "NUM7"
       ],
       "command": "FOCUS_WORKSPACE_7",
@@ -190,7 +190,7 @@
     },
     {
       "keys": [
-        "LCONTROL",
+        "LMENU",
         "NUM8"
       ],
       "command": "FOCUS_WORKSPACE_8",
@@ -198,7 +198,7 @@
     },
     {
       "keys": [
-        "LCONTROL",
+        "LMENU",
         "NUM9"
       ],
       "command": "FOCUS_WORKSPACE_9",

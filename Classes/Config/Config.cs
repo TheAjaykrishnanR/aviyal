@@ -45,17 +45,18 @@ public class Config : IJson<Config>
 		new() { keys= [VK.LMENU, VK.LSHIFT, VK.L], command= COMMAND.SHIFT_WINDOW_NEXT_WORKSPACE },
 		new() { keys= [VK.LMENU, VK.LSHIFT, VK.H], command= COMMAND.SHIFT_WINDOW_PREVIOUS_WORKSPACE },
 		// jump to numbered workspace
-		new() { keys= [VK.LCONTROL, VK.NUM1], command= COMMAND.FOCUS_WORKSPACE_1 },
-		new() { keys= [VK.LCONTROL, VK.NUM2], command= COMMAND.FOCUS_WORKSPACE_2 },
-		new() { keys= [VK.LCONTROL, VK.NUM3], command= COMMAND.FOCUS_WORKSPACE_3 },
-		new() { keys= [VK.LCONTROL, VK.NUM4], command= COMMAND.FOCUS_WORKSPACE_4 },
-		new() { keys= [VK.LCONTROL, VK.NUM5], command= COMMAND.FOCUS_WORKSPACE_5 },
-		new() { keys= [VK.LCONTROL, VK.NUM6], command= COMMAND.FOCUS_WORKSPACE_6 },
-		new() { keys= [VK.LCONTROL, VK.NUM7], command= COMMAND.FOCUS_WORKSPACE_7 },
-		new() { keys= [VK.LCONTROL, VK.NUM8], command= COMMAND.FOCUS_WORKSPACE_8 },
-		new() { keys= [VK.LCONTROL, VK.NUM9], command= COMMAND.FOCUS_WORKSPACE_9 },
+		new() { keys= [VK.LMENU, VK.NUM1], command= COMMAND.FOCUS_WORKSPACE_1 },
+		new() { keys= [VK.LMENU, VK.NUM2], command= COMMAND.FOCUS_WORKSPACE_2 },
+		new() { keys= [VK.LMENU, VK.NUM3], command= COMMAND.FOCUS_WORKSPACE_3 },
+		new() { keys= [VK.LMENU, VK.NUM4], command= COMMAND.FOCUS_WORKSPACE_4 },
+		new() { keys= [VK.LMENU, VK.NUM5], command= COMMAND.FOCUS_WORKSPACE_5 },
+		new() { keys= [VK.LMENU, VK.NUM6], command= COMMAND.FOCUS_WORKSPACE_6 },
+		new() { keys= [VK.LMENU, VK.NUM7], command= COMMAND.FOCUS_WORKSPACE_7 },
+		new() { keys= [VK.LMENU, VK.NUM8], command= COMMAND.FOCUS_WORKSPACE_8 },
+		new() { keys= [VK.LMENU, VK.NUM9], command= COMMAND.FOCUS_WORKSPACE_9 },
 
 		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.R], command= COMMAND.RESTART },
+		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.U], command= COMMAND.UPDATE },
 	};
 
 	public string ToJson()
