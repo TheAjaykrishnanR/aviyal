@@ -70,6 +70,7 @@ public class Config : IJson<Config>
 			["bottom"] = bottom,
 			["inner"] = inner,
 			["workspaces"] = workspaces,
+			["workspaceAnimations"] = workspaceAnimations.ToString(),
 			["floatingWindowSize"] = floatingWindowSize,
 			["serverPort"] = serverPort,
 			["rules"] = new JsonArray(
@@ -111,6 +112,12 @@ public class Config : IJson<Config>
 		config.right = Convert.ToInt32(node["right"].ToString());
 		config.bottom = Convert.ToInt32(node["bottom"].ToString());
 		config.workspaces = Convert.ToInt32(node["workspaces"].ToString());
+		config.workspaceAnimations =
+		node["workspaceAnimations"].ToString() switch
+		{
+			"true" => true,
+			"false" => false
+		};
 		config.floatingWindowSize = node["floatingWindowSize"].ToString();
 		config.serverPort = Convert.ToInt32(node["serverPort"].ToString());
 
