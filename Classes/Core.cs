@@ -250,6 +250,7 @@ public class Window : IWindow
 		User32.SendMessage(this.hWnd, (uint)WINDOWMESSAGE.WM_CLOSE, 0, 0);
 	}
 
+	// force the window to redraw itself
 	public void Redraw()
 	{
 		User32.RedrawWindow(this.hWnd, 0, 0,
