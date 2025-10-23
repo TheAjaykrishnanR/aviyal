@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("aviyal")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a797bb0b583907e82a0a2974b04f5f117ebef48c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9ed21246912adb1b20fa7f754e41c911090d146a")]
 [assembly: System.Reflection.AssemblyProductAttribute("aviyal")]
 [assembly: System.Reflection.AssemblyTitleAttribute("aviyal")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

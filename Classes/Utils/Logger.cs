@@ -60,7 +60,7 @@ public class WindowManagerState : IJson<WindowManagerState>
 						["borderThickness"] = wnd.borderThickness.ToString(),
 						["elevated"] = wnd.elevated.ToString(),
 						["floating"] = wnd.floating.ToString(),
-						["tileable"] = wnd.tileable.ToString(),
+						["resizeable"] = wnd.resizeable.ToString(),
 						["workspace"] = wnd.workspace.ToString(),
 					};
 				}).ToArray()

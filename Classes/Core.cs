@@ -76,8 +76,20 @@ public class Window : IWindow
 			return state;
 		}
 	}
+
+	public bool resizeable
+	{
+		get
+		{
+			if (!this.styles.HasFlag(WINDOWSTYLE.WS_THICKFRAME)) return false;
+			if (this.className.Contains("OperationStatusWindow") || // copy, paste status windows
+				this.className.Contains("DS_MODALFRAME")
+				) return false;
+			return true;
+		}
+	}
+
 	public bool floating { get; set; } = false;
-	public bool tileable { get; set; } = true;
 
 	public int pid
 	{
@@ -142,12 +154,9 @@ public class Window : IWindow
 		return !left.Equals(right);
 	}
 
-	public void ToggleAnimation(bool flag)
+	public Window(nint hWnd)
 	{
-		int attr = 0;
-		if (!flag) attr = 1;
-		int res = Dwmapi.DwmSetWindowAttribute(this.hWnd, DWMWINDOWATTRIBUTE.DWMWA_TRANSITIONS_FORCEDISABLED, ref attr, sizeof(int));
-		////Console.WriteLine($"ToggleAnimation(): {res}");
+		this.hWnd = hWnd;
 	}
 
 	public void Hide()
@@ -205,6 +214,21 @@ public class Window : IWindow
 		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, moveFlag);
 	}
 
+	public void Close()
+	{
+		User32.SendMessage(this.hWnd, (uint)WINDOWMESSAGE.WM_CLOSE, 0, 0);
+	}
+
+	// force the window to redraw itself
+	public void Redraw()
+	{
+		User32.RedrawWindow(this.hWnd, 0, 0,
+			REDRAWWINDOW.INVALIDATE |
+			REDRAWWINDOW.ALLCHILDREN |
+			REDRAWWINDOW.UPDATENOW
+		);
+	}
+
 	public void SetBottom()
 	{
 		User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_BOTTOM, 0, 0, 0, 0, SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
@@ -213,6 +237,14 @@ public class Window : IWindow
 	public void SetFront()
 	{
 		User32.SetWindowPos(this.hWnd, (nint)SWPZORDER.HWND_TOP, 0, 0, 0, 0, SETWINDOWPOS.SWP_NOMOVE | SETWINDOWPOS.SWP_NOSIZE | SETWINDOWPOS.SWP_NOACTIVATE);
+	}
+
+	public void ToggleAnimation(bool flag)
+	{
+		int attr = 0;
+		if (!flag) attr = 1;
+		int res = Dwmapi.DwmSetWindowAttribute(this.hWnd, DWMWINDOWATTRIBUTE.DWMWA_TRANSITIONS_FORCEDISABLED, ref attr, sizeof(int));
+		////Console.WriteLine($"ToggleAnimation(): {res}");
 	}
 
 	public RECT GetFrameMargin()
@@ -237,21 +269,6 @@ public class Window : IWindow
 		};
 	}
 
-	public void Close()
-	{
-		User32.SendMessage(this.hWnd, (uint)WINDOWMESSAGE.WM_CLOSE, 0, 0);
-	}
-
-	// force the window to redraw itself
-	public void Redraw()
-	{
-		User32.RedrawWindow(this.hWnd, 0, 0,
-			REDRAWWINDOW.INVALIDATE |
-			REDRAWWINDOW.ALLCHILDREN |
-			REDRAWWINDOW.UPDATENOW
-		);
-	}
-
 	RECT ScaleRect(RECT rect, double scale)
 	{
 		rect.Left = (int)(rect.Left * scale);
@@ -267,11 +284,6 @@ public class Window : IWindow
 			a.Top == b.Top &&
 			a.Right == b.Right &&
 			a.Bottom == b.Bottom;
-	}
-
-	public Window(nint hWnd)
-	{
-		this.hWnd = hWnd;
 	}
 }
 
@@ -325,6 +337,16 @@ public class Workspace : IWorkspace
 		return !left.Equals(right);
 	}
 
+	Config config;
+	(int, int) floatingWindowSize;
+	public Workspace(Config config)
+	{
+		this.config = config;
+		var sizeStrs = config.floatingWindowSize.Split("x");
+		floatingWindowSize.Item1 = Convert.ToInt32(sizeStrs[0]);
+		floatingWindowSize.Item2 = Convert.ToInt32(sizeStrs[1]);
+	}
+
 	public void Add(Window wnd)
 	{
 		windows.Add(wnd);
@@ -342,8 +364,8 @@ public class Workspace : IWorkspace
 		//windows.ForEach(wnd => //Console.WriteLine($"WND IS NULL: {wnd == null}"));
 
 		List<Window?> nonFloating = windows
+		.Where(wnd => wnd?.resizeable == true)
 		.Where(wnd => wnd?.floating == false)
-		.Where(wnd => wnd?.tileable == true)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
 		.ToList();
@@ -359,6 +381,7 @@ public class Workspace : IWorkspace
 
 		// floating
 		List<Window?> floating = windows
+		.Where(wnd => wnd?.resizeable == true)
 		.Where(wnd => wnd?.floating == true)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
@@ -375,16 +398,14 @@ public class Workspace : IWorkspace
 		windows?.ForEach(wnd => wnd?.Show());
 	}
 
-	Window? lastFocusedWindow = null;
-	public void SetFocusedWindow()
+	public void Hide()
 	{
-		if (lastFocusedWindow == null)
+		windows?.ForEach(wnd =>
 		{
-			var wnd = windows?.FirstOrDefault();
-			lastFocusedWindow = wnd;
-			wnd?.Focus();
-		}
-		else lastFocusedWindow.Focus();
+			//var (sx, sy) = Utils.GetScreenSize();
+			//wnd?.Move(sx, sy);
+			wnd?.Hide();
+		});
 	}
 
 	public void Focus()
@@ -399,14 +420,24 @@ public class Workspace : IWorkspace
 		windows?.ForEach(wnd => wnd?.Redraw());
 	}
 
-	public void Hide()
+	public void Move(int? x, int? y, bool redraw = true)
 	{
-		windows?.ForEach(wnd =>
+		windows.ForEach(wnd =>
 		{
-			//var (sx, sy) = Utils.GetScreenSize();
-			//wnd?.Move(sx, sy);
-			wnd?.Hide();
+			wnd?.Move(wnd.relRect.Left + x, wnd.relRect.Top + y, redraw);
 		});
+	}
+
+	Window? lastFocusedWindow = null;
+	public void SetFocusedWindow()
+	{
+		if (lastFocusedWindow == null)
+		{
+			var wnd = windows?.FirstOrDefault();
+			lastFocusedWindow = wnd;
+			wnd?.Focus();
+		}
+		else lastFocusedWindow.Focus();
 	}
 
 	public void CloseFocusedWindow()
@@ -439,8 +470,9 @@ public class Workspace : IWorkspace
 		Focus();
 	}
 
-	public void ApplyFloatingSize(Window wnd)
+	public void MakeFloating(Window wnd)
 	{
+		if (!wnd.resizeable) return;
 		wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
 	}
 
@@ -450,7 +482,7 @@ public class Workspace : IWorkspace
 		if (wnd == null) return;
 		wnd.floating = !wnd.floating;
 		//Console.WriteLine($"[ TOGGLE FLOATING ] : {wnd.floating}, [ {config.floatingWindowSize} ]");
-		if (wnd.floating) ApplyFloatingSize(wnd);
+		if (wnd.floating && wnd.resizeable) MakeFloating(wnd);
 		Update();
 	}
 
@@ -464,14 +496,6 @@ public class Workspace : IWorkspace
 			Top = (int)((sh - h) / 2),
 			Bottom = (int)((sh + h) / 2),
 		};
-	}
-
-	public void Move(int? x, int? y, bool redraw = true)
-	{
-		windows.ForEach(wnd =>
-		{
-			wnd?.Move(wnd.relRect.Left + x, wnd.relRect.Top + y, redraw);
-		});
 	}
 
 	public void SwapWindows(Window wnd1, Window wnd2)
@@ -491,16 +515,6 @@ public class Workspace : IWorkspace
 			return wnd?.relRect.Left < pt.X && pt.X < wnd?.relRect.Right &&
 				   wnd?.relRect.Top < pt.Y && pt.Y < wnd?.relRect.Bottom;
 		});
-	}
-
-	Config config;
-	(int, int) floatingWindowSize;
-	public Workspace(Config config)
-	{
-		this.config = config;
-		var sizeStrs = config.floatingWindowSize.Split("x");
-		floatingWindowSize.Item1 = Convert.ToInt32(sizeStrs[0]);
-		floatingWindowSize.Item2 = Convert.ToInt32(sizeStrs[1]);
 	}
 }
 
@@ -582,6 +596,25 @@ public class WindowManager : IWindowManager
 		return windows;
 	}
 
+	public List<Window?> GetAllWindows()
+	{
+		List<Window?> windows = new();
+		foreach (var wksp in workspaces)
+			foreach (var wnd in wksp!.windows)
+				windows.Add(wnd);
+		return windows;
+	}
+
+	// search for the window in our workspace and give a local reference that
+	// has all the valid states set, the window instance emmitted by window event
+	// listener gives a blank window that only matches the stateless properties
+	// call this in all event handlers that deal with windows events of windows
+	// that already exist in the workspace so basically every one except WindowAdded
+	Window? GetAlreadyStoredWindow(Window wnd)
+	{
+		return focusedWorkspace?.windows?.FirstOrDefault(_wnd => _wnd == wnd);
+	}
+
 	public void FocusWorkspace(Workspace wksp)
 	{
 		workspaces.ForEach(wksp => wksp.Hide());
@@ -589,34 +622,16 @@ public class WindowManager : IWindowManager
 		focusedWorkspace = wksp;
 	}
 
-	int GetX(int start, int end, int frames, int frame)
+	bool suppressEvents = false;
+	void SuppressEvents(Action func)
 	{
-		double progress = (double)frame / frames;
-		progress = EaseOutQuint(progress);
-		return start + (int)((end - start) * progress);
-	}
-
-	public double EaseOutQuint(double x)
-	{
-		return 1 - Math.Pow(1 - x, 3);
-	}
-
-	public async Task WorkspaceAnimate(Workspace wksp, int startX, int endX, int duration)
-	{
-		int fps = 60;
-		int dt = (int)(1000 / fps); // milliseconds
-		int frames = (int)(((float)duration / 1000) * fps);
-
-		Stopwatch sw = new();
-		sw.Start();
-		for (int i = 0; i < frames; i++)
+		lock (@addLock)
 		{
-			wksp.Move(GetX(startX, endX, frames, i), null, redraw: false); // not drawn, so must be manually redrawn once finished
-			int wait = (int)(i * dt - sw.ElapsedMilliseconds);
-			wait = wait < 0 ? 0 : wait;
-			await Task.Delay(wait);
+			suppressEvents = true;
+			func();
+			Thread.Sleep(100);
+			suppressEvents = false;
 		}
-		sw.Stop();
 	}
 
 	public void FocusNextWorkspace()
@@ -713,18 +728,6 @@ public class WindowManager : IWindowManager
 		FocusWorkspace(workspaces[index]);
 		focusedWorkspace = workspaces[index];
 		wnd.Focus();
-	}
-
-	bool suppressEvents = false;
-	void SuppressEvents(Action func)
-	{
-		lock (@addLock)
-		{
-			suppressEvents = true;
-			func();
-			Thread.Sleep(100);
-			suppressEvents = false;
-		}
 	}
 
 	public void ShiftFocusedWindowToNextWorkspace()
@@ -825,24 +828,6 @@ public class WindowManager : IWindowManager
 		return false;
 	}
 
-	bool ShouldWindowBeFloating(Window wnd)
-	{
-		// despite window rules dont apply floating to dialog windows
-		if (wnd.className.Contains("#32770")) return false;
-
-		if (IsWindowInConfigRules(wnd, "floating")) return true;
-		return false;
-	}
-
-	bool ShouldWindowBeTileable(Window wnd)
-	{
-		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_THICKFRAME)) return false; // non resizeable window
-		if (wnd.className.Contains("OperationStatusWindow") || // copy, paste status windows
-			wnd.className.Contains("DS_MODALFRAME")
-			) return false;
-		return true;
-	}
-
 	public void CleanGhostWindows()
 	{
 		lock (@addLock)
@@ -868,17 +853,7 @@ public class WindowManager : IWindowManager
 
 	void ApplyConfigsToWindow(Window wnd)
 	{
-		if (ShouldWindowBeFloating(wnd)) wnd.floating = true; else wnd.floating = false;
-		if (ShouldWindowBeTileable(wnd)) wnd.tileable = true; else wnd.tileable = false;
-	}
-
-	public List<Window?> GetAllWindows()
-	{
-		List<Window?> windows = new();
-		foreach (var wksp in workspaces)
-			foreach (var wnd in wksp!.windows)
-				windows.Add(wnd);
-		return windows;
+		wnd.floating = IsWindowInConfigRules(wnd, "floating");
 	}
 
 	readonly Lock @addLock = new();
@@ -905,23 +880,13 @@ public class WindowManager : IWindowManager
 			ApplyConfigsToWindow(wnd);
 			wnd.workspace = focusedWorkspaceIndex;
 			focusedWorkspace.Add(wnd);
-			if (wnd.floating) focusedWorkspace.ApplyFloatingSize(wnd);
+			if (wnd.floating) focusedWorkspace.MakeFloating(wnd);
 			focusedWorkspace.Update();
 			//Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 		}
 
 		CleanGhostWindows();
-		SaveState($"WindowAdded, wnd: {wnd.title}, exe: {wnd.exe}, tileable: {wnd.tileable}");
-	}
-
-	// search for the window in our workspace and give a local reference that
-	// has all the valid states set, the window instance emmitted by window event
-	// listener gives a blank window that only matches the stateless properties
-	// call this in all event handlers that deal with windows events of windows
-	// that already exist in the workspace so basically every one except WindowAdded
-	Window? GetAlreadyStoredWindow(Window wnd)
-	{
-		return focusedWorkspace?.windows?.FirstOrDefault(_wnd => _wnd == wnd);
+		SaveState($"WindowAdded, wnd: {wnd.title}, exe: {wnd.exe}");
 	}
 
 	public void WindowRemoved(Window wnd)
@@ -956,7 +921,7 @@ public class WindowManager : IWindowManager
 		// wnd -> window being moved
 		// cursorPos
 		// wndEnclosingCursor -> window enclosing cursor
-		if (!wnd.floating && wnd.tileable)
+		if (!wnd.floating && wnd.resizeable)
 		{
 			User32.GetCursorPos(out POINT pt);
 			Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
@@ -1028,7 +993,7 @@ public class WindowManager : IWindowManager
 
 		focusedWorkspace.Update();
 		CleanGhostWindows();
-		SaveState($"WindowFocused, {wnd.title}, {wnd.tileable}");
+		SaveState($"WindowFocused, {wnd.title}");
 	}
 
 	public WindowManagerState GetState()
@@ -1060,6 +1025,7 @@ public class WindowManager : IWindowManager
 		}
 	}
 
+	// server event handler
 	public delegate void WindowManagerMessageHandler(string message);
 	public event WindowManagerMessageHandler WINDOW_MANAGER_MESSAGE_SENT = (message) => { };
 
@@ -1100,6 +1066,37 @@ public class WindowManager : IWindowManager
 				break;
 		}
 		return response;
+	}
+
+	// animation related 
+	int GetX(int start, int end, int frames, int frame)
+	{
+		double progress = (double)frame / frames;
+		progress = EaseOutQuint(progress);
+		return start + (int)((end - start) * progress);
+	}
+
+	public double EaseOutQuint(double x)
+	{
+		return 1 - Math.Pow(1 - x, 3);
+	}
+
+	public async Task WorkspaceAnimate(Workspace wksp, int startX, int endX, int duration)
+	{
+		int fps = 60;
+		int dt = (int)(1000 / fps); // milliseconds
+		int frames = (int)(((float)duration / 1000) * fps);
+
+		Stopwatch sw = new();
+		sw.Start();
+		for (int i = 0; i < frames; i++)
+		{
+			wksp.Move(GetX(startX, endX, frames, i), null, redraw: false); // not drawn, so must be manually redrawn once finished
+			int wait = (int)(i * dt - sw.ElapsedMilliseconds);
+			wait = wait < 0 ? 0 : wait;
+			await Task.Delay(wait);
+		}
+		sw.Stop();
 	}
 }
 

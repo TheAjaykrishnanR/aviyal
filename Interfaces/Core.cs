@@ -14,8 +14,8 @@ public interface IWindow
 	public string? exe { get; }
 	public RECT rect { get; }
 	public SHOWWINDOW state { get; }
+	public bool resizeable { get; }
 	public bool floating { get; set; }
-	public bool tileable { get; set; }
 	public WINDOWSTYLE styles { get; }
 	public WINDOWSTYLEEX exStyles { get; }
 
