@@ -317,6 +317,7 @@ public class Workspace : IWorkspace
 		Update();
 	}
 
+	// applies updated relRects (provided by the layout) to the windows in the workspace
 	public void Update()
 	{
 		//windows.ForEach(wnd => //Console.WriteLine($"WND IS NULL: {wnd == null}"));
@@ -340,11 +341,16 @@ public class Workspace : IWorkspace
 		}
 	}
 
+	public void Show()
+	{
+		windows?.ForEach(wnd => wnd?.Show());
+	}
+
 	Window? lastFocusedWindow = null;
 	public void Focus()
 	{
 		Update();
-		windows?.ForEach(wnd => wnd?.Show());
+		Show();
 		if (lastFocusedWindow == null)
 		{
 			var wnd = windows?.FirstOrDefault();
@@ -358,7 +364,12 @@ public class Workspace : IWorkspace
 
 	public void Hide()
 	{
-		windows?.ForEach(wnd => wnd?.Hide());
+		windows?.ForEach(wnd =>
+		{
+			//var (sx, sy) = Utils.GetScreenSize();
+			//wnd?.Move(sx, sy);
+			wnd?.Hide();
+		});
 	}
 
 	public void CloseFocusedWindow()
@@ -586,7 +597,17 @@ public class WindowManager : IWindowManager
 				(int w, int h) = Utils.GetScreenSize();
 
 				workspaces[next].Move(w, null);
-				workspaces[next].Focus();
+
+				// we call Show() here instead of Focus() because Focus() has a call to Update()
+				// if we Update() our Workspace then all the windows will be set to their
+				// appropriate relRect effectively reversing Move(w, null). Hence as a result
+				// you will see a flash of the next/prev workspace before it appears sliding.
+				// So whats exactly going on ? Move(w, null) moves your workspace out of screen,
+				// Focus() brings it back using Update() and Shows it until WorkspaceAnimate()
+				// takes it out of screen as part of the animation start position which is also
+				// beyond the screen.
+				//Thread.Sleep(100);
+				workspaces[next].Show();
 
 				int duration = 500;
 				List<Task> _ts = new();
@@ -621,7 +642,7 @@ public class WindowManager : IWindowManager
 				(int w, int h) = Utils.GetScreenSize();
 
 				workspaces[prev].Move(-w, null);
-				workspaces[prev].Focus();
+				workspaces[prev].Show();
 
 				int duration = 500;
 				List<Task> _ts = new();
