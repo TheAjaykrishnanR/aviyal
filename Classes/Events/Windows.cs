@@ -40,8 +40,9 @@ public class WindowEventsListener : IDisposable
 
 	public delegate void WindowEventHandler(Window wnd);
 
-	public event WindowEventHandler WINDOW_ADDED = (wnd) => { };
-	public event WindowEventHandler WINDOW_REMOVED = (wnd) => { };
+	public event WindowEventHandler WINDOW_SHOWN = (wnd) => { };
+	public event WindowEventHandler WINDOW_HIDDEN = (wnd) => { };
+	public event WindowEventHandler WINDOW_DESTROYED = (wnd) => { };
 	public event WindowEventHandler WINDOW_MOVED = (wnd) => { };
 	public event WindowEventHandler WINDOW_MAXIMIZED = (wnd) => { };
 	public event WindowEventHandler WINDOW_MINIMIZED = (wnd) => { };
@@ -79,10 +80,13 @@ public class WindowEventsListener : IDisposable
 						break;
 					case WINEVENT.OBJECT_SHOW:
 						//Console.WriteLine($"WINDOW_ADDED: {hWnd}");
-						WINDOW_ADDED(new Window(hWnd));
+						WINDOW_SHOWN(new Window(hWnd));
+						break;
+					case WINEVENT.OBJECT_HIDE:
+						WINDOW_HIDDEN(new Window(hWnd));
 						break;
 					case WINEVENT.OBJECT_DESTROY:
-						WINDOW_REMOVED(new Window(hWnd));
+						WINDOW_DESTROYED(new Window(hWnd));
 						break;
 					case WINEVENT.EVENT_SYSTEM_MOVESIZEEND:
 						WINDOW_MOVED(new Window(hWnd));
@@ -111,7 +115,7 @@ public class WindowEventsListener : IDisposable
 						WINDOW_FOCUSED(new Window(hWnd));
 						break;
 					case WINEVENT.EVENT_OBJECT_UNCLOAKED:
-						WINDOW_ADDED(new Window(hWnd));
+						WINDOW_SHOWN(new Window(hWnd));
 						break;
 				}
 			}

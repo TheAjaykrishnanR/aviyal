@@ -67,8 +67,9 @@ class Aviyal : IDisposable
 		// in order to recieve window events for windows that
 		// already exists while the application is run
 		//wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
-		wndListener.WINDOW_ADDED += wm.WindowAdded;
-		wndListener.WINDOW_REMOVED += wm.WindowRemoved;
+		wndListener.WINDOW_SHOWN += wm.WindowShown;
+		wndListener.WINDOW_HIDDEN += wm.WindowHidden;
+		wndListener.WINDOW_DESTROYED += wm.WindowDestroyed;
 		wndListener.WINDOW_MOVED += wm.WindowMoved;
 		wndListener.WINDOW_MAXIMIZED += wm.WindowMaximized;
 		wndListener.WINDOW_MINIMIZED += wm.WindowMinimized;
@@ -105,8 +106,8 @@ class Aviyal : IDisposable
 		// old event handlers still setting window attributes
 		server.REQUEST_RECEIVED -= wm.RequestReceived;
 		wm.WINDOW_MANAGER_MESSAGE_SENT -= (message) => server.Broadcast(message);
-		wndListener.WINDOW_ADDED -= wm.WindowAdded;
-		wndListener.WINDOW_REMOVED -= wm.WindowRemoved;
+		wndListener.WINDOW_SHOWN -= wm.WindowShown;
+		wndListener.WINDOW_DESTROYED -= wm.WindowDestroyed;
 		wndListener.WINDOW_MOVED -= wm.WindowMoved;
 		wndListener.WINDOW_MAXIMIZED -= wm.WindowMaximized;
 		wndListener.WINDOW_MINIMIZED -= wm.WindowMinimized;

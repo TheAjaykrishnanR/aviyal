@@ -609,7 +609,7 @@ public class WindowManager : IWindowManager
 	// has all the valid states set, the window instance emmitted by window event
 	// listener gives a blank window that only matches the stateless properties
 	// call this in all event handlers that deal with windows events of windows
-	// that already exist in the workspace so basically every one except WindowAdded
+	// that already exist in the workspace so basically every one except WindowShown
 	Window? GetAlreadyStoredWindow(Window wnd)
 	{
 		return focusedWorkspace?.windows?.FirstOrDefault(_wnd => _wnd == wnd);
@@ -629,7 +629,7 @@ public class WindowManager : IWindowManager
 		{
 			suppressEvents = true;
 			func();
-			Thread.Sleep(100);
+			Thread.Sleep(500);
 			suppressEvents = false;
 		}
 	}
@@ -857,7 +857,7 @@ public class WindowManager : IWindowManager
 	}
 
 	readonly Lock @addLock = new();
-	public void WindowAdded(Window wnd)
+	public void WindowShown(Window wnd)
 	{
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if (suppressEvents) return;
@@ -886,12 +886,29 @@ public class WindowManager : IWindowManager
 		}
 
 		CleanGhostWindows();
-		SaveState($"WindowAdded, wnd: {wnd.title}, exe: {wnd.exe}");
+		SaveState($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
 	}
 
-	public void WindowRemoved(Window wnd)
+	public void WindowHidden(Window wnd)
 	{
-		if (ShouldWindowBeIgnored(wnd)) return;
+		// we shouldn'd filter out by ShouldWindowBeIgnored() and in WindowDestroyed
+		// here because windows that get hidden or destroyed might meet the 
+		// ignorable criteria
+		if (suppressEvents) return;
+		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
+
+		if (focusedWorkspace.windows.Contains(wnd))
+		{
+			focusedWorkspace.Remove(wnd);
+			focusedWorkspace.Update();
+		}
+
+		CleanGhostWindows();
+		SaveState("WindowHidden");
+	}
+
+	public void WindowDestroyed(Window wnd)
+	{
 		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 

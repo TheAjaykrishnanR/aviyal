@@ -60,8 +60,9 @@ public interface IWindowManager
 	public void FocusNextWorkspace() { }
 	public void FocusPreviousWorkspace() { }
 
-	public void WindowAdded(Window wnd);
-	public void WindowRemoved(Window wnd);
+	public void WindowShown(Window wnd);
+	public void WindowHidden(Window wnd);
+	public void WindowDestroyed(Window wnd);
 	public void WindowMoved(Window wnd);
 	public void WindowMaximized(Window wnd);
 	public void WindowMinimized(Window wnd);
