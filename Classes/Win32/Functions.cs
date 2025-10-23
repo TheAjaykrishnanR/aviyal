@@ -218,6 +218,12 @@ public class Kernel32
 	public static extern bool AttachConsole(int processId);
 
 	[DllImport("kernel32.dll", SetLastError = true)]
+	public static extern bool FreeConsole();
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	public static extern nint GetConsoleWindow();
+
+	[DllImport("kernel32.dll", SetLastError = true)]
 	public static extern nint GetModuleHandle(string moduleName);
 
 	[DllImport("kernel32.dll", SetLastError = true)]

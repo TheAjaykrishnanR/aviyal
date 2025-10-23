@@ -235,6 +235,16 @@ class Aviyal : IDisposable
 		});
 	}
 
+	static void WithConsole(Action func)
+	{
+		Kernel32.AttachConsole(-1);
+		Console.Clear();
+		Console.Write("\n");
+		func();
+		Console.WriteLine("Press enter to return...");
+		Kernel32.FreeConsole();
+	}
+
 	static void Main(string[] args)
 	{
 		switch (args.ToList().ElementAtOrDefault(0))
@@ -244,13 +254,18 @@ class Aviyal : IDisposable
 				break;
 			case "--debug":
 				WindowManager.DEBUG = true;
-				Loop();
+				WithConsole(() => Loop());
 				break;
 			case "--version":
-				Console.WriteLine($"Aviyal version: {ver}");
+				WithConsole(() =>
+				{
+					Console.WriteLine($"Aviyal version: {ver}");
+				});
 				break;
 			case "--help":
-				Console.WriteLine(
+				WithConsole(() =>
+				{
+					Console.WriteLine(
 @"
 ,_______________________________,
 |   Aviyal Window Manager |__|__|
@@ -261,13 +276,12 @@ class Aviyal : IDisposable
 |////////////////////////////////
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-Aviyal is a window manager that dynamically tiles your windows, organizes them inside workspaces,
-navigation through keybindings, and more :)
+Aviyal is a window manager that dynamically tiles your windows, organizes them inside workspaces, allows navigation through keybindings, and more :)
 
 aviyal: https://github.com/TheAjaykrishnanR/aviyal
 dflat: https://github.com/TheAjaykrishnanR/dflat
 
-USAGE: aviyal <--options> <--arguments>
+USAGE: aviyal <options> <arguments>
 
 available options:
 
@@ -276,10 +290,14 @@ available options:
 --version:  prints the version
 --restore:  restores windows from a previous state. Useful when crashed and windows are hidden.
 "
-				);
+					);
+				});
 				break;
 			case "--restore":
-				Restore(args.ToList().ElementAtOrDefault(1));
+				WithConsole(() =>
+				{
+					Restore(args.ToList().ElementAtOrDefault(1));
+				});
 				break;
 		}
 	}
