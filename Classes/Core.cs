@@ -347,10 +347,8 @@ public class Workspace : IWorkspace
 	}
 
 	Window? lastFocusedWindow = null;
-	public void Focus()
+	public void SetFocusedWindow()
 	{
-		Update();
-		Show();
 		if (lastFocusedWindow == null)
 		{
 			var wnd = windows?.FirstOrDefault();
@@ -358,8 +356,13 @@ public class Workspace : IWorkspace
 			wnd?.Focus();
 		}
 		else lastFocusedWindow.Focus();
+	}
 
-		//Console.WriteLine($"WORKSPACEFOCUSED, WINDOW: {focusedWindowIndex}");
+	public void Focus()
+	{
+		Update();
+		Show();
+		SetFocusedWindow();
 	}
 
 	public void Hide()
@@ -617,6 +620,7 @@ public class WindowManager : IWindowManager
 				focusedWorkspace.Hide();
 				focusedWorkspace = workspaces[next];
 				focusedWorkspace.Update(); // when animation finishes, margins dont match
+				focusedWorkspace.SetFocusedWindow();
 			}
 
 			else
@@ -652,6 +656,7 @@ public class WindowManager : IWindowManager
 				focusedWorkspace.Hide();
 				focusedWorkspace = workspaces[prev];
 				focusedWorkspace.Update();
+				focusedWorkspace.SetFocusedWindow();
 			}
 			else
 			{

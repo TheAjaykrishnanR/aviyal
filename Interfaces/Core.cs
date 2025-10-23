@@ -40,6 +40,7 @@ public interface IWorkspace
 	public void Show();
 	public void Hide();
 	public void Focus();
+	public void SetFocusedWindow();
 	public void CloseFocusedWindow();
 	public void FocusAdjacentWindow(EDGE direction);
 	public void Move(int? x, int? y);
