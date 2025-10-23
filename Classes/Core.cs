@@ -617,11 +617,17 @@ public class WindowManager : IWindowManager
 
 	public void FocusWorkspace(Workspace wksp)
 	{
-		workspaces.ForEach(wksp => wksp.Hide());
-		wksp.Focus();
-		focusedWorkspace = wksp;
+		SuppressEvents(() =>
+		{
+			workspaces.ForEach(wksp => wksp?.Hide());
+			wksp.Focus();
+			focusedWorkspace = wksp;
+		});
 	}
 
+	// all workspace/window actions must be executed inside this wrapper function
+	// This is to ensure that our own actions dont trigger the window events recursively
+	readonly Lock @addLock = new();
 	bool suppressEvents = false;
 	void SuppressEvents(Action func)
 	{
@@ -636,16 +642,16 @@ public class WindowManager : IWindowManager
 
 	public void FocusNextWorkspace()
 	{
-		SuppressEvents(() =>
+
+		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
+		int prev = focusedWorkspaceIndex > 0 ? focusedWorkspaceIndex - 1 : workspaces.Count - 1;
+
+		if (config.workspaceAnimations)
 		{
-			int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
-			int prev = focusedWorkspaceIndex > 0 ? focusedWorkspaceIndex - 1 : workspaces.Count - 1;
-
-			if (config.workspaceAnimations)
+			// move left
+			(int w, int h) = Utils.GetScreenSize();
+			SuppressEvents(() =>
 			{
-				// move left
-				(int w, int h) = Utils.GetScreenSize();
-
 				workspaces[next].Move(w, null);
 
 				// we call Show() here instead of Focus() because Focus() has a call to Update()
@@ -669,30 +675,28 @@ public class WindowManager : IWindowManager
 				focusedWorkspace.Update(); // when animation finishes, margins dont match
 				focusedWorkspace.Redraw(); // manually redraw
 				focusedWorkspace.SetFocusedWindow();
-			}
-
-			else
-			{
-				FocusWorkspace(workspaces[next]);
-				//Console.WriteLine($"FOCUSING NEXT WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
-			}
-		});
+			});
+		}
+		else
+		{
+			FocusWorkspace(workspaces[next]);
+			//Console.WriteLine($"FOCUSING NEXT WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+		}
 
 		SaveState("FocusNextWorkspace");
 	}
 
 	public void FocusPreviousWorkspace()
 	{
-		SuppressEvents(() =>
+		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
+		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
+
+		if (config.workspaceAnimations)
 		{
-			int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
-			int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
-
-			if (config.workspaceAnimations)
+			// move right
+			(int w, int h) = Utils.GetScreenSize();
+			SuppressEvents(() =>
 			{
-				// move right
-				(int w, int h) = Utils.GetScreenSize();
-
 				workspaces[prev].Move(-w, null);
 				workspaces[prev].Show();
 
@@ -706,34 +710,38 @@ public class WindowManager : IWindowManager
 				focusedWorkspace.Update();
 				focusedWorkspace.Redraw();
 				focusedWorkspace.SetFocusedWindow();
-			}
-			else
-			{
-				FocusWorkspace(workspaces[prev]);
-				//Console.WriteLine($"FOCUSING PREVIOUS WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
-			}
-		});
+			});
+		}
+		else
+		{
+			FocusWorkspace(workspaces[prev]);
+			//Console.WriteLine($"FOCUSING PREVIOUS WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
+		}
 
 		SaveState("FocusPreviousWorkspace");
 	}
 
 	public void ShiftFocusedWindowToWorkspace(int index)
 	{
-		if (index < 0 || index > workspaces.Count - 1) return;
-		Window? wnd = focusedWorkspace.focusedWindow;
-		if (wnd == null) return;
-		focusedWorkspace.Remove(wnd);
-		wnd.workspace = index;
-		workspaces[index].Add(wnd);
-		FocusWorkspace(workspaces[index]);
-		focusedWorkspace = workspaces[index];
-		wnd.Focus();
+		SuppressEvents(() =>
+		{
+			if (index < 0 || index > workspaces.Count - 1) return;
+			Window? wnd = focusedWorkspace.focusedWindow;
+			if (wnd == null) return;
+			focusedWorkspace.Remove(wnd);
+			wnd.workspace = index;
+			workspaces[index].Add(wnd);
+			FocusWorkspace(workspaces[index]);
+			focusedWorkspace = workspaces[index];
+			wnd.Focus();
+		});
+
 	}
 
 	public void ShiftFocusedWindowToNextWorkspace()
 	{
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
-		SuppressEvents(() => ShiftFocusedWindowToWorkspace(next));
+		ShiftFocusedWindowToWorkspace(next);
 
 		SaveState("ShiftWindowToNextWorkspace");
 	}
@@ -741,7 +749,7 @@ public class WindowManager : IWindowManager
 	public void ShiftFocusedWindowToPreviousWorkspace()
 	{
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
-		SuppressEvents(() => ShiftFocusedWindowToWorkspace(prev));
+		ShiftFocusedWindowToWorkspace(prev);
 
 		SaveState("ShiftWindowToPreviousWorkspace");
 	}
@@ -856,7 +864,6 @@ public class WindowManager : IWindowManager
 		wnd.floating = IsWindowInConfigRules(wnd, "floating");
 	}
 
-	readonly Lock @addLock = new();
 	public void WindowShown(Window wnd)
 	{
 		if (ShouldWindowBeIgnored(wnd)) return;
