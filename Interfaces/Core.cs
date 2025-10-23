@@ -25,6 +25,7 @@ public interface IWindow
 	public void Move(RECT pos);
 	public void Move(int? x, int? y);
 	public void Close();
+	public void Redraw();
 }
 
 public interface IWorkspace
@@ -40,6 +41,7 @@ public interface IWorkspace
 	public void Show();
 	public void Hide();
 	public void Focus();
+	public void Redraw();
 	public void SetFocusedWindow();
 	public void CloseFocusedWindow();
 	public void FocusAdjacentWindow(EDGE direction);
