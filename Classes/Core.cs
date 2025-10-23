@@ -772,11 +772,15 @@ public class WindowManager : IWindowManager
 		// all normal top level windows must have either "WS_OVERLAPPED" - OR - "WS_POPUP"
 		// so kick out windows that dont have neither
 		// WS_OVERLAPPED is the default style with which you get a normal window
-		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_OVERLAPPED) &&
+		// since WS_OVERLAPPED = 0x00000000L it must be checked by the absence of both
+		// WS_POPUP and WS_CHILD
+		bool isOverlapped = ((uint)wnd.styles & ((uint)WINDOWSTYLE.WS_POPUP | (uint)WINDOWSTYLE.WS_CHILD)) == 0;
+		if (!isOverlapped &&
 		   !wnd.styles.HasFlag(WINDOWSTYLE.WS_POPUP)
 		) return true;
 
 		if (wnd.exStyles.HasFlag(WINDOWSTYLEEX.WS_EX_TOOLWINDOW)) return true;
+		if (wnd.exStyles.HasFlag(WINDOWSTYLEEX.WS_EX_TOPMOST)) return true;
 
 		if (wnd.className == null || wnd.className == "") return true;
 
