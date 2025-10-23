@@ -42,6 +42,12 @@ public class User32
 	public static extern int RedrawWindow(nint hWnd, nint redrawRect, nint hrgnUpdate, REDRAWWINDOW flags);
 
 	[DllImport("user32.dll", SetLastError = true)]
+	public static extern int UpdateWindow(nint hWnd);
+
+	[DllImport("user32.dll", SetLastError = true)]
+	public static extern int InvalidateRect(nint hWnd, nint lpRect, bool bgErase);
+
+	[DllImport("user32.dll", SetLastError = true)]
 	public static extern nint FindWindowEx(nint hWndParent, nint hWndChildAfter, string className, string windowName);
 
 	[DllImport("user32.dll", SetLastError = true)]

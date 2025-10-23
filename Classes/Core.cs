@@ -250,6 +250,15 @@ public class Window : IWindow
 		User32.SendMessage(this.hWnd, (uint)WINDOWMESSAGE.WM_CLOSE, 0, 0);
 	}
 
+	public void Redraw()
+	{
+		User32.RedrawWindow(this.hWnd, 0, 0,
+			REDRAWWINDOW.INVALIDATE |
+			REDRAWWINDOW.ALLCHILDREN |
+			REDRAWWINDOW.UPDATENOW
+		);
+	}
+
 	public Window(nint hWnd)
 	{
 		this.hWnd = hWnd;
@@ -330,14 +339,24 @@ public class Workspace : IWorkspace
 		.ToList();
 
 		// non floating
-		if (nonFloating.Count == 0) return;
-
 		RECT[] relRects = layout.GetRects(nonFloating.Count);
 		RECT[] rects = layout.ApplyInner(layout.ApplyOuter(relRects.ToArray()));
 		for (int i = 0; i < nonFloating.Count; i++)
 		{
 			nonFloating[i]?.Move(rects[i]);
 			nonFloating[i].relRect = relRects[i];
+		}
+
+		// floating
+		List<Window?> floating = windows
+		.Where(wnd => wnd?.floating == true)
+		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
+		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
+		.ToList();
+
+		for (int i = 0; i < floating.Count; i++)
+		{
+			floating[i].relRect = floating[i].rect;
 		}
 	}
 
@@ -363,6 +382,11 @@ public class Workspace : IWorkspace
 		Update();
 		Show();
 		SetFocusedWindow();
+	}
+
+	public void Redraw()
+	{
+		windows?.ForEach(wnd => wnd?.Redraw());
 	}
 
 	public void Hide()
@@ -620,6 +644,7 @@ public class WindowManager : IWindowManager
 				focusedWorkspace.Hide();
 				focusedWorkspace = workspaces[next];
 				focusedWorkspace.Update(); // when animation finishes, margins dont match
+				focusedWorkspace.Redraw();
 				focusedWorkspace.SetFocusedWindow();
 			}
 
@@ -656,6 +681,7 @@ public class WindowManager : IWindowManager
 				focusedWorkspace.Hide();
 				focusedWorkspace = workspaces[prev];
 				focusedWorkspace.Update();
+				focusedWorkspace.Redraw();
 				focusedWorkspace.SetFocusedWindow();
 			}
 			else
