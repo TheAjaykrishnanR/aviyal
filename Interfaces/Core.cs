@@ -22,8 +22,8 @@ public interface IWindow
 	public void Hide();
 	public void Show();
 	public void Focus();
-	public void Move(RECT pos);
-	public void Move(int? x, int? y);
+	public void Move(RECT pos, bool redraw);
+	public void Move(int? x, int? y, bool redraw);
 	public void Close();
 	public void Redraw();
 }
@@ -45,7 +45,7 @@ public interface IWorkspace
 	public void SetFocusedWindow();
 	public void CloseFocusedWindow();
 	public void FocusAdjacentWindow(EDGE direction);
-	public void Move(int? x, int? y);
+	public void Move(int? x, int? y, bool redraw);
 	public void SwapWindows(Window wnd1, Window wnd2);
 	public Window? GetWindowFromPoint(POINT pt);
 }

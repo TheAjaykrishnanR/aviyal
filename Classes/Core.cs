@@ -169,15 +169,14 @@ public class Window : IWindow
 		User32.SetForegroundWindow(this.hWnd);
 	}
 
-	SETWINDOWPOS moveFlags =
+	const SETWINDOWPOS defaultMoveFlags =
 		SETWINDOWPOS.SWP_NOSENDCHANGING |
 		SETWINDOWPOS.SWP_NOCOPYBITS |
 		SETWINDOWPOS.SWP_ASYNCWINDOWPOS |
 		SETWINDOWPOS.SWP_NOACTIVATE |
-		SETWINDOWPOS.SWP_NOZORDER |
-		SETWINDOWPOS.SWP_NOREDRAW;
+		SETWINDOWPOS.SWP_NOZORDER;
 
-	public void Move(RECT pos)
+	public void Move(RECT pos, bool redraw = true)
 	{
 		// remove frame bounds
 		RECT margin = GetFrameMargin();
@@ -186,22 +185,24 @@ public class Window : IWindow
 		pos.Right -= margin.Right;
 		pos.Bottom -= margin.Bottom;
 
+		SETWINDOWPOS moveFlags = redraw switch
+		{
+			true => defaultMoveFlags,
+			false => defaultMoveFlags | SETWINDOWPOS.SWP_NOREDRAW
+		};
+
 		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, moveFlags);
 	}
 
-	bool RectEqual(RECT a, RECT b)
+	const SETWINDOWPOS slideFlag = defaultMoveFlags | SETWINDOWPOS.SWP_NOSIZE;
+	public void Move(int? x, int? y, bool redraw = true)
 	{
-		return a.Left == b.Left &&
-			a.Top == b.Top &&
-			a.Right == b.Right &&
-			a.Bottom == b.Bottom;
-	}
-
-	public void Move(int? x, int? y)
-	{
-		SETWINDOWPOS slideFlag = moveFlags | SETWINDOWPOS.SWP_NOSIZE;
-
-		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, slideFlag);
+		SETWINDOWPOS moveFlag = redraw switch
+		{
+			true => slideFlag,
+			false => slideFlag | SETWINDOWPOS.SWP_NOREDRAW
+		};
+		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, moveFlag);
 	}
 
 	public void SetBottom()
@@ -236,15 +237,6 @@ public class Window : IWindow
 		};
 	}
 
-	RECT ScaleRect(RECT rect, double scale)
-	{
-		rect.Left = (int)(rect.Left * scale);
-		rect.Top = (int)(rect.Top * scale);
-		rect.Right = (int)(rect.Right * scale);
-		rect.Bottom = (int)(rect.Bottom * scale);
-		return rect;
-	}
-
 	public void Close()
 	{
 		User32.SendMessage(this.hWnd, (uint)WINDOWMESSAGE.WM_CLOSE, 0, 0);
@@ -258,6 +250,23 @@ public class Window : IWindow
 			REDRAWWINDOW.ALLCHILDREN |
 			REDRAWWINDOW.UPDATENOW
 		);
+	}
+
+	RECT ScaleRect(RECT rect, double scale)
+	{
+		rect.Left = (int)(rect.Left * scale);
+		rect.Top = (int)(rect.Top * scale);
+		rect.Right = (int)(rect.Right * scale);
+		rect.Bottom = (int)(rect.Bottom * scale);
+		return rect;
+	}
+
+	bool RectEqual(RECT a, RECT b)
+	{
+		return a.Left == b.Left &&
+			a.Top == b.Top &&
+			a.Right == b.Right &&
+			a.Bottom == b.Bottom;
 	}
 
 	public Window(nint hWnd)
@@ -457,11 +466,11 @@ public class Workspace : IWorkspace
 		};
 	}
 
-	public void Move(int? x, int? y)
+	public void Move(int? x, int? y, bool redraw = true)
 	{
 		windows.ForEach(wnd =>
 		{
-			wnd?.Move(wnd.relRect.Left + x, wnd.relRect.Top + y);
+			wnd?.Move(wnd.relRect.Left + x, wnd.relRect.Top + y, redraw);
 		});
 	}
 
@@ -602,14 +611,12 @@ public class WindowManager : IWindowManager
 		sw.Start();
 		for (int i = 0; i < frames; i++)
 		{
-			wksp.Move(GetX(startX, endX, frames, i), null);
+			wksp.Move(GetX(startX, endX, frames, i), null, redraw: false); // not drawn, so must be manually redrawn once finished
 			int wait = (int)(i * dt - sw.ElapsedMilliseconds);
 			wait = wait < 0 ? 0 : wait;
-			//Console.WriteLine($"{i}. wait: {wait}");
 			await Task.Delay(wait);
 		}
 		sw.Stop();
-		//Console.WriteLine($"total: {sw.ElapsedMilliseconds} ms");
 	}
 
 	public void FocusNextWorkspace()
@@ -645,7 +652,7 @@ public class WindowManager : IWindowManager
 				focusedWorkspace.Hide();
 				focusedWorkspace = workspaces[next];
 				focusedWorkspace.Update(); // when animation finishes, margins dont match
-				focusedWorkspace.Redraw();
+				focusedWorkspace.Redraw(); // manually redraw
 				focusedWorkspace.SetFocusedWindow();
 			}
 
