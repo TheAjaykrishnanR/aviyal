@@ -1,4 +1,5 @@
 bin/
+obj/
 *.exe
 *.dll
 *.obj
