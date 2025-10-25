@@ -1,8 +1,3 @@
-/*
-	MIT License
-    Copyright (c) 2025 Ajaykrishnan R	
-*/
-
 using System;
 using System.Text.Json.Nodes;
 using System.Collections.Generic;

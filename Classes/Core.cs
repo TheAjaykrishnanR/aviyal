@@ -540,9 +540,7 @@ public class WindowManager : IWindowManager
 			return index;
 		}
 	}
-	public int WORKSPACES = 9;
 
-	//Server server = new();
 	Config config;
 	public static bool DEBUG = false;
 	public WindowManager(Config config)
@@ -570,7 +568,7 @@ public class WindowManager : IWindowManager
 		}
 		//initWindows.ForEach(wnd => //Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
-		for (int i = 0; i < WORKSPACES; i++)
+		for (int i = 0; i < this.config.workspaces; i++)
 		{
 			Workspace wksp = new(config);
 			wksp.layout = new Dwindle(config);

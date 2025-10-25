@@ -58,7 +58,3 @@ You can find the executable at `bin\Debug\net*\win-x64`
 ## Contributing
 
 PRs welcome !
-
-## License
-
-This project is free to use, modify and distribute according to the MIT License.
