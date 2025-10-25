@@ -633,7 +633,7 @@ public class WindowManager : IWindowManager
 		{
 			suppressEvents = true;
 			func();
-			Thread.Sleep(500);
+			Thread.Sleep(1000);
 			suppressEvents = false;
 		}
 	}
@@ -663,10 +663,9 @@ public class WindowManager : IWindowManager
 				//Thread.Sleep(100);
 				workspaces[next].Show();
 
-				int duration = 500;
 				List<Task> _ts = new();
-				_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, 0, -w, duration)));
-				_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[next], w, 0, duration)));
+				_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, 0, -w, config.workspaceAnimationsDuration)));
+				_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[next], w, 0, config.workspaceAnimationsDuration)));
 				Task.WhenAll(_ts).Wait();
 				focusedWorkspace.Hide();
 				focusedWorkspace = workspaces[next];
@@ -700,8 +699,8 @@ public class WindowManager : IWindowManager
 
 				int duration = 500;
 				List<Task> _ts = new();
-				_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, 0, w, duration)));
-				_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[prev], -w, 0, duration)));
+				_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, 0, w, config.workspaceAnimationsDuration)));
+				_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[prev], -w, 0, config.workspaceAnimationsDuration)));
 				Task.WhenAll(_ts).Wait();
 				focusedWorkspace.Hide();
 				focusedWorkspace = workspaces[prev];

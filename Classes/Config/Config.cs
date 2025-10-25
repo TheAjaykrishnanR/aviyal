@@ -17,6 +17,7 @@ public class Config : IJson<Config>
 	public int workspaces { get; set; } = 9;
 	public string floatingWindowSize { get; set; } = "800x400";
 	public bool workspaceAnimations = false;
+	public int workspaceAnimationsDuration = 500; // milliseconds
 	public int serverPort = 6969;
 
 	public List<WindowRule> rules = new();
@@ -66,6 +67,7 @@ public class Config : IJson<Config>
 			["inner"] = inner,
 			["workspaces"] = workspaces,
 			["workspaceAnimations"] = workspaceAnimations.ToString(),
+			["workspaceAnimationsDuration"] = workspaceAnimationsDuration.ToString(),
 			["floatingWindowSize"] = floatingWindowSize,
 			["serverPort"] = serverPort,
 			["rules"] = new JsonArray(
@@ -113,6 +115,8 @@ public class Config : IJson<Config>
 			"true" => true,
 			"false" => false
 		};
+		config.workspaceAnimationsDuration =
+			Convert.ToInt32(node["workspaceAnimationsDuration"].ToString());
 		config.floatingWindowSize = node["floatingWindowSize"].ToString();
 		config.serverPort = Convert.ToInt32(node["serverPort"].ToString());
 
