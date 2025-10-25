@@ -425,6 +425,7 @@ public class Workspace : IWorkspace
 		windows.ForEach(wnd =>
 		{
 			wnd?.Move(wnd.relRect.Left + x, wnd.relRect.Top + y, redraw);
+			Console.WriteLine($"move: {wnd.title} x: {wnd.rect.Left}, y: {wnd.rect.Top}");
 		});
 	}
 
@@ -633,7 +634,7 @@ public class WindowManager : IWindowManager
 		{
 			suppressEvents = true;
 			func();
-			Thread.Sleep(1000);
+			Thread.Sleep(500);
 			suppressEvents = false;
 		}
 	}
@@ -646,11 +647,18 @@ public class WindowManager : IWindowManager
 
 		if (config.workspaceAnimations)
 		{
-			// move left
+			// slide windows left -> if horizontal
+			// slide windows up -> if vertical
 			(int w, int h) = Utils.GetScreenSize();
 			SuppressEvents(() =>
 			{
-				workspaces[next].Move(w, null);
+				if (config.workspaceAnimationsDirection == "horizontal")
+					workspaces[next]?.Move(w, null);
+				else if (config.workspaceAnimationsDirection == "vertical")
+				{
+					Console.WriteLine($"next workspace set down at h: {h}");
+					workspaces[next]?.Move(null, h);
+				}
 
 				// we call Show() here instead of Focus() because Focus() has a call to Update()
 				// if we Update() our Workspace then all the windows will be set to their
@@ -661,22 +669,31 @@ public class WindowManager : IWindowManager
 				// takes it out of screen as part of the animation start position which is also
 				// beyond the screen.
 				//Thread.Sleep(100);
-				workspaces[next].Show();
+				workspaces[next]?.Show();
 
 				List<Task> _ts = new();
-				_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, 0, -w, config.workspaceAnimationsDuration)));
-				_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[next], w, 0, config.workspaceAnimationsDuration)));
+				if (config.workspaceAnimationsDirection == "horizontal")
+				{
+					_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, "horizontal", 0, -w, config.workspaceAnimationsDuration)));
+					_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[next]!, "horizontal", w, 0, config.workspaceAnimationsDuration)));
+				}
+				else if (config.workspaceAnimationsDirection == "vertical")
+				{
+					_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, "vertical", 0, -h, config.workspaceAnimationsDuration)));
+					_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[next]!, "vertical", h, 0, config.workspaceAnimationsDuration)));
+				}
+
 				Task.WhenAll(_ts).Wait();
 				focusedWorkspace.Hide();
-				focusedWorkspace = workspaces[next];
-				focusedWorkspace.Update(); // when animation finishes, margins dont match
-				focusedWorkspace.Redraw(); // manually redraw
-				focusedWorkspace.SetFocusedWindow();
+				focusedWorkspace = workspaces[next]!;
+				focusedWorkspace?.Update(); // when animation finishes, margins dont match
+				focusedWorkspace?.Redraw(); // manually redraw
+				focusedWorkspace?.SetFocusedWindow();
 			});
 		}
 		else
 		{
-			FocusWorkspace(workspaces[next]);
+			FocusWorkspace(workspaces[next]!);
 			//Console.WriteLine($"FOCUSING NEXT WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		}
 
@@ -691,22 +708,35 @@ public class WindowManager : IWindowManager
 		if (config.workspaceAnimations)
 		{
 			// move right
+			// move down
 			(int w, int h) = Utils.GetScreenSize();
 			SuppressEvents(() =>
 			{
-				workspaces[prev].Move(-w, null);
-				workspaces[prev].Show();
+				if (config.workspaceAnimationsDirection == "horizontal")
+					workspaces[prev]?.Move(-w, null);
+				else if (config.workspaceAnimationsDirection == "vertical")
+					workspaces[prev]?.Move(null, -h);
 
-				int duration = 500;
+				workspaces[prev]?.Show();
+
 				List<Task> _ts = new();
-				_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, 0, w, config.workspaceAnimationsDuration)));
-				_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[prev], -w, 0, config.workspaceAnimationsDuration)));
+				if (config.workspaceAnimationsDirection == "horizontal")
+				{
+					_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, "horizontal", 0, w, config.workspaceAnimationsDuration)));
+					_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[prev]!, "horizontal", -w, 0, config.workspaceAnimationsDuration)));
+				}
+				else if (config.workspaceAnimationsDirection == "vertical")
+				{
+					_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, "vertical", 0, h, config.workspaceAnimationsDuration)));
+					_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[prev]!, "vertical", -h, 0, config.workspaceAnimationsDuration)));
+				}
+
 				Task.WhenAll(_ts).Wait();
 				focusedWorkspace.Hide();
-				focusedWorkspace = workspaces[prev];
-				focusedWorkspace.Update();
-				focusedWorkspace.Redraw();
-				focusedWorkspace.SetFocusedWindow();
+				focusedWorkspace = workspaces[prev]!;
+				focusedWorkspace?.Update();
+				focusedWorkspace?.Redraw();
+				focusedWorkspace?.SetFocusedWindow();
 			});
 		}
 		else
@@ -886,11 +916,11 @@ public class WindowManager : IWindowManager
 			focusedWorkspace.Add(wnd);
 			if (wnd.floating) focusedWorkspace.MakeFloating(wnd);
 			focusedWorkspace.Update();
-			//Console.WriteLine($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 		}
 
 		CleanGhostWindows();
 		SaveState($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
+		Logger.LogToFile($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowHidden(Window wnd)
@@ -909,6 +939,7 @@ public class WindowManager : IWindowManager
 
 		CleanGhostWindows();
 		SaveState("WindowHidden");
+		Logger.LogToFile($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowDestroyed(Window wnd)
@@ -926,6 +957,7 @@ public class WindowManager : IWindowManager
 
 		CleanGhostWindows();
 		SaveState("WindowRemoved");
+		Logger.LogToFile($"WindowDestroyed, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	// window handlers must always check window properties of the already stored windows
@@ -953,6 +985,7 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Update();
 		CleanGhostWindows();
 		SaveState("WindowMoved");
+		Logger.LogToFile($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowMaximized(Window wnd)
@@ -966,6 +999,7 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Update();
 		CleanGhostWindows();
 		SaveState("WindowMaximized");
+		Logger.LogToFile($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowMinimized(Window wnd)
@@ -981,6 +1015,7 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Update();
 		CleanGhostWindows();
 		SaveState("WindowMinimized");
+		Logger.LogToFile($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public bool mouseDown { get; set; } = false;
@@ -997,6 +1032,7 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Update();
 		CleanGhostWindows();
 		SaveState($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
+		Logger.LogToFile($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	Workspace? GetWindowWorkspace(Window wnd)
@@ -1015,6 +1051,7 @@ public class WindowManager : IWindowManager
 		focusedWorkspace.Update();
 		CleanGhostWindows();
 		SaveState($"WindowFocused, {wnd.title}");
+		Logger.LogToFile($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public WindowManagerState GetState()
@@ -1090,7 +1127,7 @@ public class WindowManager : IWindowManager
 	}
 
 	// animation related 
-	int GetX(int start, int end, int frames, int frame)
+	int GetCoord(int start, int end, int frames, int frame)
 	{
 		double progress = (double)frame / frames;
 		progress = EaseOutQuint(progress);
@@ -1102,7 +1139,7 @@ public class WindowManager : IWindowManager
 		return 1 - Math.Pow(1 - x, 3);
 	}
 
-	public async Task WorkspaceAnimate(Workspace wksp, int startX, int endX, int duration)
+	public async Task WorkspaceAnimate(Workspace wksp, string direction, int start, int end, int duration)
 	{
 		int fps = 60;
 		int dt = (int)(1000 / fps); // milliseconds
@@ -1112,7 +1149,11 @@ public class WindowManager : IWindowManager
 		sw.Start();
 		for (int i = 0; i < frames; i++)
 		{
-			wksp.Move(GetX(startX, endX, frames, i), null, redraw: false); // not drawn, so must be manually redrawn once finished
+			if (direction == "horizontal")
+				wksp.Move(GetCoord(start, end, frames, i), null, redraw: false);
+			else if (direction == "vertical")
+				wksp.Move(null, GetCoord(start, end, frames, i), redraw: false);
+
 			int wait = (int)(i * dt - sw.ElapsedMilliseconds);
 			wait = wait < 0 ? 0 : wait;
 			await Task.Delay(wait);

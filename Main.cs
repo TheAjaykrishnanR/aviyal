@@ -82,13 +82,13 @@ class Aviyal : IDisposable
 		currentDomain.UnhandledException += (s, e) =>
 		{
 			int i = 0;
-			wm.workspaces.ForEach(wksp => wksp.windows.ForEach(wnd => { wnd?.Show(); i++; }));
+			wm.workspaces.ForEach(wksp => wksp?.windows.ForEach(wnd => { wnd?.Show(); i++; }));
 			Console.WriteLine($"Crash: Restored {i} windows...");
 
 			Exception ex = (Exception)e.ExceptionObject;
 			string text = ex.Message + "\n" + ex.StackTrace;
 			Console.WriteLine(text);
-			File.WriteAllText(Paths.errorFile, text);
+			File.WriteAllText(Paths.logFile, text);
 			errored = true;
 		};
 	}

@@ -4,6 +4,7 @@
 */
 
 using System;
+using System.Threading;
 using System.Linq;
 using System.Diagnostics;
 using System.Windows;
@@ -22,6 +23,12 @@ public class Logger
 		if (ex != null) text += $"\n{ex.Message}" + $"\n{ex.StackTrace}" + $"\n{ex?.InnerException?.StackTrace}";
 		if (DEBUG && debug) Debug.WriteLine(text);
 		if (CONSOLE && console) Console.WriteLine(text);
+	}
+
+	private static Lock @writeLock = new();
+	public static void LogToFile(string text)
+	{
+		lock (@writeLock) File.AppendAllText(Paths.logFile, $"{text}\n");
 	}
 
 	public static void Log(List<string> array)
