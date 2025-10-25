@@ -2,7 +2,8 @@
 
 > Window manager for windows written purely in C# thats simple, lightweight and portable.
 
-![showcase_1](https://github.com/TheAjaykrishnanR/aviyal/blob/master/Imgs/explorer_xBzMGjKIDA.gif)
+<video src="https://github.com/TheAjaykrishnanR/aviyal/blob/master/Imgs/output.mp4"/>
+
 ## Features
 
 1. Workspaces
