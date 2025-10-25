@@ -27,7 +27,7 @@ By default `9` workspaces are initialized.
 ## Configuration
 
 Configuration file `aviyal.json` will be created at first run. You can modify the default settings there,
-including adding new keybindings etc. Look at the example config file [here](https://github.com/TheAjaykrishnanR/aviyal/blob/master/aviyal.json)
+including adding new keybindings etc. Look at the example config file [here](https://github.com/TheAjaykrishnanR/aviyal/blob/master/Src/aviyal.json)
 
 ## Building
 
@@ -45,8 +45,7 @@ You will find the aot compiled executable at `bin\aviyal.exe`
 For development ease, such as LSP a dotnet `csproj` file is also provided which allows language
 support in neovim by roslyn. This allows you to build aviyal just like any other dotnet application.
 
-If thats what you prefer, building it is as simple as
-
+If thats what you prefer, build it as:
 ```
 git clone https://github.com/TheAjaykrishnanR/aviyal
 cd aviyal

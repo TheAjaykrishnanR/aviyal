@@ -1,5 +1,0 @@
-C:\Users\Jayakuttan\dev\aviyal\Tests\obj\Debug\net10.0\aviyal.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\Jayakuttan\dev\aviyal\Tests\obj\Debug\net10.0\aviyal.AssemblyInfoInputs.cache
-C:\Users\Jayakuttan\dev\aviyal\Tests\obj\Debug\net10.0\aviyal.AssemblyInfo.cs
-C:\Users\Jayakuttan\dev\aviyal\Tests\obj\Debug\net10.0\aviyal.csproj.CoreCompileInputs.cache
-C:\Users\Jayakuttan\dev\aviyal\Tests\obj\Debug\net10.0\aviyal.sourcelink.json
