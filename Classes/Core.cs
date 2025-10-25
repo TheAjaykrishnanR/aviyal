@@ -425,7 +425,6 @@ public class Workspace : IWorkspace
 		windows.ForEach(wnd =>
 		{
 			wnd?.Move(wnd.relRect.Left + x, wnd.relRect.Top + y, redraw);
-			Console.WriteLine($"move: {wnd.title} x: {wnd.rect.Left}, y: {wnd.rect.Top}");
 		});
 	}
 

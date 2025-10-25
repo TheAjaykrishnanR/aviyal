@@ -8,6 +8,7 @@
   "workspaces": 9,
   "workspaceAnimations": true,
   "workspaceAnimationsDuration": 500,
+  "workspaceAnimationsDirection": "horizontal",
   "floatingWindowSize": "800x400",
   "serverPort": 6969,
   "rules": 
