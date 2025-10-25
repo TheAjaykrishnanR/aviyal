@@ -194,24 +194,24 @@ public class Window : IWindow
 		pos.Right -= margin.Right;
 		pos.Bottom -= margin.Bottom;
 
-		SETWINDOWPOS moveFlags = redraw switch
+		SETWINDOWPOS flags = redraw switch
 		{
 			true => defaultMoveFlags,
 			false => defaultMoveFlags | SETWINDOWPOS.SWP_NOREDRAW
 		};
 
-		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, moveFlags);
+		User32.SetWindowPos(this.hWnd, 0, pos.Left, pos.Top, pos.Right - pos.Left, pos.Bottom - pos.Top, flags);
 	}
 
 	const SETWINDOWPOS slideFlag = defaultMoveFlags | SETWINDOWPOS.SWP_NOSIZE;
 	public void Move(int? x, int? y, bool redraw = true)
 	{
-		SETWINDOWPOS moveFlag = redraw switch
+		SETWINDOWPOS flags = redraw switch
 		{
 			true => slideFlag,
 			false => slideFlag | SETWINDOWPOS.SWP_NOREDRAW
 		};
-		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, moveFlag);
+		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, flags);
 	}
 
 	public void Close()
@@ -978,7 +978,10 @@ public class WindowManager : IWindowManager
 			User32.GetCursorPos(out POINT pt);
 			Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
 			if (wndUnderCursor == null) return;
-			focusedWorkspace.SwapWindows(wnd, wndUnderCursor);
+			SuppressEvents(() =>
+			{
+				focusedWorkspace.SwapWindows(wnd, wndUnderCursor);
+			});
 		}
 
 		focusedWorkspace.Update();

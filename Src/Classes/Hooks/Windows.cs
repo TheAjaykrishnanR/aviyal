@@ -103,7 +103,11 @@ public class WindowEventsListener : IDisposable
 						}
 						if (state == SHOWWINDOW.SW_SHOWNORMAL)
 						{
-							WINDOW_RESTORED(new Window(hWnd)); // will fire continuously, can gobble events that are supposed to be handled by MOVESIZEEND
+							// To catch window being restored to normal from mazimized state
+							// will fire continuously, can gobble events that are supposed to be handled by MOVESIZEEND
+							// the dt filter is important because we dont want to capture movement here
+							// only the one-off restore action
+							if (dt > 100) WINDOW_RESTORED(new Window(hWnd));
 						}
 						break;
 					case WINEVENT.EVENT_SYSTEM_FOREGROUND:

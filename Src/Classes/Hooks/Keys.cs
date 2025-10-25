@@ -60,13 +60,13 @@ public class KeyEventsListener : IDisposable
 			VK key = (VK)kbdStruct.vkCode;
 			//Console.WriteLine($"START, Key: {key}, {(WINDOWMESSAGE)wparam}");
 			uint dt = kbdStruct.time - lastKeyTime;
-			if (dt > 500) captured.Clear();
+			//if (dt > 500) captured.Clear();
 			letKeyPass = true;
 			switch ((WINDOWMESSAGE)wparam)
 			{
 				case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */:
 					if (!captured.Contains(key)) captured.Add(key);
-					//Log(captured, dt);
+					Log(captured, dt);
 					foreach (Keymap keymap in keymaps)
 					{
 						if (Utils.ListContentEqual<VK>(captured, keymap.keys))
@@ -75,10 +75,11 @@ public class KeyEventsListener : IDisposable
 							//Log(keymap.keys, dt, "HOTKEY_PRESSED");
 							lastKey = key;
 							letKeyPass = false;
-							captured.Clear();
 
+							// we run this in a task because otherwise we wont catch 
+							// the trailing last key and stop it from being sent down.
+							// active windows will receive ^L, ^H keys
 							Task.Run(() => HOTKEY_PRESSED(keymap));
-
 							break;
 						}
 					}
@@ -97,8 +98,7 @@ public class KeyEventsListener : IDisposable
 			//Console.WriteLine($"key: {key}, {(WINDOWMESSAGE)wparam}, pass: {letKeyPass}");
 			//Console.WriteLine($"END, Key: {key}, {(WINDOWMESSAGE)wparam}");
 
-			if (letKeyPass) return CallNextHookEx(0, code, wparam, lparam);
-			return 1; // handled
+			return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
 		}
 	}
 
