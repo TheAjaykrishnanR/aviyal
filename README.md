@@ -2,6 +2,8 @@
 
 > Window manager for windows written purely in C# thats simple, lightweight and portable.
 
+![showcase_1]()
+
 ## Usage
 
 Download the latest release from [releases](https://github.com/TheAjaykrishnanR/aviyal/releases) and run it. 
