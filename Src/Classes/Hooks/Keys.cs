@@ -52,15 +52,9 @@ public class KeyEventsListener : IDisposable
 		lock (@eventLock)
 		{
 			var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
-			if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY)
-			{
-				//Console.WriteLine("FOREGROUND_FAKE_KEY");
-				return 1;
-			}
+			if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY) return 1;
 			VK key = (VK)kbdStruct.vkCode;
-			//Console.WriteLine($"START, Key: {key}, {(WINDOWMESSAGE)wparam}");
 			uint dt = kbdStruct.time - lastKeyTime;
-			//if (dt > 500) captured.Clear();
 			letKeyPass = true;
 			switch ((WINDOWMESSAGE)wparam)
 			{
@@ -71,15 +65,15 @@ public class KeyEventsListener : IDisposable
 					{
 						if (Utils.ListContentEqual<VK>(captured, keymap.keys))
 						{
-							//Log(captured, dt, "HOTKEY_PRESSED");
-							//Log(keymap.keys, dt, "HOTKEY_PRESSED");
 							lastKey = key;
 							letKeyPass = false;
+							captured.Remove(key);
 
 							// we run this in a task because otherwise we wont catch 
 							// the trailing last key and stop it from being sent down.
 							// active windows will receive ^L, ^H keys
 							Task.Run(() => HOTKEY_PRESSED(keymap));
+							//Console.WriteLine("HOTKEY PRESSED");
 							break;
 						}
 					}
