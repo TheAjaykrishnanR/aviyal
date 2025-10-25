@@ -36,7 +36,7 @@ If you have `dflat` in path, building is as simple as:
 
 ```
 git clone https://github.com/TheAjaykrishnanR/aviyal
-cd aviyal
+cd aviyal/Src
 ./Build.ps1
 ```
 
@@ -48,7 +48,7 @@ support in neovim by roslyn. This allows you to build aviyal just like any other
 If thats what you prefer, build it as:
 ```
 git clone https://github.com/TheAjaykrishnanR/aviyal
-cd aviyal
+cd aviyal/Src
 dotnet build
 ```
 
