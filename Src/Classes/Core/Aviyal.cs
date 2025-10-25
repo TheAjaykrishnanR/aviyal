@@ -1146,13 +1146,19 @@ public class WindowManager : IWindowManager
 
 		Stopwatch sw = new();
 		sw.Start();
+
+		Action<int> move = direction switch
+		{
+			"horizontal" => (frame) =>
+				wksp.Move(GetCoord(start, end, frames, frame), null, redraw: false),
+			"vertical" => (frame) =>
+				wksp.Move(null, GetCoord(start, end, frames, frame), redraw: false),
+			_ => (frame) => { }
+		};
+
 		for (int i = 0; i < frames; i++)
 		{
-			if (direction == "horizontal")
-				wksp.Move(GetCoord(start, end, frames, i), null, redraw: false);
-			else if (direction == "vertical")
-				wksp.Move(null, GetCoord(start, end, frames, i), redraw: false);
-
+			move(i);
 			int wait = (int)(i * dt - sw.ElapsedMilliseconds);
 			wait = wait < 0 ? 0 : wait;
 			await Task.Delay(wait);
