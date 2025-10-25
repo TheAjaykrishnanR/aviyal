@@ -2,13 +2,29 @@
 
 > Window manager for windows written purely in C# thats simple, lightweight and portable.
 
-![showcase_1]()
+![showcase_1](https://github.com/TheAjaykrishnanR/aviyal/blob/master/Imgs/explorer_xBzMGjKIDA.gif)
+## Features
+
+1. Workspaces
+2. Workspace animations (Horizontal and vertical)
+3. Dynamic Tiling : `Dwindle`
+4. Toggle floating
+5. Close focused window
+6. Shift focus 
+7. Configuration using json
+8. Hot reloading
+9. Qerry state using websocket and execute commands
+10. Launch apps using hotkeys
 
 ## Usage
 
 Download the latest release from [releases](https://github.com/TheAjaykrishnanR/aviyal/releases) and run it. 
 For live debug output, run from a terminal (`cmd.exe` or `pwsh.exe`).
 
+## Configuration
+
+Configuration file `aviyal.json` will be created at first run. You can modify the default settings there,
+including adding new keybindings etc. Look at the example config file [here](https://github.com/TheAjaykrishnanR/aviyal/blob/master/Src/aviyal.json)
 ## Default keybindings
 
 - `FOCUS NEXT WORKSPACE`: `LCONTROL, LSHIFT, L`
@@ -25,11 +41,6 @@ For live debug output, run from a terminal (`cmd.exe` or `pwsh.exe`).
 - `REFRESH TILING`: `LCONTROL, LSHIFT, U`
 
 By default `9` workspaces are initialized.
-
-## Configuration
-
-Configuration file `aviyal.json` will be created at first run. You can modify the default settings there,
-including adding new keybindings etc. Look at the example config file [here](https://github.com/TheAjaykrishnanR/aviyal/blob/master/Src/aviyal.json)
 
 ## Building
 
