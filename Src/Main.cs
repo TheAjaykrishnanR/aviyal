@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
@@ -126,7 +127,10 @@ class Aviyal : IDisposable
 	}
 
 	public void MouseDown() => wm.mouseDown = true;
-	public void MouseUp() => wm.mouseDown = false;
+	public void MouseUp()
+	{
+		wm.mouseDown = false;
+	}
 
 	public void Exec(List<string> args)
 	{
