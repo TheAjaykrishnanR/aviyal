@@ -47,7 +47,6 @@ public class WindowEventsListener : IDisposable
 	readonly Lock @eventLock = new();
 	uint dt = 0;
 	uint lastTime = 0;
-	uint lastRestored = 0;
 	void winEventProc(
 		nint hWinEventHook,
 		WINEVENT msg,

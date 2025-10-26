@@ -36,7 +36,7 @@ public class KeyEventsListener : IDisposable
 	{
 		string text = $"{prefix}[";
 		keys.ForEach(key => text += $"{key}, ");
-		text += $"], {dt}ms, lasKey: {lastKey}, letKeyPass: {letKeyPass}, key: {key}\n";
+		text += $"], {dt}ms, trailingKey: {trailingKey}, letKeyPass: {letKeyPass}, key: {key}\n";
 		Console.Write(text);
 		File.AppendAllText(Paths.logFile, text);
 	}
@@ -53,8 +53,9 @@ public class KeyEventsListener : IDisposable
 
 	const int FIRE_INTERVAL = 50; // milliseconds
 	uint lastKeyTime = 0;
-	VK? lastKey; // the trailing key of a hotkey action -> H in Ctrl+Shift+H
+	VK? trailingKey; // the trailing key of a hotkey action -> H in Ctrl+Shift+H
 	bool letKeyPass = true;
+	bool hotkeyPressed = false; // if hotkey keys combo are remaining pressed
 	int KeyboardCallback(int code, nint wparam, nint lparam)
 	{
 		var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
@@ -66,28 +67,35 @@ public class KeyEventsListener : IDisposable
 		{
 			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */ :
 				if (!captured.Contains(key)) captured.Add(key);
-				//Log(captured, dt);
+				Log(captured, dt);
 				foreach (Keymap keymap in keymaps)
 				{
 					if (Utils.ListContentEqual<VK>(captured, keymap.keys))
 					{
-						lastKey = key;
+						trailingKey = key;
 						letKeyPass = false;
 						captured.Remove(key);
 
 						// we run this in a task because otherwise the trailing
 						// last key will fly away in the WM_KEYUP and be sent down.
 						// active windows will receive ^L, ^H keys
-						if (dt > FIRE_INTERVAL) Task.Run(() => HOTKEY_PRESSED(keymap));
+						if (!hotkeyPressed)
+						{
+							Console.WriteLine("HOTKEY_PRESSED");
+							Task.Run(() => HOTKEY_PRESSED(keymap));
+						}
+						hotkeyPressed = true;
+
 						break;
 					}
 				}
 				break;
 			case WINDOWMESSAGE.WM_KEYUP or WINDOWMESSAGE.WM_SYSKEYUP:
-				if (key == lastKey)
+				if (key == trailingKey)
 				{
 					letKeyPass = false;
-					lastKey = null;
+					trailingKey = null;
+					hotkeyPressed = false; // hotkey combo released
 				}
 				captured.Remove(key);
 				break;
