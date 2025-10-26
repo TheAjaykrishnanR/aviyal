@@ -41,7 +41,16 @@ public class KeyEventsListener : IDisposable
 		File.AppendAllText(Paths.logFile, text);
 	}
 
-	// for a key that stays pressed windows fire events every ~30 ms
+	/*
+	 * Windows calls our callback everytime a key is pressed or released.
+	 * If the key remains pressed it will continually call our callback 
+	 * every ~30 ms with the WM_KEYDOWN message. If multiple keys remain 
+	 * pressed only the last key that was pressed will continually emit
+	 * WM_KEYDOWN, hence we wont know if the keys before are still being 
+	 * pressed. This is why there is the WM_KEYUP message. Unless a key
+	 * emits the WM_KEYUP we will include it in our capture list.
+	 * */
+
 	const int FIRE_INTERVAL = 50; // milliseconds
 	uint lastKeyTime = 0;
 	VK? lastKey; // the trailing key of a hotkey action -> H in Ctrl+Shift+H
@@ -57,7 +66,7 @@ public class KeyEventsListener : IDisposable
 		{
 			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */ :
 				if (!captured.Contains(key)) captured.Add(key);
-				Log(captured, dt);
+				//Log(captured, dt);
 				foreach (Keymap keymap in keymaps)
 				{
 					if (Utils.ListContentEqual<VK>(captured, keymap.keys))
@@ -84,7 +93,6 @@ public class KeyEventsListener : IDisposable
 				break;
 		}
 		lastKeyTime = kbdStruct.time;
-
 		return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
 	}
 
