@@ -69,8 +69,8 @@ public class KeyEventsListener : IDisposable
 							letKeyPass = false;
 							captured.Remove(key);
 
-							// we run this in a task because otherwise we wont catch 
-							// the trailing last key and stop it from being sent down.
+							// we run this in a task because otherwise the trailing
+							// last key will fly away in the WM_KEYUP and be sent down.
 							// active windows will receive ^L, ^H keys
 							Task.Run(() => HOTKEY_PRESSED(keymap));
 							//Console.WriteLine("HOTKEY PRESSED");

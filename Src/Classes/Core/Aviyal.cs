@@ -626,16 +626,13 @@ public class WindowManager : IWindowManager
 	// all workspace/window actions must be executed inside this wrapper function
 	// This is to ensure that our own actions dont trigger the window events recursively
 	readonly Lock @addLock = new();
-	bool suppressEvents = false;
+	List<Task> wmActions = new();
 	void SuppressEvents(Action func)
 	{
-		lock (@addLock)
-		{
-			suppressEvents = true;
-			func();
-			Thread.Sleep(500);
-			suppressEvents = false;
-		}
+		Task _t = Task.Run(func);
+		wmActions.Add(_t);
+		_t.Wait();
+		wmActions.Remove(_t);
 	}
 
 	public void FocusNextWorkspace()
@@ -892,8 +889,8 @@ public class WindowManager : IWindowManager
 
 	public void WindowShown(Window wnd)
 	{
+		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if (suppressEvents) return;
 		foreach (var wksp in workspaces)
 			if (wksp!.windows.Contains(wnd))
 			{
@@ -914,7 +911,7 @@ public class WindowManager : IWindowManager
 			wnd.workspace = focusedWorkspaceIndex;
 			focusedWorkspace.Add(wnd);
 			if (wnd.floating) focusedWorkspace.MakeFloating(wnd);
-			focusedWorkspace.Update();
+			SuppressEvents(() => focusedWorkspace.Update());
 		}
 
 		CleanGhostWindows();
@@ -927,13 +924,13 @@ public class WindowManager : IWindowManager
 		// we shouldn'd filter out by ShouldWindowBeIgnored() and in WindowDestroyed
 		// here because windows that get hidden or destroyed might meet the 
 		// ignorable criteria
-		if (suppressEvents) return;
+		if (wmActions.Count > 0) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 
 		if (focusedWorkspace.windows.Contains(wnd))
 		{
 			focusedWorkspace.Remove(wnd);
-			focusedWorkspace.Update();
+			SuppressEvents(() => focusedWorkspace.Update());
 		}
 
 		CleanGhostWindows();
@@ -943,7 +940,7 @@ public class WindowManager : IWindowManager
 
 	public void WindowDestroyed(Window wnd)
 	{
-		if (suppressEvents) return;
+		if (wmActions.Count > 0) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 
 		//Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
@@ -951,7 +948,7 @@ public class WindowManager : IWindowManager
 		if (focusedWorkspace.windows.Contains(wnd))
 		{
 			focusedWorkspace.Remove(wnd);
-			focusedWorkspace.Update();
+			SuppressEvents(() => focusedWorkspace.Update());
 		}
 
 		CleanGhostWindows();
@@ -962,8 +959,8 @@ public class WindowManager : IWindowManager
 	// window handlers must always check window properties of the already stored windows
 	public void WindowMoved(Window wnd)
 	{
+		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 
 		//Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
@@ -978,13 +975,10 @@ public class WindowManager : IWindowManager
 			User32.GetCursorPos(out POINT pt);
 			Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
 			if (wndUnderCursor == null) return;
-			SuppressEvents(() =>
-			{
-				focusedWorkspace.SwapWindows(wnd, wndUnderCursor);
-			});
+			SuppressEvents(() => focusedWorkspace.SwapWindows(wnd, wndUnderCursor));
 		}
 
-		focusedWorkspace.Update();
+		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
 		SaveState("WindowMoved");
 		Logger.LogToFile($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
@@ -992,13 +986,13 @@ public class WindowManager : IWindowManager
 
 	public void WindowMaximized(Window wnd)
 	{
+		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 
 		//Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
-		focusedWorkspace.Update();
+		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
 		SaveState("WindowMaximized");
 		Logger.LogToFile($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
@@ -1006,34 +1000,42 @@ public class WindowManager : IWindowManager
 
 	public void WindowMinimized(Window wnd)
 	{
+		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 
 		//Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
 		TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED).Wait();
 
-		focusedWorkspace.Update();
+		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
 		SaveState("WindowMinimized");
 		Logger.LogToFile($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
+	// window unmaximized
 	public bool mouseDown { get; set; } = false;
+	long lastRestoreAction = 0;
 	public void WindowRestored(Window wnd)
 	{
+		// To catch window being restored to normal from mazimized state.
+		// will fire continuously, can gobble events that are supposed to be handled by MOVESIZEEND
+		// the time filter is important because we dont want to capture movement here
+		// only the one-off restore action
 
+		if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - lastRestoreAction < 100) return;
+		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if (suppressEvents) return;
-		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
+		if ((wnd = GetAlreadyStoredWindow(wnd)!) == null) return;
 		if (mouseDown) return;
 
+		lastRestoreAction = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 		//Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
-		focusedWorkspace.Update();
+		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		SaveState($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
+		SaveState($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}, wmActions: {wmActions.Count}");
 		Logger.LogToFile($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
@@ -1044,13 +1046,13 @@ public class WindowManager : IWindowManager
 
 	public void WindowFocused(Window wnd)
 	{
+		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if (suppressEvents) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)!) == null) return;
 
 		//Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
-		focusedWorkspace.Update();
+		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
 		SaveState($"WindowFocused, {wnd.title}");
 		Logger.LogToFile($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");

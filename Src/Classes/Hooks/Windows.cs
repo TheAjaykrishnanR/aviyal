@@ -47,6 +47,7 @@ public class WindowEventsListener : IDisposable
 	readonly Lock @eventLock = new();
 	uint dt = 0;
 	uint lastTime = 0;
+	uint lastRestored = 0;
 	void winEventProc(
 		nint hWinEventHook,
 		WINEVENT msg,
@@ -67,7 +68,7 @@ public class WindowEventsListener : IDisposable
 				dt = dwmsEventTime - lastTime;
 				lastTime = dwmsEventTime;
 
-				//Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, dt: {dt}");
+				Console.WriteLine($"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, dt: {dt}");
 
 				switch (msg)
 				{
@@ -103,11 +104,7 @@ public class WindowEventsListener : IDisposable
 						}
 						if (state == SHOWWINDOW.SW_SHOWNORMAL)
 						{
-							// To catch window being restored to normal from mazimized state
-							// will fire continuously, can gobble events that are supposed to be handled by MOVESIZEEND
-							// the dt filter is important because we dont want to capture movement here
-							// only the one-off restore action
-							if (dt > 100) WINDOW_RESTORED(new Window(hWnd));
+							WINDOW_RESTORED(new Window(hWnd));
 						}
 						break;
 					case WINEVENT.EVENT_SYSTEM_FOREGROUND:
