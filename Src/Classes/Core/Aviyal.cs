@@ -571,7 +571,12 @@ public class WindowManager : IWindowManager
 		for (int i = 0; i < this.config.workspaces; i++)
 		{
 			Workspace wksp = new(config);
-			wksp.layout = new Dwindle(config);
+			switch (config.layout)
+			{
+				case "dwindle":
+					wksp.layout = new Dwindle(config);
+					break;
+			}
 			workspaces.Add(wksp);
 		}
 		// add all windows to 1st workspace
@@ -693,7 +698,7 @@ public class WindowManager : IWindowManager
 			//Console.WriteLine($"FOCUSING NEXT WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		}
 
-		SaveState("FocusNextWorkspace");
+		WM_EVENT("FocusNextWorkspace");
 	}
 
 	public void FocusPreviousWorkspace()
@@ -741,7 +746,7 @@ public class WindowManager : IWindowManager
 			//Console.WriteLine($"FOCUSING PREVIOUS WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		}
 
-		SaveState("FocusPreviousWorkspace");
+		WM_EVENT("FocusPreviousWorkspace");
 	}
 
 	public void ShiftFocusedWindowToWorkspace(int index)
@@ -766,7 +771,7 @@ public class WindowManager : IWindowManager
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 		ShiftFocusedWindowToWorkspace(next);
 
-		SaveState("ShiftWindowToNextWorkspace");
+		WM_EVENT("ShiftWindowToNextWorkspace");
 	}
 
 	public void ShiftFocusedWindowToPreviousWorkspace()
@@ -774,7 +779,7 @@ public class WindowManager : IWindowManager
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
 		ShiftFocusedWindowToWorkspace(prev);
 
-		SaveState("ShiftWindowToPreviousWorkspace");
+		WM_EVENT("ShiftWindowToPreviousWorkspace");
 	}
 
 	bool IsWindowInConfigRules(Window wnd, string ruleType)
@@ -887,6 +892,9 @@ public class WindowManager : IWindowManager
 		wnd.floating = IsWindowInConfigRules(wnd, "floating");
 	}
 
+	public delegate void wmEventHandler(string message);
+	public event wmEventHandler WM_EVENT = (message) => { };
+
 	public void WindowShown(Window wnd)
 	{
 		if (wmActions.Count > 0) return;
@@ -915,7 +923,7 @@ public class WindowManager : IWindowManager
 		}
 
 		CleanGhostWindows();
-		SaveState($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
+		WM_EVENT($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
 		Logger.LogToFile($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
@@ -934,7 +942,7 @@ public class WindowManager : IWindowManager
 		}
 
 		CleanGhostWindows();
-		SaveState("WindowHidden");
+		WM_EVENT("WindowHidden");
 		Logger.LogToFile($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
@@ -952,7 +960,7 @@ public class WindowManager : IWindowManager
 		}
 
 		CleanGhostWindows();
-		SaveState("WindowRemoved");
+		WM_EVENT("WindowRemoved");
 		Logger.LogToFile($"WindowDestroyed, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
@@ -980,7 +988,7 @@ public class WindowManager : IWindowManager
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		SaveState("WindowMoved");
+		WM_EVENT("WindowMoved");
 		Logger.LogToFile($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
@@ -994,7 +1002,7 @@ public class WindowManager : IWindowManager
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		SaveState("WindowMaximized");
+		WM_EVENT("WindowMaximized");
 		Logger.LogToFile($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
@@ -1010,7 +1018,7 @@ public class WindowManager : IWindowManager
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		SaveState("WindowMinimized");
+		WM_EVENT("WindowMinimized");
 		Logger.LogToFile($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
@@ -1035,7 +1043,7 @@ public class WindowManager : IWindowManager
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		SaveState($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}, wmActions: {wmActions.Count}");
+		WM_EVENT($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}, wmActions: {wmActions.Count}");
 		Logger.LogToFile($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
@@ -1054,80 +1062,8 @@ public class WindowManager : IWindowManager
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		SaveState($"WindowFocused, {wnd.title}");
+		WM_EVENT($"WindowFocused, {wnd.title}");
 		Logger.LogToFile($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
-	}
-
-	public WindowManagerState GetState()
-	{
-		WindowManagerState state = new();
-		GetAllWindows().ForEach(wnd => state.windows.Add(wnd!));
-		state.focusedWorkspaceIndex = focusedWorkspaceIndex;
-		state.workspaceCount = workspaces.Count;
-		return state;
-	}
-
-	int stateCounter = 0;
-	readonly Lock @lock = new();
-	public void SaveState(string? lastAction = null)
-	{
-		lock (@lock)
-		{
-			var state = GetState();
-			WINDOW_MANAGER_MESSAGE_SENT(state.ToJson());
-			try
-			{
-				File.WriteAllText(Paths.stateFile, state.ToJson());
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.Message);
-			}
-			Console.WriteLine($"{stateCounter++}. lastAction: {lastAction}\n{state.ToJson()}");
-		}
-	}
-
-	// server event handler
-	public delegate void WindowManagerMessageHandler(string message);
-	public event WindowManagerMessageHandler WINDOW_MANAGER_MESSAGE_SENT = (message) => { };
-
-	public string RequestReceived(string request)
-	{
-		string[] args = request.Split(" ");
-		args[args.Length - 1] = args.Last().Replace("\n", "");
-		//Console.WriteLine($"arg0: {args.FirstOrDefault()}, arg1: {args.ElementAtOrDefault(1)}");
-		string? verb = args.FirstOrDefault();
-		//Console.WriteLine($"verb: {verb}");
-		string response = "";
-		switch (verb)
-		{
-			case null or "":
-				break;
-			case "get":
-				switch (args.ElementAtOrDefault(1))
-				{
-					case null or "":
-						break;
-					case "state":
-						response = GetState().ToJson();
-						break;
-				}
-				break;
-			case "set":
-				switch (args.ElementAtOrDefault(1))
-				{
-					case null or "":
-						break;
-					case "focusedWorkspaceIndex":
-						int index = Convert.ToInt32(args.ElementAtOrDefault(2));
-						if (index >= 0 && index <= workspaces.Count - 1) FocusWorkspace(workspaces[index]);
-						break;
-				}
-				break;
-			default:
-				break;
-		}
-		return response;
 	}
 
 	// animation related 

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,67 +34,58 @@ public class KeyEventsListener : IDisposable
 
 	void Log(List<VK> keys, uint dt = 0, VK? key = null, string prefix = "")
 	{
-		Console.Write($"{prefix}[");
-		keys.ForEach(key => Console.Write($"{key}, "));
-		Console.Write($"], {dt}ms, lasKey: {lastKey}, letKeyPass: {letKeyPass}, key: {key}\n");
+		string text = $"{prefix}[";
+		keys.ForEach(key => text += $"{key}, ");
+		text += $"], {dt}ms, lasKey: {lastKey}, letKeyPass: {letKeyPass}, key: {key}\n";
+		Console.Write(text);
+		File.AppendAllText(Paths.logFile, text);
 	}
 
-	// we use locking because future keys if allowed to go through the callback proc
-	// as it comes before the current key is fully processed will cause unintended
-	// consequences such as clearing the captured collection. However this is not
-	// required for the window events as no such lists exists for that and we can
-	// adopt a fire and forget mechanism for them
-	private readonly Lock @eventLock = new();
+	// for a key that stays pressed windows fire events every ~30 ms
+	const int FIRE_INTERVAL = 50; // milliseconds
 	uint lastKeyTime = 0;
 	VK? lastKey; // the trailing key of a hotkey action -> H in Ctrl+Shift+H
 	bool letKeyPass = true;
 	int KeyboardCallback(int code, nint wparam, nint lparam)
 	{
-		lock (@eventLock)
+		var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
+		if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY) return 1;
+		VK key = (VK)kbdStruct.vkCode;
+		uint dt = kbdStruct.time - lastKeyTime;
+		letKeyPass = true;
+		switch ((WINDOWMESSAGE)wparam)
 		{
-			var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
-			if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY) return 1;
-			VK key = (VK)kbdStruct.vkCode;
-			uint dt = kbdStruct.time - lastKeyTime;
-			letKeyPass = true;
-			switch ((WINDOWMESSAGE)wparam)
-			{
-				case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */:
-					if (!captured.Contains(key)) captured.Add(key);
-					Log(captured, dt);
-					foreach (Keymap keymap in keymaps)
+			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */ :
+				if (!captured.Contains(key)) captured.Add(key);
+				Log(captured, dt);
+				foreach (Keymap keymap in keymaps)
+				{
+					if (Utils.ListContentEqual<VK>(captured, keymap.keys))
 					{
-						if (Utils.ListContentEqual<VK>(captured, keymap.keys))
-						{
-							lastKey = key;
-							letKeyPass = false;
-							captured.Remove(key);
-
-							// we run this in a task because otherwise the trailing
-							// last key will fly away in the WM_KEYUP and be sent down.
-							// active windows will receive ^L, ^H keys
-							Task.Run(() => HOTKEY_PRESSED(keymap));
-							//Console.WriteLine("HOTKEY PRESSED");
-							break;
-						}
-					}
-					break;
-				case WINDOWMESSAGE.WM_KEYUP:
-					if (key == lastKey)
-					{
+						lastKey = key;
 						letKeyPass = false;
-						lastKey = null;
-					}
-					captured.Remove(key);
-					break;
-			}
-			//Console.WriteLine($"KEY: {key}, MSG: {(WINDOWMESSAGE)wparam}");
-			lastKeyTime = kbdStruct.time;
-			//Console.WriteLine($"key: {key}, {(WINDOWMESSAGE)wparam}, pass: {letKeyPass}");
-			//Console.WriteLine($"END, Key: {key}, {(WINDOWMESSAGE)wparam}");
+						captured.Remove(key);
 
-			return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
+						// we run this in a task because otherwise the trailing
+						// last key will fly away in the WM_KEYUP and be sent down.
+						// active windows will receive ^L, ^H keys
+						if (dt > FIRE_INTERVAL) Task.Run(() => HOTKEY_PRESSED(keymap));
+						break;
+					}
+				}
+				break;
+			case WINDOWMESSAGE.WM_KEYUP or WINDOWMESSAGE.WM_SYSKEYUP:
+				if (key == lastKey)
+				{
+					letKeyPass = false;
+					lastKey = null;
+				}
+				captured.Remove(key);
+				break;
 		}
+		lastKeyTime = kbdStruct.time;
+
+		return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
 	}
 
 	nint hhook;
@@ -116,7 +108,7 @@ public class KeyEventsListener : IDisposable
 	public delegate void HotkeyPressedEventHandler(Keymap keymap);
 	public event HotkeyPressedEventHandler HOTKEY_PRESSED = (keymap) => { };
 
-	Thread thread;
+	public Thread thread;
 	public KeyEventsListener(Config config)
 	{
 		this.keymaps = config.keymaps;

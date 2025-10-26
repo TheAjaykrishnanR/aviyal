@@ -44,22 +44,22 @@ class Aviyal : IDisposable
 			{ COMMAND.SHIFT_WINDOW_PREVIOUS_WORKSPACE, () => wm.ShiftFocusedWindowToPreviousWorkspace() },
 			{ COMMAND.TOGGLE_FLOATING_WINDOW, () => wm.focusedWorkspace.ToggleFloating() },
 
-			{ COMMAND.FOCUS_WORKSPACE_1, () => wm.FocusWorkspace(wm.workspaces[0]) },
-			{ COMMAND.FOCUS_WORKSPACE_2, () => wm.FocusWorkspace(wm.workspaces[1]) },
-			{ COMMAND.FOCUS_WORKSPACE_3, () => wm.FocusWorkspace(wm.workspaces[2]) },
-			{ COMMAND.FOCUS_WORKSPACE_4, () => wm.FocusWorkspace(wm.workspaces[3]) },
-			{ COMMAND.FOCUS_WORKSPACE_5, () => wm.FocusWorkspace(wm.workspaces[4]) },
-			{ COMMAND.FOCUS_WORKSPACE_6, () => wm.FocusWorkspace(wm.workspaces[5]) },
-			{ COMMAND.FOCUS_WORKSPACE_7, () => wm.FocusWorkspace(wm.workspaces[6]) },
-			{ COMMAND.FOCUS_WORKSPACE_8, () => wm.FocusWorkspace(wm.workspaces[7]) },
-			{ COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(wm.workspaces[8]) },
+			{ COMMAND.FOCUS_WORKSPACE_1, () => wm.FocusWorkspace(wm.workspaces[0]!) },
+			{ COMMAND.FOCUS_WORKSPACE_2, () => wm.FocusWorkspace(wm.workspaces[1]!) },
+			{ COMMAND.FOCUS_WORKSPACE_3, () => wm.FocusWorkspace(wm.workspaces[2]!) },
+			{ COMMAND.FOCUS_WORKSPACE_4, () => wm.FocusWorkspace(wm.workspaces[3]!) },
+			{ COMMAND.FOCUS_WORKSPACE_5, () => wm.FocusWorkspace(wm.workspaces[4]!) },
+			{ COMMAND.FOCUS_WORKSPACE_6, () => wm.FocusWorkspace(wm.workspaces[5]!) },
+			{ COMMAND.FOCUS_WORKSPACE_7, () => wm.FocusWorkspace(wm.workspaces[6]!) },
+			{ COMMAND.FOCUS_WORKSPACE_8, () => wm.FocusWorkspace(wm.workspaces[7]!) },
+			{ COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(wm.workspaces[8]!) },
 
 			{ COMMAND.RESTART, () => Restart() },
 			{ COMMAND.UPDATE, () => wm.focusedWorkspace.Update() },
 		};
 
-		server.REQUEST_RECEIVED += wm.RequestReceived;
-		wm.WINDOW_MANAGER_MESSAGE_SENT += (message) => server.Broadcast(message);
+		wm.WM_EVENT += WmEventHandler;
+		server.REQUEST_RECEIVED += RequestReceived;
 		// in order to recieve window events for windows that
 		// already exists while the application is run
 		//wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
@@ -100,8 +100,8 @@ class Aviyal : IDisposable
 		// found out the hard way when couldnt figure out why previous instance
 		// configuration persisted onto the next. Turns out it was one of these
 		// old event handlers still setting window attributes
-		server.REQUEST_RECEIVED -= wm.RequestReceived;
-		wm.WINDOW_MANAGER_MESSAGE_SENT -= (message) => server.Broadcast(message);
+		wm.WM_EVENT -= WmEventHandler;
+		server.REQUEST_RECEIVED -= RequestReceived;
 		wndListener.WINDOW_SHOWN -= wm.WindowShown;
 		wndListener.WINDOW_DESTROYED -= wm.WindowDestroyed;
 		wndListener.WINDOW_MOVED -= wm.WindowMoved;
@@ -119,6 +119,8 @@ class Aviyal : IDisposable
 		mouseListener.Dispose();
 	}
 
+	public void WmEventHandler(string message) => SaveState(message);
+
 	public void HotkeyPressed(Keymap keymap)
 	{
 		Console.WriteLine($"Hotekey Pressed: {keymap.command}");
@@ -127,9 +129,76 @@ class Aviyal : IDisposable
 	}
 
 	public void MouseDown() => wm.mouseDown = true;
-	public void MouseUp()
+	public void MouseUp() => wm.mouseDown = false;
+
+	// server request received
+	public string RequestReceived(string request)
 	{
-		wm.mouseDown = false;
+		string[] args = request.Split(" ");
+		args[args.Length - 1] = args.Last().Replace("\n", "");
+		string? verb = args.FirstOrDefault();
+		string response = "";
+		switch (verb)
+		{
+			case null or "":
+				break;
+			case "get":
+				switch (args.ElementAtOrDefault(1))
+				{
+					case null or "":
+						break;
+					case "state":
+						response = GetState().ToJson();
+						break;
+				}
+				break;
+			case "set":
+				switch (args.ElementAtOrDefault(1))
+				{
+					case null or "":
+						break;
+					case "focusedWorkspaceIndex":
+						int index = Convert.ToInt32(args.ElementAtOrDefault(2));
+						if (index >= 0 && index <= wm.workspaces.Count - 1) wm.FocusWorkspace(wm.workspaces[index]);
+						break;
+				}
+				break;
+			default:
+				break;
+		}
+		return response;
+	}
+
+	public ProgramState GetState()
+	{
+		ProgramState state = new();
+		wm.GetAllWindows().ForEach(wnd => state.windows.Add(wnd!));
+		state.focusedWorkspaceIndex = wm.focusedWorkspaceIndex;
+		state.workspaceCount = wm.workspaces.Count;
+		state.keysHookThreadState = kbdListener.thread.ThreadState.ToString();
+		state.mouseHookThreadState = mouseListener.thread.ThreadState.ToString();
+		state.wndHookThreadState = wndListener.thread.ThreadState.ToString();
+		return state;
+	}
+
+	int stateCounter = 0;
+	readonly Lock @lock = new();
+	public void SaveState(string? lastAction = null)
+	{
+		lock (@lock)
+		{
+			var state = GetState();
+			server.Broadcast(state.ToJson());
+			try
+			{
+				File.WriteAllText(Paths.stateFile, state.ToJson());
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+			}
+			Console.WriteLine($"{stateCounter++}. lastAction: {lastAction}\n{state.ToJson()}");
+		}
 	}
 
 	public void Exec(List<string> args)
@@ -150,6 +219,10 @@ class Aviyal : IDisposable
 			Console.WriteLine(string.Join(", ", args));
 		}
 	}
+
+	/* 
+	 *
+	 * */
 
 	static void Run()
 	{
@@ -225,7 +298,7 @@ class Aviyal : IDisposable
 			Console.WriteLine($"State file: {restoreFile} not found!");
 			return;
 		}
-		WindowManagerState state = WindowManagerState.FromJson(File.ReadAllText(restoreFile));
+		ProgramState state = ProgramState.FromJson(File.ReadAllText(restoreFile));
 		Console.WriteLine($"Found {state.windows.Count} windows in {restoreFile}");
 		state.windows.ForEach(wnd =>
 		{

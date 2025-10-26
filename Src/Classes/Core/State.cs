@@ -7,11 +7,14 @@ using System.IO;
 using System.Text.Json.Nodes;
 using System.Collections.Generic;
 
-public class WindowManagerState : IJson<WindowManagerState>
+public class ProgramState : IJson<ProgramState>
 {
 	public List<Window> windows = new();
 	public int focusedWorkspaceIndex;
 	public int workspaceCount;
+	public string? keysHookThreadState;
+	public string? mouseHookThreadState;
+	public string? wndHookThreadState;
 
 	public string ToJson()
 	{
@@ -37,13 +40,16 @@ public class WindowManagerState : IJson<WindowManagerState>
 			),
 			["focusedWorkspaceIndex"] = focusedWorkspaceIndex.ToString(),
 			["workspaceCount"] = workspaceCount.ToString(),
+			["keysHookThreadState"] = keysHookThreadState?.ToString(),
+			["mouseHookThreadState"] = mouseHookThreadState?.ToString(),
+			["wndHookThreadState"] = wndHookThreadState?.ToString(),
 		};
 		return j.ToString();
 	}
 
-	public static WindowManagerState FromJson(string json)
+	public static ProgramState FromJson(string json)
 	{
-		WindowManagerState state = new();
+		ProgramState state = new();
 		JsonNode? node = JsonNode.Parse(json);
 		JsonArray? _arr = node?["windows"]?.AsArray();
 		_arr?.ToList().ForEach(

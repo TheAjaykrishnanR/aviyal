@@ -68,7 +68,7 @@ public class MouseEventsListener : IDisposable
 	public event MouseEventHandler MOUSE_DOWN = () => { };
 	public event MouseEventHandler MOUSE_UP = () => { };
 
-	Thread thread;
+	public Thread thread;
 	public MouseEventsListener()
 	{
 		thread = new(Loop);
