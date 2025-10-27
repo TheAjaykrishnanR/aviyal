@@ -51,22 +51,29 @@ public class KeyEventsListener : IDisposable
 	 * emits the WM_KEYUP we will include it in our capture list.
 	 * */
 
-	const int FIRE_INTERVAL = 50; // milliseconds
 	uint lastKeyTime = 0;
 	VK? trailingKey; // the trailing key of a hotkey action -> H in Ctrl+Shift+H
 	bool letKeyPass = true;
 	bool hotkeyPressed = false; // if hotkey keys combo are remaining pressed
+	uint dt = 0;
 	int KeyboardCallback(int code, nint wparam, nint lparam)
 	{
 		var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
 		if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY) return 1;
 		VK key = (VK)kbdStruct.vkCode;
-		uint dt = kbdStruct.time - lastKeyTime;
+		dt = kbdStruct.time - lastKeyTime;
+		// if in the offchance that a key is added to the capture list which does
+		// not remove itself because it doesnt emit the WM_KEYUP message thereby
+		// essentially polluting our hotkey buffer making it impossible for any hotkey
+		// to be triggered, so we clear our buffer if the last key was pressed 10 seconds
+		// ago. This is a reasonable time as no hotkey combo will span a whole 10 seconds.
+		if (dt > 10000) captured.Clear();
 		letKeyPass = true;
 		switch ((WINDOWMESSAGE)wparam)
 		{
 			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */ :
-				if (!captured.Contains(key)) captured.Add(key);
+				if (!captured.Contains(key) && key != 0)
+					captured.Add(key);
 				Log(captured, dt);
 				foreach (Keymap keymap in keymaps)
 				{
