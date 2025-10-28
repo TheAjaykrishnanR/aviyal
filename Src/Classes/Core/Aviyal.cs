@@ -620,6 +620,7 @@ public class WindowManager : IWindowManager
 
 	public void FocusWorkspace(Workspace wksp)
 	{
+		if (wmActions.Count > 0) return;
 		SuppressEvents(() =>
 		{
 			workspaces.ForEach(wksp => wksp?.Hide());
@@ -628,8 +629,13 @@ public class WindowManager : IWindowManager
 		});
 	}
 
-	// all workspace/window actions must be executed inside this wrapper function
-	// This is to ensure that our own actions dont trigger the window events recursively
+	/* all workspace/window actions must be executed inside this wrapper function
+	 * This is to ensure that our own actions dont trigger the window events recursively
+	 * and also to ensure that a new action isn't executed while an old one is going on.
+	 * All funcs executed through supress events must check if any wmActions are running
+	 * and should return if so. Basically any method using this should check for wmActions
+	 * as its prefix.
+	 * */
 	readonly Lock @addLock = new();
 	List<Task> wmActions = new();
 	void SuppressEvents(Action func)
@@ -642,6 +648,7 @@ public class WindowManager : IWindowManager
 
 	public void FocusNextWorkspace()
 	{
+		if (wmActions.Count > 0) return;
 
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 		int prev = focusedWorkspaceIndex > 0 ? focusedWorkspaceIndex - 1 : workspaces.Count - 1;
@@ -661,15 +668,15 @@ public class WindowManager : IWindowManager
 					workspaces[next]?.Move(null, h);
 				}
 
-				// we call Show() here instead of Focus() because Focus() has a call to Update()
-				// if we Update() our Workspace then all the windows will be set to their
-				// appropriate relRect effectively reversing Move(w, null). Hence as a result
-				// you will see a flash of the next/prev workspace before it appears sliding.
-				// So whats exactly going on ? Move(w, null) moves your workspace out of screen,
-				// Focus() brings it back using Update() and Shows it until WorkspaceAnimate()
-				// takes it out of screen as part of the animation start position which is also
-				// beyond the screen.
-				//Thread.Sleep(100);
+				/* we call Show() here instead of Focus() because Focus() has a call to Update()
+				 * if we Update() our Workspace then all the windows will be set to their
+				 * appropriate relRect effectively reversing Move(w, null). Hence as a result
+				 * you will see a flash of the next/prev workspace before it appears sliding.
+				 * So whats exactly going on ? Move(w, null) moves your workspace out of screen,
+				 * Focus() brings it back using Update() and Shows it until WorkspaceAnimate()
+				 * takes it out of screen as part of the animation start position which is also
+				 * beyond the screen.
+				 * */
 				workspaces[next]?.Show();
 
 				List<Task> _ts = new();
@@ -703,6 +710,8 @@ public class WindowManager : IWindowManager
 
 	public void FocusPreviousWorkspace()
 	{
+		if (wmActions.Count > 0) return;
+
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
 
@@ -742,7 +751,7 @@ public class WindowManager : IWindowManager
 		}
 		else
 		{
-			FocusWorkspace(workspaces[prev]);
+			FocusWorkspace(workspaces[prev]!);
 			//Console.WriteLine($"FOCUSING PREVIOUS WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		}
 
@@ -751,6 +760,7 @@ public class WindowManager : IWindowManager
 
 	public void ShiftFocusedWindowToWorkspace(int index)
 	{
+		if (wmActions.Count > 0) return;
 		SuppressEvents(() =>
 		{
 			if (index < 0 || index > workspaces.Count - 1) return;
@@ -758,9 +768,9 @@ public class WindowManager : IWindowManager
 			if (wnd == null) return;
 			focusedWorkspace.Remove(wnd);
 			wnd.workspace = index;
-			workspaces[index].Add(wnd);
-			FocusWorkspace(workspaces[index]);
-			focusedWorkspace = workspaces[index];
+			workspaces[index]?.Add(wnd);
+			FocusWorkspace(workspaces[index]!);
+			focusedWorkspace = workspaces[index]!;
 			wnd.Focus();
 		});
 
@@ -815,11 +825,12 @@ public class WindowManager : IWindowManager
 		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_VISIBLE)) return true;
 		if (wnd.styles.HasFlag(WINDOWSTYLE.WS_CHILD)) return true;
 
-		// all normal top level windows must have either "WS_OVERLAPPED" - OR - "WS_POPUP"
-		// so kick out windows that dont have neither
-		// WS_OVERLAPPED is the default style with which you get a normal window
-		// since WS_OVERLAPPED = 0x00000000L it must be checked by the absence of both
-		// WS_POPUP and WS_CHILD
+		/* all normal top level windows must have either "WS_OVERLAPPED" - OR - "WS_POPUP"
+		 * so kick out windows that dont have neither
+		 * WS_OVERLAPPED is the default style with which you get a normal window
+		 * since WS_OVERLAPPED = 0x00000000L it must be checked by the absence of both
+		 * WS_POPUP and WS_CHILD
+		 * */
 		bool isOverlapped = ((uint)wnd.styles & ((uint)WINDOWSTYLE.WS_POPUP | (uint)WINDOWSTYLE.WS_CHILD)) == 0;
 		if (!isOverlapped &&
 		   !wnd.styles.HasFlag(WINDOWSTYLE.WS_POPUP)
@@ -869,11 +880,13 @@ public class WindowManager : IWindowManager
 		lock (@addLock)
 		{
 			var visibleWindows = GetVisibleWindows();
-			// visible windows will give all alt-tab programs, even tool windows
-			// which we dont need and for whom winevents would typically not fire.
-			// That is why whe have an '>' instead of an '!='
-			// The reason we are doing all this is that for some windows such as
-			// the file explorer, win events wont fire an OBJECT_SHOW when closing
+
+			/* visible windows will give all alt-tab programs, even tool windows
+			 * which we dont need and for whom winevents would typically not fire.
+			 * That is why whe have an '>' instead of an '!='
+			 * The reason we are doing all this is that for some windows such as
+			 * the file explorer, win events wont fire an OBJECT_SHOW when closing
+			 * */
 			if (focusedWorkspace.windows.Count > visibleWindows.Count)
 			{
 				var ghostWindows = focusedWorkspace.windows.Where(wnd => !visibleWindows.Contains(wnd)).ToList();
@@ -924,7 +937,7 @@ public class WindowManager : IWindowManager
 
 		CleanGhostWindows();
 		WM_EVENT($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
-		Logger.LogToFile($"WindowAdded, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		Logger.LogToFile($"WindowShown, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowHidden(Window wnd)
@@ -964,12 +977,35 @@ public class WindowManager : IWindowManager
 		Logger.LogToFile($"WindowDestroyed, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
+
+	/* This is the best way to capture windows that have been missed by WindowShown(),
+	 * and by missed I mean those windows which upon arriving at WindowShown were
+	 * rejected by ShouldWindowBeIgnored() for whatever reason. It is possible for
+	 * certain windows to appear ignorable for a while (especially at launching) 
+	 * to then be a normal window that should be included. A window could become normal
+	 * by a lot of means such as EVENT_OBJECT_NAMECHANGE or something and could be handled
+	 * that way but this is better because if one were to call AddToStoreIfMissed() on
+	 * events that only fire on "real windows" such as WindowMoved, WindowFocused, 
+	 * WindowRestored, WindowMin and Max, then we'll add the window there.
+	 * */
+
+	public Window? AddToStoreIfMissed(Window _wnd)
+	{
+		Window? wnd;
+		if ((wnd = GetAlreadyStoredWindow(_wnd)!) == null)
+		{
+			WindowShown(_wnd!);
+			wnd = GetAlreadyStoredWindow(wnd!)!;
+		}
+		return wnd;
+	}
+
 	// window handlers must always check window properties of the already stored windows
 	public void WindowMoved(Window wnd)
 	{
 		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
+		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
 		//Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
@@ -996,7 +1032,8 @@ public class WindowManager : IWindowManager
 	{
 		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
+		if ((wnd = AddToStoreIfMissed(wnd)!) == null) ;
+
 
 		//Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
@@ -1010,7 +1047,7 @@ public class WindowManager : IWindowManager
 	{
 		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
+		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
 		//Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
@@ -1035,7 +1072,7 @@ public class WindowManager : IWindowManager
 		if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - lastRestoreAction < 100) return;
 		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if ((wnd = GetAlreadyStoredWindow(wnd)!) == null) return;
+		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 		if (mouseDown) return;
 
 		lastRestoreAction = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -1056,7 +1093,7 @@ public class WindowManager : IWindowManager
 	{
 		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if ((wnd = GetAlreadyStoredWindow(wnd)!) == null) return;
+		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
 		//Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 

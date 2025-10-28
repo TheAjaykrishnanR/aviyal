@@ -102,25 +102,9 @@
     {
       "keys": [
         "LCONTROL",
-        "K"
-      ],
-      "command": "FOCUS_TOP_WINDOW",
-      "arguments": []
-    },
-    {
-      "keys": [
-        "LCONTROL",
         "L"
       ],
       "command": "FOCUS_RIGHT_WINDOW",
-      "arguments": []
-    },
-    {
-      "keys": [
-        "LCONTROL",
-        "J"
-      ],
-      "command": "FOCUS_BOTTOM_WINDOW",
       "arguments": []
     },
     {
