@@ -1032,7 +1032,7 @@ public class WindowManager : IWindowManager
 	{
 		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
-		if ((wnd = AddToStoreIfMissed(wnd)!) == null) ;
+		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
 
 		//Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
