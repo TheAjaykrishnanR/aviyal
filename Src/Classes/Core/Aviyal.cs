@@ -243,22 +243,17 @@ public class Window : IWindow, IMoveable
 	{
 		int attr = 0;
 		if (!flag) attr = 1;
-		int res = Dwmapi.DwmSetWindowAttribute(this.hWnd, DWMWINDOWATTRIBUTE.DWMWA_TRANSITIONS_FORCEDISABLED, ref attr, sizeof(int));
-		////Console.WriteLine($"ToggleAnimation(): {res}");
+		Dwmapi.DwmSetWindowAttribute(this.hWnd, DWMWINDOWATTRIBUTE.DWMWA_TRANSITIONS_FORCEDISABLED, ref attr, sizeof(int));
 	}
 
 	public RECT GetFrameMargin()
 	{
 		User32.GetWindowRect(this.hWnd, out RECT rect);
-		//Console.WriteLine($"GWR [L: {rect.Left} R: {rect.Right} T: {rect.Top} B:{rect.Bottom}]");
 		int size = Marshal.SizeOf<RECT>();
 		nint rectPtr = Marshal.AllocHGlobal(size);
 		Dwmapi.DwmGetWindowAttribute(this.hWnd, (uint)DWMWINDOWATTRIBUTE.DWMWA_EXTENDED_FRAME_BOUNDS, rectPtr, (uint)size);
 		RECT rect2 = Marshal.PtrToStructure<RECT>(rectPtr);
 		Marshal.FreeHGlobal(rectPtr);
-		//Console.WriteLine($"DWM [L: {rect2.Left} R: {rect2.Right} T: {rect2.Top} B:{rect2.Bottom}]");
-		// scale dwm rect2 to take into account display scaling
-		double scale = Utils.GetDisplayScaling();
 
 		return new RECT()
 		{
@@ -361,8 +356,6 @@ public class Workspace : IWorkspace, IMoveable
 	// applies updated relRects (provided by the layout) to the windows in the workspace
 	public void Update()
 	{
-		//windows.ForEach(wnd => //Console.WriteLine($"WND IS NULL: {wnd == null}"));
-
 		List<Window?> nonFloating = windows
 		.Where(wnd => wnd?.resizeable == true)
 		.Where(wnd => wnd?.floating == false)
@@ -376,7 +369,7 @@ public class Workspace : IWorkspace, IMoveable
 		for (int i = 0; i < nonFloating.Count; i++)
 		{
 			nonFloating[i]?.Move(rects[i]);
-			nonFloating[i].relRect = relRects[i];
+			nonFloating[i]!.relRect = relRects[i];
 		}
 
 		// floating
@@ -385,11 +378,11 @@ public class Workspace : IWorkspace, IMoveable
 		.Where(wnd => wnd?.floating == true)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
-		.ToList();
+		.ToList()!;
 
 		for (int i = 0; i < floating.Count; i++)
 		{
-			floating[i].relRect = floating[i].rect;
+			floating[i]!.relRect = floating[i]!.rect;
 		}
 	}
 
@@ -400,12 +393,7 @@ public class Workspace : IWorkspace, IMoveable
 
 	public void Hide()
 	{
-		windows?.ForEach(wnd =>
-		{
-			//var (sx, sy) = Utils.GetScreenSize();
-			//wnd?.Move(sx, sy);
-			wnd?.Hide();
-		});
+		windows?.ForEach(wnd => wnd?.Hide());
 	}
 
 	public void Focus()
@@ -420,12 +408,21 @@ public class Workspace : IWorkspace, IMoveable
 		windows?.ForEach(wnd => wnd?.Redraw());
 	}
 
+	const int MOVE_RETRIES = 10;
 	public void Move(int? x, int? y, bool redraw = true)
 	{
-		windows.ForEach(wnd =>
+		for (int i = 0; i < windows.Count; i++)
 		{
-			wnd?.Move(wnd.relRect.Left + x, wnd.relRect.Top + y, redraw);
-		});
+			int? absX = windows[i]!.relRect.Left + x;
+			int? absY = windows[i]!.relRect.Top + y;
+			int _retry = 0;
+			while (windows[i]!.rect.Left != absX || windows[i]!.rect.Top != absY)
+			{
+				if (_retry > MOVE_RETRIES) break;
+				windows[i]?.Move(absX, absY, redraw);
+				_retry++;
+			}
+		}
 	}
 
 	Window? lastFocusedWindow = null;
@@ -451,7 +448,6 @@ public class Workspace : IWorkspace, IMoveable
 
 	public void FocusAdjacentWindow(EDGE direction)
 	{
-		//Console.WriteLine($"focusing window on: {direction}, focusedWindowIndex: {focusedWindowIndex}");
 		if (focusedWindowIndex == null) return;
 		int? index = layout.GetAdjacent((int)focusedWindowIndex, direction);
 		if (index != null) windows?[(int)index]?.Focus();
@@ -463,7 +459,6 @@ public class Workspace : IWorkspace, IMoveable
 		int? index = focusedWindowIndex;
 		if (index == null) return;
 		index += shiftBy;
-		//Console.WriteLine($"SHIFTING");
 		if (index < 0 || index > windows.Count - 1) return;
 		windows.Remove(_fwnd);
 		windows.Insert((int)index, _fwnd);
@@ -481,7 +476,6 @@ public class Workspace : IWorkspace, IMoveable
 		if (wnd == null) wnd = focusedWindow;
 		if (wnd == null) return;
 		wnd.floating = !wnd.floating;
-		//Console.WriteLine($"[ TOGGLE FLOATING ] : {wnd.floating}, [ {config.floatingWindowSize} ]");
 		if (wnd.floating && wnd.resizeable) MakeFloating(wnd);
 		Update();
 	}
@@ -531,7 +525,7 @@ public class WindowManager : IWindowManager
 			int index = 0;
 			for (int i = 0; i < workspaces.Count; i++)
 			{
-				if (workspaces[i] == focusedWorkspace)
+				if (workspaces[i]! == focusedWorkspace)
 				{
 					index = i;
 					break;
@@ -559,14 +553,14 @@ public class WindowManager : IWindowManager
 			this.initWindows.ForEach(wnd => ApplyConfigsToWindow(wnd));
 		}
 
-		// when running in debug mode, only window containing the title "windowgen" will 
-		// be managed by the program. This is so that your ide or terminal is left free
-		// while testing
+		/* when running in debug mode, only window containing the title "windowgen" will 
+		 * be managed by the program. This is so that your ide or terminal is left free
+		 * while testing
+		 * */
 		if (DEBUG)
 		{
 			this.initWindows = this.initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
 		}
-		//initWindows.ForEach(wnd => //Console.WriteLine($"Title: {wnd.title}, hWnd: {wnd.hWnd}"));
 
 		for (int i = 0; i < this.config.workspaces; i++)
 		{
@@ -693,24 +687,18 @@ public class WindowManager : IWindowManager
 				 * */
 				workspaces[next]?.Show();
 
-				//List<Task> _ts = new();
 				Animation<Workspace> workspaceAnimation = new(config.workspaceAnimationsDuration, "easeOutQuint");
 				if (config.workspaceAnimationsDirection == "horizontal")
 				{
-					//_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, "horizontal", 0, -w, config.workspaceAnimationsDuration)));
-					//_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[next]!, "horizontal", w, 0, config.workspaceAnimationsDuration)));
 					workspaceAnimation.Add(focusedWorkspace, new POINT2() { X = 0, Y = null }, new POINT2() { X = -w, Y = null });
 					workspaceAnimation.Add(workspaces[next], new POINT2() { X = w, Y = null }, new POINT2() { X = 0, Y = null });
 				}
 				else if (config.workspaceAnimationsDirection == "vertical")
 				{
-					//_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, "vertical", 0, -h, config.workspaceAnimationsDuration)));
-					//_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[next]!, "vertical", h, 0, config.workspaceAnimationsDuration)));
 					workspaceAnimation.Add(focusedWorkspace, new POINT2() { X = null, Y = 0 }, new POINT2() { X = null, Y = -h });
 					workspaceAnimation.Add(workspaces[next], new POINT2() { X = null, Y = h }, new POINT2() { X = null, Y = 0 });
 				}
 
-				//Task.WhenAll(_ts).Wait();
 				workspaceAnimation.Play().Wait();
 				focusedWorkspace.Hide();
 				focusedWorkspace = workspaces[next]!;
@@ -722,7 +710,6 @@ public class WindowManager : IWindowManager
 		else
 		{
 			FocusWorkspace(workspaces[next]!);
-			//Console.WriteLine($"FOCUSING NEXT WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		}
 
 		WM_EVENT("FocusNextWorkspace");
@@ -747,25 +734,19 @@ public class WindowManager : IWindowManager
 
 				workspaces[prev]?.Show();
 
-				//List<Task> _ts = new();
 				Animation<Workspace> workspaceAnimation = new(config.workspaceAnimationsDuration, "easeOutQuint");
 				if (config.workspaceAnimationsDirection == "horizontal")
 				{
-					//_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, "horizontal", 0, w, config.workspaceAnimationsDuration)));
-					//_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[prev]!, "horizontal", -w, 0, config.workspaceAnimationsDuration)));
 					workspaceAnimation.Add(focusedWorkspace, new POINT2() { X = 0, Y = null }, new POINT2() { X = w, Y = null });
 					workspaceAnimation.Add(workspaces[prev], new POINT2() { X = -w, Y = null }, new POINT2() { X = 0, Y = null });
 
 				}
 				else if (config.workspaceAnimationsDirection == "vertical")
 				{
-					//_ts.Add(Task.Run(() => WorkspaceAnimate(focusedWorkspace, "vertical", 0, h, config.workspaceAnimationsDuration)));
-					//_ts.Add(Task.Run(() => WorkspaceAnimate(workspaces[prev]!, "vertical", -h, 0, config.workspaceAnimationsDuration)));
 					workspaceAnimation.Add(focusedWorkspace, new POINT2() { X = null, Y = 0 }, new POINT2() { X = null, Y = h });
 					workspaceAnimation.Add(workspaces[prev], new POINT2() { X = null, Y = -h }, new POINT2() { X = null, Y = 0 });
 				}
 
-				//Task.WhenAll(_ts).Wait();
 				workspaceAnimation.Play().Wait();
 				focusedWorkspace.Hide();
 				focusedWorkspace = workspaces[prev]!;
@@ -777,7 +758,6 @@ public class WindowManager : IWindowManager
 		else
 		{
 			FocusWorkspace(workspaces[prev]!);
-			//Console.WriteLine($"FOCUSING PREVIOUS WORKSPACE, focusedWorkspaceIndex: {focusedWorkspaceIndex}");
 		}
 
 		WM_EVENT("FocusPreviousWorkspace");
@@ -827,8 +807,9 @@ public class WindowManager : IWindowManager
 	// filter out windows that should never be interacted with
 	bool ShouldWindowBeIgnored(Window wnd)
 	{
-		// not required actually because WINDOW_ADDED only fires on OBJECT_SHOW
-		// however adding for completeness
+		/* not required actually because WINDOW_ADDED only fires on OBJECT_SHOW
+		 * however adding for completeness
+		 * */
 		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_VISIBLE)) return true;
 		if (wnd.styles.HasFlag(WINDOWSTYLE.WS_CHILD)) return true;
 
@@ -922,11 +903,12 @@ public class WindowManager : IWindowManager
 		foreach (var wksp in workspaces)
 			if (wksp!.windows.Contains(wnd))
 			{
-				// This is for cases where an already added window gets focused without direct interaction
-				// for eg say you click a link on your terminal and your default browser is open
-				// in another workspace. The reason why we are handling it here instead of
-				// WindowFocused is because the event emmited is OBJECT_SHOW rather than
-				// EVENT_FOREGROUND_CHANGED
+				/* This is for cases where an already added window gets focused without direct interaction
+				 * for eg say you click a link on your terminal and your default browser is open
+				 * in another workspace. The reason why we are handling it here instead of
+				 * WindowFocused is because the event emmited is OBJECT_SHOW rather than
+				 * EVENT_FOREGROUND_CHANGED
+				 * */
 				if (wksp != focusedWorkspace) FocusWorkspace(wksp);
 				return;
 			}
@@ -949,9 +931,10 @@ public class WindowManager : IWindowManager
 
 	public void WindowHidden(Window wnd)
 	{
-		// we shouldn'd filter out by ShouldWindowBeIgnored() and in WindowDestroyed
-		// here because windows that get hidden or destroyed might meet the 
-		// ignorable criteria
+		/* we shouldn'd filter out by ShouldWindowBeIgnored() and in WindowDestroyed
+		 * here because windows that get hidden or destroyed might meet the 
+		 * ignorable criteria
+		 * */
 		if (wmActions.Count > 0) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 
@@ -1015,11 +998,10 @@ public class WindowManager : IWindowManager
 
 		//Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
-		//var _wnd = focusedWorkspace.windows.FirstOrDefault(_wnd => _wnd == wnd);
-		//if (_wnd == null) return;
-		// wnd -> window being moved
-		// cursorPos
-		// wndEnclosingCursor -> window enclosing cursor
+		/* wnd -> window being moved
+		 * cursorPos
+		 * wndEnclosingCursor -> window enclosing cursor
+		 * */
 		if (!wnd.floating && wnd.resizeable)
 		{
 			User32.GetCursorPos(out POINT pt);
@@ -1070,10 +1052,11 @@ public class WindowManager : IWindowManager
 	const int WINEVENT_RESTORE_TIMEOUT = 1000;
 	public void WindowRestored(Window wnd)
 	{
-		// To catch window being restored to normal from mazimized state.
-		// will fire continuously, can gobble events that are supposed to be handled by MOVESIZEEND
-		// the time filter is important because we dont want to capture movement here
-		// only the one-off restore action
+		/* To catch window being restored to normal from mazimized state.
+		 * will fire continuously, can gobble events that are supposed to be handled by MOVESIZEEND
+		 * the time filter is important because we dont want to capture movement here
+		 * only the one-off restore action
+		 * */
 
 		// ignore window restore events that appear in rapid succession
 		if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - lastRestoreAction < WINEVENT_RESTORE_TIMEOUT)
