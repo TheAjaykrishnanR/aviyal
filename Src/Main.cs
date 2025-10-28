@@ -197,7 +197,7 @@ class Aviyal : IDisposable
 			{
 				Console.WriteLine(ex.Message);
 			}
-			Console.WriteLine($"{stateCounter++}. lastAction: {lastAction}\n{state.ToJson()}");
+			Console.WriteLine($"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}\n{state.ToJson()}");
 		}
 	}
 

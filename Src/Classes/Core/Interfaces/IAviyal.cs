@@ -77,9 +77,3 @@ public interface ILayout
 	public RECT[] ApplyOuter(RECT[] rects);
 	public int? GetAdjacent(int index, EDGE direction);
 }
-
-public interface IAnimation<T>
-{
-	public T GetValue(double progress);
-}
-

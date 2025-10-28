@@ -9,6 +9,7 @@ if($args[0] -eq "winexe") {
 dflat Main.cs `
 	  Classes\Core\Interfaces\IAviyal.cs `
 	  Classes\Core\Interfaces\IJson.cs `
+	  Classes\Core\Interfaces\IAnimation.cs `
 	  Classes\Core\Aviyal.cs `
 	  Classes\Core\Config.cs `
 	  Classes\Core\Globals.cs `
@@ -18,6 +19,7 @@ dflat Main.cs `
 	  Classes\Core\Server.cs `
 	  Classes\Core\State.cs `
 	  Classes\Core\Utils.cs `
+	  Classes\Core\Animation.cs `
 	  Classes\Hooks\Keys.cs `
 	  Classes\Hooks\Mouse.cs `
 	  Classes\Hooks\Windows.cs `
