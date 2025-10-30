@@ -28,6 +28,8 @@ class Aviyal : IDisposable
 		wm = new(config);
 		server = new(config);
 
+		kbdListener = new(config);
+
 		actions = new()
 		{
 			{ COMMAND.FOCUS_NEXT_WORKSPACE, () => wm.FocusNextWorkspace() },
@@ -58,26 +60,6 @@ class Aviyal : IDisposable
 			{ COMMAND.UPDATE, () => wm.focusedWorkspace.Update() },
 		};
 
-		wm.WM_EVENT += WmEventHandler;
-		server.REQUEST_RECEIVED += RequestReceived;
-		// in order to recieve window events for windows that
-		// already exists while the application is run
-		//wm.initWindows.ForEach(wnd => wndListener.shown.Add(wnd.hWnd));
-		wndListener.WINDOW_SHOWN += wm.WindowShown;
-		wndListener.WINDOW_HIDDEN += wm.WindowHidden;
-		wndListener.WINDOW_DESTROYED += wm.WindowDestroyed;
-		wndListener.WINDOW_MOVED += wm.WindowMoved;
-		wndListener.WINDOW_MAXIMIZED += wm.WindowMaximized;
-		wndListener.WINDOW_MINIMIZED += wm.WindowMinimized;
-		wndListener.WINDOW_RESTORED += wm.WindowRestored;
-		wndListener.WINDOW_FOCUSED += wm.WindowFocused;
-
-		kbdListener = new(config);
-		kbdListener.HOTKEY_PRESSED += HotkeyPressed;
-
-		mouseListener.MOUSE_DOWN += MouseDown;
-		mouseListener.MOUSE_UP += MouseUp;
-
 		// just make all windows reappear if crashes
 		AppDomain currentDomain = AppDomain.CurrentDomain;
 		currentDomain.UnhandledException += (s, e) =>
@@ -92,6 +74,26 @@ class Aviyal : IDisposable
 			File.WriteAllText(Paths.logFile, text);
 			errored = true;
 		};
+	}
+
+	public void AttachEventHandlers()
+	{
+		wm.WM_EVENT += WmEventHandler;
+		server.REQUEST_RECEIVED += RequestReceived;
+
+		wndListener.WINDOW_SHOWN += wm.WindowShown;
+		wndListener.WINDOW_HIDDEN += wm.WindowHidden;
+		wndListener.WINDOW_DESTROYED += wm.WindowDestroyed;
+		wndListener.WINDOW_MOVED += wm.WindowMoved;
+		wndListener.WINDOW_MAXIMIZED += wm.WindowMaximized;
+		wndListener.WINDOW_MINIMIZED += wm.WindowMinimized;
+		wndListener.WINDOW_RESTORED += wm.WindowRestored;
+		wndListener.WINDOW_FOCUSED += wm.WindowFocused;
+
+		kbdListener.HOTKEY_PRESSED += HotkeyPressed;
+
+		mouseListener.MOUSE_DOWN += MouseDown;
+		mouseListener.MOUSE_UP += MouseUp;
 	}
 
 	public void Dispose()
@@ -123,7 +125,7 @@ class Aviyal : IDisposable
 
 	public void HotkeyPressed(Keymap keymap)
 	{
-		Console.WriteLine($"Hotekey Pressed: {keymap.command}");
+		Console.WriteLine($"Hotekey Pressed: {keymap.command}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
 		if (keymap.command == COMMAND.EXEC) Exec(keymap.arguments);
 		else actions[keymap.command]?.Invoke();
 	}
@@ -264,6 +266,9 @@ class Aviyal : IDisposable
 		aviyal = new(config);
 		aviyal.wm.initWindows = windows!;
 		aviyal.wm.Start();
+		// do NOT attach the event handlers before wm has started. Window events before initialization
+		// can case race conditions and collection modifications in wm.Start()
+		aviyal.AttachEventHandlers();
 	}
 
 	static bool errored = false;

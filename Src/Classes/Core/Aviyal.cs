@@ -661,13 +661,13 @@ public class WindowManager : IWindowManager
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 		int prev = focusedWorkspaceIndex > 0 ? focusedWorkspaceIndex - 1 : workspaces.Count - 1;
 
-		if (config.workspaceAnimations)
+		SuppressEvents(() =>
 		{
-			// slide windows left -> if horizontal
-			// slide windows up -> if vertical
-			(int w, int h) = Utils.GetScreenSize();
-			SuppressEvents(() =>
+			if (config.workspaceAnimations)
 			{
+				// slide windows left -> if horizontal
+				// slide windows up -> if vertical
+				(int w, int h) = Utils.GetScreenSize();
 				if (config.workspaceAnimationsDirection == "horizontal")
 					workspaces[next]?.Move(w, null);
 				else if (config.workspaceAnimationsDirection == "vertical")
@@ -705,12 +705,12 @@ public class WindowManager : IWindowManager
 				focusedWorkspace?.Update(); // when animation finishes, margins dont match
 				focusedWorkspace?.Redraw(); // manually redraw
 				focusedWorkspace?.SetFocusedWindow();
-			});
-		}
-		else
-		{
-			FocusWorkspace(workspaces[next]!);
-		}
+			}
+			else
+			{
+				FocusWorkspace(workspaces[next]!);
+			}
+		});
 
 		WM_EVENT("FocusNextWorkspace");
 	}
@@ -720,13 +720,13 @@ public class WindowManager : IWindowManager
 		int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
 		int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
 
-		if (config.workspaceAnimations)
+		SuppressEvents(() =>
 		{
-			// move right
-			// move down
-			(int w, int h) = Utils.GetScreenSize();
-			SuppressEvents(() =>
+			if (config.workspaceAnimations)
 			{
+				// move right
+				// move down
+				(int w, int h) = Utils.GetScreenSize();
 				if (config.workspaceAnimationsDirection == "horizontal")
 					workspaces[prev]?.Move(-w, null);
 				else if (config.workspaceAnimationsDirection == "vertical")
@@ -753,12 +753,12 @@ public class WindowManager : IWindowManager
 				focusedWorkspace?.Update();
 				focusedWorkspace?.Redraw();
 				focusedWorkspace?.SetFocusedWindow();
-			});
-		}
-		else
-		{
-			FocusWorkspace(workspaces[prev]!);
-		}
+			}
+			else
+			{
+				FocusWorkspace(workspaces[prev]!);
+			}
+		});
 
 		WM_EVENT("FocusPreviousWorkspace");
 	}
