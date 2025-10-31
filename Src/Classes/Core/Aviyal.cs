@@ -648,7 +648,11 @@ public class WindowManager : IWindowManager
 	const int WINEVENT_DELAY = 100;
 	void SuppressEvents(Action func)
 	{
-		if (wmActions.Count > 0) return;
+		if (wmActions.Count > 0)
+		{
+			Logger.Log($"suppressing action because another is going on");
+			return;
+		}
 
 		Task _t = new(func);
 		wmActions.Add(_t);
