@@ -95,8 +95,16 @@ public class Window : IWindow, IMoveable
 	{
 		get
 		{
-			Process? _p = Process.GetProcessesByName(exeName).FirstOrDefault();
-			return _p == null ? 0 : _p.Id;
+			try
+			{
+				Process? _p = Process.GetProcessesByName(exeName).FirstOrDefault();
+				return _p == null ? 0 : _p.Id;
+			}
+			catch (Exception ex)
+			{
+				Logger.Log("Unable to get pid", ex);
+				return 0;
+			}
 		}
 	}
 

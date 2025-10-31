@@ -18,10 +18,11 @@ public class Logger
 		if (ex != null) text += $"\n{ex.Message}" + $"\n{ex.StackTrace}" + $"\n{ex?.InnerException?.StackTrace}";
 		if (DEBUG && debug) Debug.WriteLine(text);
 		if (CONSOLE && console) Console.WriteLine(text);
+		if (FILE && file) LogToFile(text);
 	}
 
 	private static Lock @writeLock = new();
-	public static void LogToFile(string text)
+	public static void LogToFile(string? text)
 	{
 		lock (@writeLock) File.AppendAllText(Paths.logFile, $"{text}\n");
 	}

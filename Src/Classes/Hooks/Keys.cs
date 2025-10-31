@@ -65,9 +65,9 @@ public class KeyEventsListener : IDisposable
 		// if in the offchance that a key is added to the capture list which does
 		// not remove itself because it doesnt emit the WM_KEYUP message thereby
 		// essentially polluting our hotkey buffer making it impossible for any hotkey
-		// to be triggered, so we clear our buffer if the last key was pressed 10 seconds
-		// ago. This is a reasonable time as no hotkey combo will span a whole 10 seconds.
-		if (dt > 10000) captured.Clear();
+		// to be triggered, so we clear our buffer if the last key was pressed 2 seconds
+		// ago. This is a reasonable time as no hotkey combo will span a whole 2 seconds.
+		if (dt > 2000 || key == VK.ESCAPE) captured.Clear();
 		letKeyPass = true;
 		switch ((WINDOWMESSAGE)wparam)
 		{

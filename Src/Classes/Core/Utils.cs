@@ -52,7 +52,6 @@ public partial class Utils
 	public static bool IsWindowVisible(nint hWnd)
 	{
 		var styleList = Utils.GetStylesFromHwnd(hWnd);
-		//Logger.Log($"IsWindowVisible(): {Marshal.GetLastWin32Error()}");
 		if (styleList.Contains("WS_VISIBLE")) return true;
 		return false;
 	}
@@ -165,8 +164,8 @@ public partial class Utils
 
 		if (Environment.IsPrivilegedProcess)
 		{
-			List<GUIProcess> allWindows = EnumWindowProcesses();
-			Process? process = allWindows.Where(guiProcess => guiProcess.process.Id == processId).FirstOrDefault()?.process;
+			List<GUIProcess?> allWindows = EnumWindowProcesses();
+			Process? process = allWindows.FirstOrDefault(guiProcess => guiProcess?.process.Id == processId)?.process;
 			return process?.MainModule?.FileName;
 		}
 
@@ -228,40 +227,12 @@ public partial class Utils
 
 		WINDOWSTYLEEX exStyle = (WINDOWSTYLEEX)User32.GetWindowLong(hWnd, GETWINDOWLONG.GWL_EXSTYLE);
 		if (exStyle.HasFlag(WINDOWSTYLEEX.WS_EX_TOOLWINDOW)) return false;
-		//if (exStyle.ContainsFlag((uint)WINDOWSTYLE.WS_EX_APPWINDOW)) return false;
 
 		string className = GetClassNameFromHWND(hWnd);
 		string title = Utils.GetWindowTitleFromHWND(hWnd);
-		//if (className == "Windows.UI.Core.CoreWindow")
-		//{
-		//	if (title == "Settings") return true;
-		//	return false;
-		//}
-		//if (className == "ApplicationFrameWindow")
-		//{
-		//	return false;
-		//}
-		// ---------------------------------------------------------------
+
 		Dwmapi.DwmGetWindowAttribute(hWnd, (uint)DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, out uint cloak, sizeof(uint));
-		//Console.WriteLine($"[CLOAK], title: {title}, class: {className}, cloak: {cloak}");
 		return cloak == 0;
-
-		/*
-		// https://devblogs.microsoft.com/oldnewthing/20071008-00/?p=24863 
-		const int GA_ROOTOWNER = 3;
-		// start at the owner window
-		nint hWndWalk = User32.GetAncestor(hWnd, GA_ROOTOWNER);
-
-		nint hWndTry;
-		// a window in taskbar / alt-tab is its own last popup window, so loop until hWnd walk becomes a popup window
-		while ((hWndTry = User32.GetLastActivePopup(hWndWalk)) != hWndWalk)
-		{
-			if (IsWindowVisible(hWndTry)) break;
-			hWndWalk = hWndTry;
-		}
-		// once the walk is finished hWndWalk "is" the taskbarwindow in that owner chain, now check if the window you supplied is that window
-		return hWnd == hWndWalk;
-		*/
 	}
 
 	/// <summary>
@@ -331,17 +302,8 @@ public partial class Utils
 	{
 		nint hMon = User32.MonitorFromPoint(new POINT() { X = 0, Y = 0 }, 0x01);
 		Shcore.GetDpiForMonitor(hMon, MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out uint dpiX, out uint dpiY);
-		//Console.WriteLine($"dpiX: {dpiX}, dpiY: {dpiY}");
 		return dpiX / 96.0f;
 	}
-
-	//public static double GetDisplayScaling()
-	//{
-	//	nint hMon = User32.MonitorFromPoint(new POINT() { X = 0, Y = 0 }, 0x01);
-	//	Shcore.GetScaleFactorForMonitor(hMon, out DEVICE_SCALE_FACTOR scale);
-	//	//Console.WriteLine($"SCALE: {scale}, hMon: {hMon}");
-	//	return ((double)scale) / 100;
-	//}
 
 	/// <summary>
 	/// Hides window in the alt-tab window by (ADDING the WS_EX_TOOLWINDOW) and 
