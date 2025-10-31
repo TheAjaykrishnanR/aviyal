@@ -115,15 +115,26 @@ public partial class Utils
 	/// Enumerate ALL windows (including children)
 	/// </summary>
 	/// <returns></returns>
-	public static List<GUIProcess> EnumWindowProcesses()
+	public static List<GUIProcess?> EnumWindowProcesses()
 	{
-		List<GUIProcess> guiProcesses = new();
+		List<GUIProcess?> guiProcesses = new();
 		EnumWindowProc enumWindowProc = (nint hWnd, nint lParam) =>
 		{
 			User32.GetWindowThreadProcessId(hWnd, out uint processId);
-			Process process = Process.GetProcessById((int)processId);
-			GUIProcess guiProcess;
-			if ((guiProcess = guiProcesses.Where(_p => _p.name == process.ProcessName).FirstOrDefault()) == null)
+			Process? process = default;
+			try
+			{
+				process = Process.GetProcessById((int)processId);
+			}
+			catch (Exception ex)
+			{
+				// process does not exist ?
+				Logger.Log(ex.Message);
+				Logger.Log(ex.StackTrace);
+				return true;
+			}
+			GUIProcess? guiProcess;
+			if ((guiProcess = guiProcesses.FirstOrDefault(_p => _p.name == process.ProcessName)) == null)
 			{
 				guiProcess = new() { name = process.ProcessName };
 				guiProcesses.Add(guiProcess);

@@ -46,7 +46,7 @@ public class Window : IWindow, IMoveable
 			return field;
 		}
 	}
-	public string exeName
+	public string? exeName
 	{
 		get
 		{
