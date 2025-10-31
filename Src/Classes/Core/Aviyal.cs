@@ -139,9 +139,6 @@ public class Window : IWindow, IMoveable
 		}
 	}
 
-	// last time the window was restored
-	public long lastRestore = 0;
-
 	public override bool Equals(object? obj)
 	{
 		//if (base.Equals(obj)) return true;
@@ -1086,6 +1083,8 @@ public class WindowManager : IWindowManager
 	// window unmaximized
 	public bool mouseDown { get; set; } = false;
 	const int WINEVENT_RESTORE_TIMEOUT = 1000;
+	nint lasRestoredhWnd = 0;
+	long lastRestoreTime = 0;
 	public void WindowRestored(Window wnd)
 	{
 		/* To catch window being restored to normal from mazimized state.
@@ -1095,19 +1094,22 @@ public class WindowManager : IWindowManager
 		 * */
 
 		// ignore window restore events that appear in rapid succession
+		if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - lastRestoreTime < WINEVENT_RESTORE_TIMEOUT &&
+			wnd.hWnd == lasRestoredhWnd
+		)
+		{
+			lasRestoredhWnd = wnd.hWnd;
+			lastRestoreTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+			Console.WriteLine("ignore window restore");
+			return;
+		}
+		lasRestoredhWnd = wnd.hWnd;
+		lastRestoreTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
 		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 		if (mouseDown) return;
-
-		wnd = GetAlreadyStoredWindow(wnd)!;
-		if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - wnd.lastRestore < WINEVENT_RESTORE_TIMEOUT)
-		{
-			wnd.lastRestore = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-			Console.WriteLine("ignore window restore");
-			return;
-		}
-		wnd.lastRestore = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
 		//Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
