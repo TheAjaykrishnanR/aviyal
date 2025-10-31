@@ -24,7 +24,17 @@ public class Logger
 	private static Lock @writeLock = new();
 	public static void LogToFile(string? text)
 	{
-		lock (@writeLock) File.AppendAllText(Paths.logFile, $"{text}\n");
+		lock (@writeLock)
+		{
+			try
+			{
+				File.AppendAllText(Paths.logFile, $"{text}\n");
+			}
+			catch (Exception ex)
+			{
+				Log("unable to log to file", ex: ex, file: false);
+			}
+		}
 	}
 
 	public static void Log(List<string> array)
