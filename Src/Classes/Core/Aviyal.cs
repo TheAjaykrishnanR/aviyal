@@ -50,7 +50,7 @@ public class Window : IWindow, IMoveable
 	{
 		get
 		{
-			return @$"{exe}"?.Split(@"\").Last().Replace(".exe", "")!;
+			return @$"{exe}"?.Split(@"\").Last().ToLower().Replace(".exe", "")!;
 		}
 	}
 
