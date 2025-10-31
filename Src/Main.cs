@@ -236,6 +236,8 @@ class Aviyal : IDisposable
 
 		Console.WriteLine($"Running aviyal instance, reload count: {reloadCount}");
 
+		Paths.CreateIfAbsent();
+
 		Config config = null;
 		if (File.Exists(Paths.configFile))
 		{
@@ -328,6 +330,14 @@ class Aviyal : IDisposable
 		switch (args.ToList().ElementAtOrDefault(0))
 		{
 			case null:
+				string message =
+@"
+Running as a non elevated process. Elevated windows will be 
+unmanaged. Focused elevated windows will steal input. For 
+managing all windows including elevated ones run the process 
+as an administrator or from an elevated prompt.
+";
+				if (!Environment.IsPrivilegedProcess) User32.MessageBox(0, message, "Message", 0);
 				Loop();
 				break;
 			case "--debug":

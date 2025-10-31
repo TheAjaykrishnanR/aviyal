@@ -100,12 +100,17 @@ public class Window : IWindow, IMoveable
 		}
 	}
 
+	/* whether the window process is relatively higher in process integrity than
+	 * aviyal.
+	 * */
 	public bool elevated
 	{
 		get
 		{
-			//Console.WriteLine($"checking elevation of {title}: {Utils.IsProcessElevated(pid)}");
-			return Utils.IsProcessElevated(pid);
+			if (!Environment.IsPrivilegedProcess &&
+			/* absolute elevation of the process */
+			Utils.IsProcessElevated(pid)) return true;
+			return false;
 		}
 	}
 
@@ -133,6 +138,9 @@ public class Window : IWindow, IMoveable
 			return info.cxWindowBorders;
 		}
 	}
+
+	// last time the window was restored
+	public long lastRestore = 0;
 
 	public override bool Equals(object? obj)
 	{
@@ -359,6 +367,7 @@ public class Workspace : IWorkspace, IMoveable
 		List<Window?> nonFloating = windows
 		.Where(wnd => wnd?.resizeable == true)
 		.Where(wnd => wnd?.floating == false)
+		.Where(wnd => wnd?.elevated == false)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
 		.ToList();
@@ -376,6 +385,7 @@ public class Workspace : IWorkspace, IMoveable
 		List<Window?> floating = windows
 		.Where(wnd => wnd?.resizeable == true)
 		.Where(wnd => wnd?.floating == true)
+		.Where(wnd => wnd?.elevated == false)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
 		.ToList()!;
@@ -834,11 +844,17 @@ public class WindowManager : IWindowManager
 	// filter out windows that should never be interacted with
 	bool ShouldWindowBeIgnored(Window wnd)
 	{
+		bool IgnoreWindow(string reason)
+		{
+			Logger.Log($"Ignoring wnd, [{wnd.title}, {wnd.className}] due to: {reason}, {Paths.rootDir}");
+			return true;
+		}
+
 		/* not required actually because WINDOW_ADDED only fires on OBJECT_SHOW
 		 * however adding for completeness
 		 * */
-		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_VISIBLE)) return true;
-		if (wnd.styles.HasFlag(WINDOWSTYLE.WS_CHILD)) return true;
+		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_VISIBLE)) return IgnoreWindow("INVISIBLE WINDOW");
+		if (wnd.styles.HasFlag(WINDOWSTYLE.WS_CHILD)) return IgnoreWindow("CHILD WINDOW");
 
 		/* all normal top level windows must have either "WS_OVERLAPPED" - OR - "WS_POPUP"
 		 * so kick out windows that dont have neither
@@ -849,43 +865,37 @@ public class WindowManager : IWindowManager
 		bool isOverlapped = ((uint)wnd.styles & ((uint)WINDOWSTYLE.WS_POPUP | (uint)WINDOWSTYLE.WS_CHILD)) == 0;
 		if (!isOverlapped &&
 		   !wnd.styles.HasFlag(WINDOWSTYLE.WS_POPUP)
-		) return true;
+		) return IgnoreWindow("NEITHER OVERLAPPED NOR POPUP");
 
-		if (wnd.exStyles.HasFlag(WINDOWSTYLEEX.WS_EX_TOOLWINDOW)) return true;
-		if (wnd.exStyles.HasFlag(WINDOWSTYLEEX.WS_EX_TOPMOST)) return true;
+		if (wnd.exStyles.HasFlag(WINDOWSTYLEEX.WS_EX_TOOLWINDOW)) return IgnoreWindow("TOOLWINDOW");
+		if (wnd.exStyles.HasFlag(WINDOWSTYLEEX.WS_EX_TOPMOST)) return IgnoreWindow("TOPMOST");
 
-		if (wnd.className == null || wnd.className == "") return true;
+		if (wnd.className == null || wnd.className == "") return IgnoreWindow("NO CLASSNAME");
 
 		if (wnd.className.Contains("#32770") &&
 			!wnd.styles.HasFlag(WINDOWSTYLE.WS_SYSMENU) &&
 			(wnd.rect.Bottom - wnd.rect.Top < 50 ||
 			 wnd.rect.Right - wnd.rect.Left < 50)
-			) return true; // dialogs
+			) return IgnoreWindow("DIALOG"); // dialogs
 
 		// tooltips
 		// https://learn.microsoft.com/en-us/windows/win32/controls/common-control-window-classes
 		if (wnd.className.Contains("MicrosoftWindowsTooltip") ||
 			wnd.className.Contains("tooltips_class32")
-			) return true;
+			) return IgnoreWindow("TOOLTIP");
 
 		// menus
 		// https://learn.microsoft.com/en-us/windows/win32/winmsg/about-window-classes
 		if (wnd.className.Contains("#32768") ||
 			wnd.className.Contains("#32772")
-			) return true;
+			) return IgnoreWindow("MENUS");
 
 		// filter out windows without the normal/default border thickness
 		const int SM_CXSIZEFRAME = 32;
 		if (wnd.borderThickness < User32.GetSystemMetrics(SM_CXSIZEFRAME))
-			return true;
+			return IgnoreWindow("BORDERLESS");
 
-		if (!Environment.IsPrivilegedProcess && wnd.elevated) return true;
-
-		if (IsWindowInConfigRules(wnd, "ignore"))
-		{
-			//Console.WriteLine($"ignoring {wnd.title} due to config rules");
-			return true;
-		}
+		if (IsWindowInConfigRules(wnd, "ignore")) return IgnoreWindow("IN CONFIG RULES");
 
 		return false;
 	}
@@ -1075,7 +1085,6 @@ public class WindowManager : IWindowManager
 
 	// window unmaximized
 	public bool mouseDown { get; set; } = false;
-	long lastRestoreAction = 0;
 	const int WINEVENT_RESTORE_TIMEOUT = 1000;
 	public void WindowRestored(Window wnd)
 	{
@@ -1086,16 +1095,19 @@ public class WindowManager : IWindowManager
 		 * */
 
 		// ignore window restore events that appear in rapid succession
-		if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - lastRestoreAction < WINEVENT_RESTORE_TIMEOUT)
-		{
-			lastRestoreAction = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-			return;
-		}
-		lastRestoreAction = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 		if (wmActions.Count > 0) return;
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 		if (mouseDown) return;
+
+		wnd = GetAlreadyStoredWindow(wnd)!;
+		if (DateTimeOffset.Now.ToUnixTimeMilliseconds() - wnd.lastRestore < WINEVENT_RESTORE_TIMEOUT)
+		{
+			wnd.lastRestore = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+			Console.WriteLine("ignore window restore");
+			return;
+		}
+		wnd.lastRestore = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
 		//Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
