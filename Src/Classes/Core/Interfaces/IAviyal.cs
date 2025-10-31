@@ -51,7 +51,7 @@ public interface IWindowManager
 	public Workspace focusedWorkspace { get; }
 	public int focusedWorkspaceIndex { get; }
 
-	public void FocusWorkspace(Workspace wksp);
+	public void FocusWorkspace(int index);
 	public void FocusNextWorkspace() { }
 	public void FocusPreviousWorkspace() { }
 

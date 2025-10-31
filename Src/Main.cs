@@ -34,30 +34,30 @@ class Aviyal : IDisposable
 		{
 			{ COMMAND.FOCUS_NEXT_WORKSPACE, () => wm.FocusNextWorkspace() },
 			{ COMMAND.FOCUS_PREVIOUS_WORKSPACE, () => wm.FocusPreviousWorkspace() },
-			{ COMMAND.CLOSE_FOCUSED_WINDOW, () => wm.focusedWorkspace.CloseFocusedWindow() },
-			{ COMMAND.FOCUS_LEFT_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.LEFT) },
-			{ COMMAND.FOCUS_TOP_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.TOP) },
-			{ COMMAND.FOCUS_RIGHT_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.RIGHT) },
-			{ COMMAND.FOCUS_BOTTOM_WINDOW, () => wm.focusedWorkspace.FocusAdjacentWindow(EDGE.BOTTOM) },
+			{ COMMAND.CLOSE_FOCUSED_WINDOW, () => wm.CloseFocusedWindow() },
+			{ COMMAND.FOCUS_LEFT_WINDOW, () => wm.FocusAdjacentWindow(EDGE.LEFT) },
+			{ COMMAND.FOCUS_TOP_WINDOW, () => wm.FocusAdjacentWindow(EDGE.TOP) },
+			{ COMMAND.FOCUS_RIGHT_WINDOW, () => wm.FocusAdjacentWindow(EDGE.RIGHT) },
+			{ COMMAND.FOCUS_BOTTOM_WINDOW, () => wm.FocusAdjacentWindow(EDGE.BOTTOM) },
 
-			{ COMMAND.SHIFT_FOCUSED_WINDOW_RIGHT, () => wm.focusedWorkspace.ShiftFocusedWindow(+1) },
-			{ COMMAND.SHIFT_FOCUSED_WINDOW_LEFT, () => wm.focusedWorkspace.ShiftFocusedWindow(-1) },
+			{ COMMAND.SHIFT_FOCUSED_WINDOW_RIGHT, () => wm.ShiftFocusedWindowBy(+1) },
+			{ COMMAND.SHIFT_FOCUSED_WINDOW_LEFT, () => wm.ShiftFocusedWindowBy(-1) },
 			{ COMMAND.SHIFT_WINDOW_NEXT_WORKSPACE, () => wm.ShiftFocusedWindowToNextWorkspace() },
 			{ COMMAND.SHIFT_WINDOW_PREVIOUS_WORKSPACE, () => wm.ShiftFocusedWindowToPreviousWorkspace() },
-			{ COMMAND.TOGGLE_FLOATING_WINDOW, () => wm.focusedWorkspace.ToggleFloating() },
+			{ COMMAND.TOGGLE_FLOATING_WINDOW, () => wm.ToggleFloating() },
 
-			{ COMMAND.FOCUS_WORKSPACE_1, () => wm.FocusWorkspace(wm.workspaces[0]!) },
-			{ COMMAND.FOCUS_WORKSPACE_2, () => wm.FocusWorkspace(wm.workspaces[1]!) },
-			{ COMMAND.FOCUS_WORKSPACE_3, () => wm.FocusWorkspace(wm.workspaces[2]!) },
-			{ COMMAND.FOCUS_WORKSPACE_4, () => wm.FocusWorkspace(wm.workspaces[3]!) },
-			{ COMMAND.FOCUS_WORKSPACE_5, () => wm.FocusWorkspace(wm.workspaces[4]!) },
-			{ COMMAND.FOCUS_WORKSPACE_6, () => wm.FocusWorkspace(wm.workspaces[5]!) },
-			{ COMMAND.FOCUS_WORKSPACE_7, () => wm.FocusWorkspace(wm.workspaces[6]!) },
-			{ COMMAND.FOCUS_WORKSPACE_8, () => wm.FocusWorkspace(wm.workspaces[7]!) },
-			{ COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(wm.workspaces[8]!) },
+			{ COMMAND.FOCUS_WORKSPACE_1, () => wm.FocusWorkspace(0) },
+			{ COMMAND.FOCUS_WORKSPACE_2, () => wm.FocusWorkspace(1) },
+			{ COMMAND.FOCUS_WORKSPACE_3, () => wm.FocusWorkspace(2) },
+			{ COMMAND.FOCUS_WORKSPACE_4, () => wm.FocusWorkspace(3) },
+			{ COMMAND.FOCUS_WORKSPACE_5, () => wm.FocusWorkspace(4) },
+			{ COMMAND.FOCUS_WORKSPACE_6, () => wm.FocusWorkspace(5) },
+			{ COMMAND.FOCUS_WORKSPACE_7, () => wm.FocusWorkspace(6) },
+			{ COMMAND.FOCUS_WORKSPACE_8, () => wm.FocusWorkspace(7) },
+			{ COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(8) },
 
+			{ COMMAND.UPDATE, () => wm.Update() },
 			{ COMMAND.RESTART, () => Restart() },
-			{ COMMAND.UPDATE, () => wm.focusedWorkspace.Update() },
 		};
 
 		// just make all windows reappear if crashes
@@ -161,7 +161,7 @@ class Aviyal : IDisposable
 						break;
 					case "focusedWorkspaceIndex":
 						int index = Convert.ToInt32(args.ElementAtOrDefault(2));
-						if (index >= 0 && index <= wm.workspaces.Count - 1) wm.FocusWorkspace(wm.workspaces[index]);
+						wm.FocusWorkspace(index);
 						break;
 				}
 				break;
@@ -223,7 +223,7 @@ class Aviyal : IDisposable
 	}
 
 	/* 
-	 *
+	 * Creates an instance of the program
 	 * */
 
 	static void Run()
@@ -332,13 +332,11 @@ class Aviyal : IDisposable
 				break;
 			case "--debug":
 				WindowManager.DEBUG = true;
+				WindowManager.DEBUG_WND_NAME = args.ToList().ElementAtOrDefault(1) ?? "windowgen";
 				WithConsole(() => Loop());
 				break;
 			case "--version":
-				WithConsole(() =>
-				{
-					Console.WriteLine($"Aviyal version: {ver}");
-				});
+				WithConsole(() => Console.WriteLine($"Aviyal version: {ver}"));
 				break;
 			case "--help":
 				WithConsole(() =>

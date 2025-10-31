@@ -453,7 +453,7 @@ public class Workspace : IWorkspace, IMoveable
 		if (index != null) windows?[(int)index]?.Focus();
 	}
 
-	public void ShiftFocusedWindow(int shiftBy)
+	public void ShiftFocusedWindowBy(int shiftBy)
 	{
 		Window? _fwnd = focusedWindow;
 		int? index = focusedWindowIndex;
@@ -537,6 +537,7 @@ public class WindowManager : IWindowManager
 
 	Config config;
 	public static bool DEBUG = false;
+	public static string DEBUG_WND_NAME = "windowgen";
 	public WindowManager(Config config)
 	{
 		this.config = config;
@@ -559,7 +560,7 @@ public class WindowManager : IWindowManager
 		 * */
 		if (DEBUG)
 		{
-			this.initWindows = this.initWindows.Where(wnd => wnd.title.Contains("windowgen")).ToList();
+			this.initWindows = this.initWindows.Where(wnd => wnd.title.Contains(DEBUG_WND_NAME)).ToList();
 		}
 
 		for (int i = 0; i < this.config.workspaces; i++)
@@ -615,14 +616,14 @@ public class WindowManager : IWindowManager
 
 	/* Atomic actions
 	 * */
-	public void FocusWorkspace(Workspace wksp)
+	private void FocusWorkspace(Workspace wksp)
 	{
 		workspaces.ForEach(wksp => wksp?.Hide());
 		wksp.Focus();
 		focusedWorkspace = wksp;
 	}
 
-	public void ShiftFocusedWindowToWorkspace(int index)
+	private void ShiftFocusedWindowToWorkspace(int index)
 	{
 		if (index < 0 || index > workspaces.Count - 1) return;
 		Window? wnd = focusedWorkspace.focusedWindow;
@@ -639,7 +640,8 @@ public class WindowManager : IWindowManager
 	 * This is to ensure that our own actions dont trigger the window events recursively
 	 * and also to ensure that a new action isn't executed while an old one is going on.
 	 *
-	 * Only wrap non-atomic composite actions. 
+	 * Only wrap non-atomic composite actions. All public window manager actions must be
+	 * wrapped.
 	 * */
 	readonly Lock @addLock = new();
 	List<Task> wmActions = new();
@@ -654,6 +656,16 @@ public class WindowManager : IWindowManager
 		_t.Wait();
 		Thread.Sleep(WINEVENT_DELAY);
 		wmActions.Remove(_t);
+	}
+
+	/*
+	 * Public actions offered by the window manager
+	 * */
+
+	public void FocusWorkspace(int workspaceIndex)
+	{
+		if (workspaceIndex < 0 || workspaceIndex > workspaces.Count - 1) return;
+		SuppressEvents(() => FocusWorkspace(workspaces[workspaceIndex]!));
 	}
 
 	public void FocusNextWorkspace()
@@ -778,6 +790,17 @@ public class WindowManager : IWindowManager
 
 		WM_EVENT("ShiftWindowToPreviousWorkspace");
 	}
+
+	public void CloseFocusedWindow() => SuppressEvents(() => focusedWorkspace.CloseFocusedWindow());
+	public void FocusAdjacentWindow(EDGE direction) => SuppressEvents(() => focusedWorkspace.FocusAdjacentWindow(direction));
+
+	public void ToggleFloating() => SuppressEvents(() => focusedWorkspace.ToggleFloating());
+	public void Update() => SuppressEvents(() => focusedWorkspace.Update());
+	public void ShiftFocusedWindowBy(int shiftBy) => SuppressEvents(() => focusedWorkspace.ShiftFocusedWindowBy(shiftBy));
+
+	/*
+	 * Window events apparatus
+	 * */
 
 	bool IsWindowInConfigRules(Window wnd, string ruleType)
 	{
