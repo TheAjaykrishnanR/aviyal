@@ -185,10 +185,16 @@ public class Window : IWindow, IMoveable
 		ToggleAnimation(true);
 	}
 
+	const int FOCUS_RETRIES = 10;
 	public void Focus()
 	{
-		User32.keybd_event(0, 0, 0, Globals.FOREGROUND_FAKE_KEY);
-		User32.SetForegroundWindow(this.hWnd);
+		int _retry = 0;
+		while (User32.GetForegroundWindow() != this.hWnd)
+		{
+			if (++_retry > FOCUS_RETRIES) break;
+			User32.keybd_event(0, 0, 0, Globals.FOREGROUND_FAKE_KEY);
+			User32.SetForegroundWindow(this.hWnd);
+		}
 	}
 
 	const SETWINDOWPOS defaultMoveFlags =
@@ -433,9 +439,8 @@ public class Workspace : IWorkspace, IMoveable
 			int _retry = 0;
 			while (windows[i]!.rect.Left != absX || windows[i]!.rect.Top != absY)
 			{
-				if (_retry > MOVE_RETRIES) break;
+				if (++_retry > MOVE_RETRIES) break;
 				windows[i]?.Move(absX, absY, redraw);
-				_retry++;
 			}
 		}
 	}
