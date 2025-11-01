@@ -856,7 +856,7 @@ public class WindowManager : IWindowManager
 	{
 		bool IgnoreWindow(string reason)
 		{
-			Logger.Log($"Ignoring wnd, [{wnd.title}, {wnd.className}] due to: {reason}, {Paths.rootDir}");
+			Logger.Log($"Ignoring wnd, [{wnd.title}, {wnd.className}] due to: {reason}");
 			return true;
 		}
 

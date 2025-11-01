@@ -37,8 +37,7 @@ public class KeyEventsListener : IDisposable
 		string text = $"{prefix}[";
 		keys.ForEach(key => text += $"{key}, ");
 		text += $"], {dt}ms, trailingKey: {trailingKey}, letKeyPass: {letKeyPass}, key: {key}\n";
-		Console.Write(text);
-		File.AppendAllText(Paths.logFile, text);
+		Logger.Log(text, debug: false);
 	}
 
 	/*
