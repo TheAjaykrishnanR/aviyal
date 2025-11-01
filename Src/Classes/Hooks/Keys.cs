@@ -32,14 +32,6 @@ public class KeyEventsListener : IDisposable
 	List<VK> captured = new();
 	List<Keymap> keymaps = new();
 
-	void Log(List<VK> keys, uint dt = 0, VK? key = null, string prefix = "")
-	{
-		string text = $"{prefix}[";
-		keys.ForEach(key => text += $"{key}, ");
-		text += $"], {dt}ms, trailingKey: {trailingKey}, letKeyPass: {letKeyPass}, key: {key}\n";
-		Logger.Log(text, debug: false);
-	}
-
 	/*
 	 * Windows calls our callback everytime a key is pressed or released.
 	 * If the key remains pressed it will continually call our callback 
@@ -73,7 +65,7 @@ public class KeyEventsListener : IDisposable
 			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */ :
 				if (!captured.Contains(key) && key != 0)
 					captured.Add(key);
-				Log(captured, dt);
+				Logger.Log<VK>(captured, suffix: $"dt: {dt}");
 				foreach (Keymap keymap in keymaps)
 				{
 					if (Utils.ListContentEqual<VK>(captured, keymap.keys))
@@ -117,7 +109,7 @@ public class KeyEventsListener : IDisposable
 		const int WH_KEYBOARD_LL = 13;
 		// hmod = 0, hook function is in code
 		// dwThreadId = 0, hook all threads
-		hhook = SetWindowsHookExA(WH_KEYBOARD_LL, KeyboardCallback, Process.GetCurrentProcess().MainModule.BaseAddress, 0);
+		hhook = SetWindowsHookExA(WH_KEYBOARD_LL, KeyboardCallback, Process.GetCurrentProcess().MainModule!.BaseAddress, 0);
 		// always use a message pump, instead of: while(Console.ReadLine() != ":q") { }
 		while (running)
 		{

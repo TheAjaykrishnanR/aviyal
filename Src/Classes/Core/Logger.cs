@@ -37,9 +37,12 @@ public class Logger
 		}
 	}
 
-	public static void Log(List<string> array)
+	public static void Log<T>(List<T> array, string? prefix = null, string? suffix = null)
 	{
-		foreach (var arr in array) Log(arr);
+		string text = $"{prefix} [";
+		array.ForEach(item => text += $"{item?.ToString()}, ");
+		text += $"] {suffix}";
+		Log(text);
 	}
 
 	public static void Error(Exception ex, string? customMessage = null)

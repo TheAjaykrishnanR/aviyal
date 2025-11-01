@@ -72,7 +72,7 @@ public class Window : IWindow, IMoveable
 			WINDOWPLACEMENT wndPlmnt = new();
 			User32.GetWindowPlacement(this.hWnd, ref wndPlmnt);
 			var state = (SHOWWINDOW)wndPlmnt.showCmd;
-			//Console.WriteLine($"state: {state}");
+			//Logger.Log($"state: {state}");
 			return state;
 		}
 	}
@@ -708,7 +708,7 @@ public class WindowManager : IWindowManager
 					workspaces[next]?.Move(w, null);
 				else if (config.workspaceAnimationsDirection == "vertical")
 				{
-					Console.WriteLine($"next workspace set down at h: {h}");
+					Logger.Log($"next workspace set down at h: {h}");
 					workspaces[next]?.Move(null, h);
 				}
 
@@ -973,7 +973,7 @@ public class WindowManager : IWindowManager
 
 		CleanGhostWindows();
 		WM_EVENT($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
-		Logger.LogToFile($"WindowShown, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		Logger.Log($"WindowShown, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowHidden(Window wnd)
@@ -993,7 +993,7 @@ public class WindowManager : IWindowManager
 
 		CleanGhostWindows();
 		WM_EVENT($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}");
-		Logger.LogToFile($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		Logger.Log($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowDestroyed(Window wnd)
@@ -1001,7 +1001,7 @@ public class WindowManager : IWindowManager
 		if (wmActions.Count > 0) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
 
-		//Console.WriteLine($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Logger.Log($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		if (focusedWorkspace.windows.Contains(wnd))
 		{
@@ -1011,7 +1011,7 @@ public class WindowManager : IWindowManager
 
 		CleanGhostWindows();
 		WM_EVENT("WindowRemoved");
-		Logger.LogToFile($"WindowDestroyed, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		Logger.Log($"WindowDestroyed, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	/* This is the best way to capture windows that have been missed by WindowShown(),
@@ -1043,7 +1043,7 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
-		//Console.WriteLine($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Logger.Log($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		/* wnd -> window being moved
 		 * cursorPos
@@ -1060,7 +1060,7 @@ public class WindowManager : IWindowManager
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
 		WM_EVENT("WindowMoved");
-		Logger.LogToFile($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		Logger.Log($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowMaximized(Window wnd)
@@ -1069,12 +1069,12 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
-		//Console.WriteLine($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Logger.Log($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
 		WM_EVENT("WindowMaximized");
-		Logger.LogToFile($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		Logger.Log($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowMinimized(Window wnd)
@@ -1083,14 +1083,14 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
-		//Console.WriteLine($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Logger.Log($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
 		TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED).Wait();
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
 		WM_EVENT("WindowMinimized");
-		Logger.LogToFile($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		Logger.Log($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	// window unmaximized
@@ -1113,7 +1113,7 @@ public class WindowManager : IWindowManager
 		{
 			lasRestoredhWnd = wnd.hWnd;
 			lastRestoreTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-			Console.WriteLine("ignore window restore");
+			Logger.Log("ignore window restore");
 			return;
 		}
 		lasRestoredhWnd = wnd.hWnd;
@@ -1124,12 +1124,12 @@ public class WindowManager : IWindowManager
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 		if (mouseDown) return;
 
-		//Console.WriteLine($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Logger.Log($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
 		WM_EVENT($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}, wmActions: {wmActions.Count}");
-		Logger.LogToFile($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		Logger.Log($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	Workspace? GetWindowWorkspace(Window wnd)
@@ -1143,12 +1143,12 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
-		//Console.WriteLine($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
+		//Logger.Log($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
 		WM_EVENT($"WindowFocused, {wnd.title}");
-		Logger.LogToFile($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		Logger.Log($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 }
 

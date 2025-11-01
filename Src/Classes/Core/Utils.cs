@@ -33,29 +33,6 @@ public partial class Utils
 		return styles;
 	}
 
-	public static bool IsContextMenu(nint hWnd)
-	{
-		var styleList = Utils.GetStylesFromHwnd(hWnd);
-		//Logger.Log($"IsContextMenu(): {Marshal.GetLastWin32Error()}");
-		if (styleList.Contains("WS_POPUP")) return true;
-
-		string className = Utils.GetClassNameFromHWND(hWnd);
-		if (className == "#32768") return true;
-		if (className == "#32770") return true;
-		if (className == "SysListView32") return true;
-		if (className == "SysShadow") return true;
-		if (className == "TrayiconMessageWindow") return true;
-		if (className == "tray_icon_app") return true;
-		return false;
-	}
-
-	public static bool IsWindowVisible(nint hWnd)
-	{
-		var styleList = Utils.GetStylesFromHwnd(hWnd);
-		if (styleList.Contains("WS_VISIBLE")) return true;
-		return false;
-	}
-
 	public static nint GetWindowUnderCursor()
 	{
 		User32.GetCursorPos(out POINT pt);
@@ -164,9 +141,18 @@ public partial class Utils
 
 		if (Environment.IsPrivilegedProcess)
 		{
-			List<GUIProcess?> allWindows = EnumWindowProcesses();
-			Process? process = allWindows.FirstOrDefault(guiProcess => guiProcess?.process.Id == processId)?.process;
-			return process?.MainModule?.FileName;
+			try
+			{
+				List<GUIProcess?> allWindows = EnumWindowProcesses();
+				Process? process = allWindows.FirstOrDefault(guiProcess => guiProcess?.process.Id == processId)?.process;
+				return process?.MainModule?.FileName;
+			}
+			catch (Exception ex)
+			{
+				// can fail due to a myriad number of reason, including trying to query a 
+				// closing process
+				Logger.Log("System.Diagnostics.Process gave up :(", ex: ex);
+			}
 		}
 
 		/// <summary>
@@ -195,7 +181,7 @@ public partial class Utils
 		}).ToList();
 
 		//
-		string? exePathDeviceName = driveDevicePaths.Where(path => exePath.Contains(path)).FirstOrDefault();
+		string? exePathDeviceName = driveDevicePaths.FirstOrDefault(path => exePath.Contains(path));
 		if (exePathDeviceName == null) return null;
 		string exePathDriveName = devicePathToDrivePath[exePathDeviceName];
 
@@ -228,9 +214,6 @@ public partial class Utils
 		WINDOWSTYLEEX exStyle = (WINDOWSTYLEEX)User32.GetWindowLong(hWnd, GETWINDOWLONG.GWL_EXSTYLE);
 		if (exStyle.HasFlag(WINDOWSTYLEEX.WS_EX_TOOLWINDOW)) return false;
 
-		string className = GetClassNameFromHWND(hWnd);
-		string title = Utils.GetWindowTitleFromHWND(hWnd);
-
 		Dwmapi.DwmGetWindowAttribute(hWnd, (uint)DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, out uint cloak, sizeof(uint));
 		return cloak == 0;
 	}
@@ -249,7 +232,6 @@ public partial class Utils
 		};
 		User32.EnumWindows(enumWnd, nint.Zero);
 		var taskbarWindows = topWindows.Where(hWnd => IsWindowInTaskBar(hWnd)).ToList();
-		//taskbarWindows.ForEach(hWnd => Logger.Log($"TASKBAR WINDOWS, hWnd: {hWnd}, class: {GetClassNameFromHWND(hWnd)}, exe: {GetExePathFromHWND(hWnd)}"));
 		return taskbarWindows;
 		//return topWindows;
 	}
@@ -346,9 +328,6 @@ public partial class Utils
 		double scale = Utils.GetDisplayScaling();
 		int screenWidth = User32.GetSystemMetrics(0);
 		int screenHeight = User32.GetSystemMetrics(1);
-		screenWidth = (int)(screenWidth);
-		screenHeight = (int)(screenHeight);
-		//Console.WriteLine($"[{screenWidth}x{screenHeight}], scale: {scale}");
 		return (screenWidth, screenHeight);
 	}
 

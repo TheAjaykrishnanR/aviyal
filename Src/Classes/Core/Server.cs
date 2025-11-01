@@ -19,14 +19,14 @@ public class Server : IDisposable
 		port = config.serverPort;
 		socket.Bind(new IPEndPoint(IPAddress.Any, port));
 		socket.Listen(128);
-		Console.WriteLine($"server: listening on {IPAddress.Any}:{port}");
+		Logger.Log($"server: listening on {IPAddress.Any}:{port}");
 		Task.Run(() =>
 		{
 			while (true)
 			{
 				Socket client = socket.Accept();
 				clients.Add(client);
-				Console.WriteLine("server: socket connected");
+				Logger.Log("server: socket connected");
 				Task.Run(() =>
 				{
 					while (client.Connected)
@@ -37,11 +37,11 @@ public class Server : IDisposable
 						string response = REQUEST_RECEIVED(request);
 						byte[] bytes = Encoding.UTF8.GetBytes(response);
 						client.Send(bytes);
-						Console.WriteLine($"server: request recieved: {request}, response: {response}");
+						Logger.Log($"server: request recieved: {request}, response: {response}");
 					}
 					client.Close();
 					clients.Remove(client);
-					Console.WriteLine("server: connection closed");
+					Logger.Log("server: connection closed");
 				});
 			}
 		});
@@ -49,7 +49,7 @@ public class Server : IDisposable
 
 	public void Broadcast(string message)
 	{
-		//Console.WriteLine($"[[[BROADCASTING TO {clients.Count}]]]");
+		//Logger.Log($"[[[BROADCASTING TO {clients.Count}]]]");
 		clients?.ForEach(client =>
 		{
 			byte[] bytes = Encoding.UTF8.GetBytes(message);

@@ -66,12 +66,10 @@ class Aviyal : IDisposable
 		{
 			int i = 0;
 			wm.workspaces.ForEach(wksp => wksp?.windows.ForEach(wnd => { wnd?.Show(); i++; }));
-			Console.WriteLine($"Crash: Restored {i} windows...");
+			Logger.Log($"Crash: Restored {i} windows...");
 
 			Exception ex = (Exception)e.ExceptionObject;
-			string text = ex.Message + "\n" + ex.StackTrace;
-			Console.WriteLine(text);
-			File.WriteAllText(Paths.logFile, text);
+			Logger.Log("AppDomain: Unhandled exception", ex: ex);
 			errored = true;
 		};
 	}
@@ -125,7 +123,7 @@ class Aviyal : IDisposable
 
 	public void HotkeyPressed(Keymap keymap)
 	{
-		Console.WriteLine($"Hotekey Pressed: {keymap.command}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+		Logger.Log($"Hotekey Pressed: {keymap.command}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
 		if (keymap.command == COMMAND.EXEC) Exec(keymap.arguments);
 		else actions[keymap.command]?.Invoke();
 	}
@@ -197,9 +195,9 @@ class Aviyal : IDisposable
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine(ex.Message);
+				Logger.Log("Error writing to state file", ex: ex);
 			}
-			Console.WriteLine($"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}\n{state.ToJson()}");
+			Logger.Log($"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}\n{state.ToJson()}");
 		}
 	}
 
@@ -217,8 +215,7 @@ class Aviyal : IDisposable
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"Unable to execute command: {ex.Message}");
-			Console.WriteLine(string.Join(", ", args));
+			Logger.Log("Unable to execute command", ex: ex);
 		}
 	}
 
@@ -230,11 +227,11 @@ class Aviyal : IDisposable
 	{
 		if (Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1)
 		{
-			Console.WriteLine("an instance is already running, exiting...");
+			Logger.Log("an instance is already running, exiting...");
 			return;
 		}
 
-		Console.WriteLine($"Running aviyal instance, reload count: {reloadCount}");
+		Logger.Log($"Running aviyal instance, reload count: {reloadCount}");
 
 		Paths.CreateIfAbsent();
 
@@ -242,7 +239,7 @@ class Aviyal : IDisposable
 		if (File.Exists(Paths.configFile))
 		{
 			string jsonString = File.ReadAllText(Paths.configFile);
-			Console.WriteLine(jsonString);
+			Logger.Log(jsonString);
 			try
 			{
 				config = Config.FromJson(jsonString);
@@ -256,7 +253,7 @@ class Aviyal : IDisposable
 		else
 		{
 			config = new();
-			Console.WriteLine("Default config: ");
+			Logger.Log("Default config: ");
 			File.AppendAllText(Paths.configFile, config.ToJson());
 		}
 
@@ -302,14 +299,14 @@ class Aviyal : IDisposable
 			restoreFile = Paths.stateFile;
 		if (!File.Exists(restoreFile))
 		{
-			Console.WriteLine($"State file: {restoreFile} not found!");
+			Logger.Log($"State file: {restoreFile} not found!");
 			return;
 		}
 		ProgramState state = ProgramState.FromJson(File.ReadAllText(restoreFile));
-		Console.WriteLine($"Found {state.windows.Count} windows in {restoreFile}");
+		Logger.Log($"Found {state.windows.Count} windows in {restoreFile}");
 		state.windows.ForEach(wnd =>
 		{
-			Console.WriteLine($"Restoring {wnd.title}, hWnd: {wnd.hWnd}");
+			Logger.Log($"Restoring {wnd.title}, hWnd: {wnd.hWnd}");
 			wnd.Move(0, 0);
 			wnd.Show();
 		});
@@ -380,10 +377,7 @@ available options:
 				});
 				break;
 			case "--restore":
-				WithConsole(() =>
-				{
-					Restore(args.ToList().ElementAtOrDefault(1));
-				});
+				WithConsole(() => Restore(args.ToList().ElementAtOrDefault(1)));
 				break;
 		}
 	}
