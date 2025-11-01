@@ -694,6 +694,8 @@ public class WindowManager : IWindowManager
 	{
 		if (workspaceIndex < 0 || workspaceIndex > workspaces.Count - 1) return;
 		SuppressEvents(() => FocusWorkspace(workspaces[workspaceIndex]!));
+
+		WM_EVENT("FocusWorkspace");
 	}
 
 	public void FocusNextWorkspace()
@@ -819,12 +821,34 @@ public class WindowManager : IWindowManager
 		WM_EVENT("ShiftWindowToPreviousWorkspace");
 	}
 
-	public void CloseFocusedWindow() => SuppressEvents(() => focusedWorkspace.CloseFocusedWindow());
-	public void FocusAdjacentWindow(EDGE direction) => SuppressEvents(() => focusedWorkspace.FocusAdjacentWindow(direction));
+	public void CloseFocusedWindow() => SuppressEvents(() =>
+	{
+		focusedWorkspace.CloseFocusedWindow();
+		WM_EVENT("CloseFocusedWindow");
+	});
+	public void FocusAdjacentWindow(EDGE direction) => SuppressEvents(() =>
+	{
+		focusedWorkspace.FocusAdjacentWindow(direction);
+		WM_EVENT("FocusAdjacentWindow");
+	});
 
-	public void ToggleFloating() => SuppressEvents(() => focusedWorkspace.ToggleFloating());
-	public void Update() => SuppressEvents(() => focusedWorkspace.Update());
-	public void ShiftFocusedWindowBy(int shiftBy) => SuppressEvents(() => focusedWorkspace.ShiftFocusedWindowBy(shiftBy));
+	public void ToggleFloating() => SuppressEvents(() =>
+	{
+		focusedWorkspace.ToggleFloating();
+		WM_EVENT("ToggleFloating");
+	});
+
+	public void Update() => SuppressEvents(() =>
+	{
+		focusedWorkspace.Update();
+		WM_EVENT("Update");
+	});
+
+	public void ShiftFocusedWindowBy(int shiftBy) => SuppressEvents(() =>
+	{
+		focusedWorkspace.ShiftFocusedWindowBy(shiftBy);
+		WM_EVENT("ShiftFocusedWindowBy");
+	});
 
 	/*
 	 * Window events apparatus
