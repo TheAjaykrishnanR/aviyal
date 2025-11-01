@@ -47,10 +47,12 @@ public class KeyEventsListener : IDisposable
 	bool letKeyPass = true;
 	bool hotkeyPressed = false; // if hotkey keys combo are remaining pressed
 	uint dt = 0;
+	const int HOTKEY_COMBO_TIMEOUT = 2000;
 	int KeyboardCallback(int code, nint wparam, nint lparam)
 	{
 		var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
-		if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY) return 1;
+		if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY)
+			return CallNextHookEx(0, code, wparam, lparam);
 		VK key = (VK)kbdStruct.vkCode;
 		dt = kbdStruct.time - lastKeyTime;
 		// if in the offchance that a key is added to the capture list which does
@@ -58,7 +60,7 @@ public class KeyEventsListener : IDisposable
 		// essentially polluting our hotkey buffer making it impossible for any hotkey
 		// to be triggered, so we clear our buffer if the last key was pressed 2 seconds
 		// ago. This is a reasonable time as no hotkey combo will span a whole 2 seconds.
-		if (dt > 2000 || key == VK.ESCAPE) captured.Clear();
+		if (dt > HOTKEY_COMBO_TIMEOUT || key == VK.ESCAPE) captured.Clear();
 		letKeyPass = true;
 		switch ((WINDOWMESSAGE)wparam)
 		{

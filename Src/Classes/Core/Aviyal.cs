@@ -459,11 +459,14 @@ public class Workspace : IWorkspace, IMoveable
 
 	public void CloseFocusedWindow()
 	{
+		Window? fWnd = focusedWindow;
 		int? index = focusedWindowIndex;
 		if (index == null) return;
-		index = index > 0 ? index - 1 : 0;
+		int? toFocus = index > 0 ? index - 1 : 0;
 		focusedWindow?.Close();
-		windows.ElementAtOrDefault((int)index)?.Focus();
+		windows.ElementAtOrDefault((int)toFocus)?.Focus();
+		windows.Remove(fWnd);
+		Update();
 	}
 
 	public void FocusAdjacentWindow(EDGE direction)
@@ -473,6 +476,7 @@ public class Workspace : IWorkspace, IMoveable
 		if (index != null) windows?[(int)index]?.Focus();
 	}
 
+	// changes the order of windows in the workspace
 	public void ShiftFocusedWindowBy(int shiftBy)
 	{
 		Window? _fwnd = focusedWindow;
@@ -482,7 +486,7 @@ public class Workspace : IWorkspace, IMoveable
 		if (index < 0 || index > windows.Count - 1) return;
 		windows.Remove(_fwnd);
 		windows.Insert((int)index, _fwnd);
-		Focus();
+		Update();
 	}
 
 	public void MakeFloating(Window wnd)
