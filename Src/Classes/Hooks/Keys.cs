@@ -67,7 +67,7 @@ public class KeyEventsListener : IDisposable
 			case WINDOWMESSAGE.WM_KEYDOWN or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */ :
 				if (!captured.Contains(key) && key != 0)
 					captured.Add(key);
-				Logger.Log<VK>(captured, suffix: $"dt: {dt}");
+				if (Aviyal.DEBUG) Logger.Log<VK>(captured, suffix: $"dt: {dt}");
 				foreach (Keymap keymap in keymaps)
 				{
 					if (Utils.ListContentEqual<VK>(captured, keymap.keys))
@@ -81,8 +81,8 @@ public class KeyEventsListener : IDisposable
 						// active windows will receive ^L, ^H keys
 						if (!hotkeyPressed)
 						{
-							Console.WriteLine("HOTKEY_PRESSED");
 							Task.Run(() => HOTKEY_PRESSED(keymap));
+							if (Aviyal.DEBUG) Logger.Log("HOTKEY PRESSED");
 						}
 						hotkeyPressed = true;
 

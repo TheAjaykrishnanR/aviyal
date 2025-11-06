@@ -9,16 +9,22 @@ using System.Collections.Generic;
 
 public class Logger
 {
-	public static bool DEBUG = true;
-	public static bool CONSOLE = true;
-	public static bool FILE = true;
-
-	public static void Log(string? text, Exception? ex = null, bool debug = true, bool console = true, bool file = true)
+	static FileInfo? logFileInfo;
+	public static void Log(
+		string? text,
+		Exception? ex = null,
+		bool debug = true, bool console = true, bool file = true
+	)
 	{
 		if (ex != null) text += $"\n{ex.Message}" + $"\n{ex.StackTrace}" + $"\n{ex?.InnerException?.StackTrace}";
-		if (DEBUG && debug) Debug.WriteLine(text);
-		if (CONSOLE && console) Console.WriteLine(text);
-		if (FILE && file) LogToFile(text);
+		if (debug) Debug.WriteLine(text);
+		if (console) Console.WriteLine(text);
+		if (file)
+		{
+			logFileInfo ??= new(Paths.logFile);
+			if (logFileInfo.Length > 1024 * 1024) File.WriteAllText(Paths.logFile, null);
+			LogToFile(text);
+		}
 	}
 
 	private static Lock @writeLock = new();

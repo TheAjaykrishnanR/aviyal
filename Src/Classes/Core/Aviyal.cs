@@ -172,16 +172,27 @@ public class Window : IWindow, IMoveable
 		this.hWnd = hWnd;
 	}
 
+	int SHOWHIDE_RETRIES = 10;
 	public void Hide()
 	{
 		ToggleAnimation(false);
-		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_HIDE);
+		int _retry = 0;
+		while (User32.IsWindowVisible(this.hWnd))
+		{
+			if (++_retry > SHOWHIDE_RETRIES) break;
+			User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_HIDE);
+		}
 		ToggleAnimation(true);
 	}
 	public void Show()
 	{
 		ToggleAnimation(false);
-		User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOWNA);
+		int _retry = 0;
+		while (!User32.IsWindowVisible(this.hWnd))
+		{
+			if (++_retry > SHOWHIDE_RETRIES) break;
+			User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOWNA);
+		}
 		ToggleAnimation(true);
 	}
 
@@ -560,7 +571,6 @@ public class WindowManager : IWindowManager
 	}
 
 	Config config;
-	public static bool DEBUG = false;
 	public static string DEBUG_WND_NAME = "windowgen";
 	public WindowManager(Config config)
 	{
@@ -582,7 +592,7 @@ public class WindowManager : IWindowManager
 		 * be managed by the program. This is so that your ide or terminal is left free
 		 * while testing
 		 * */
-		if (DEBUG)
+		if (Aviyal.DEBUG)
 		{
 			this.initWindows = this.initWindows.Where(wnd => wnd.title.Contains(DEBUG_WND_NAME)).ToList();
 		}
@@ -879,19 +889,24 @@ public class WindowManager : IWindowManager
 		return false;
 	}
 
-	// filter out windows that should never be interacted with
+	/* filter out windows that should never be interacted with.
+	 * This is our guardian, the first line of defence keeping unwanted and evil 
+	 * windows from entering into our manager.
+	 * */
 	bool ShouldWindowBeIgnored(Window wnd)
 	{
 		bool IgnoreWindow(string reason)
 		{
-			Logger.Log($"Ignoring wnd, [{wnd.title}, {wnd.className}] due to: {reason}");
+			if (Aviyal.DEBUG)
+				Logger.Log($"Ignoring wnd, [{wnd.title}, {wnd.className}] due to: {reason}");
 			return true;
 		}
 
 		/* not required actually because WINDOW_ADDED only fires on OBJECT_SHOW
-		 * however adding for completeness
+		 * however adding for completeness.
+		 * Ideally we shouldn't check for window visibility here because normal windows
+		 * could be invisible as well, it is indeed a valid state for a normal window
 		 * */
-		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_VISIBLE)) return IgnoreWindow("INVISIBLE WINDOW");
 		if (wnd.styles.HasFlag(WINDOWSTYLE.WS_CHILD)) return IgnoreWindow("CHILD WINDOW");
 
 		/* all normal top level windows must have either "WS_OVERLAPPED" - OR - "WS_POPUP"
@@ -905,6 +920,9 @@ public class WindowManager : IWindowManager
 		   !wnd.styles.HasFlag(WINDOWSTYLE.WS_POPUP)
 		) return IgnoreWindow("NEITHER OVERLAPPED NOR POPUP");
 
+		/* ignore all toolwindows and topmost windows since these generally are supposed
+		 * to be visible at all times.
+		 * */
 		if (wnd.exStyles.HasFlag(WINDOWSTYLEEX.WS_EX_TOOLWINDOW)) return IgnoreWindow("TOOLWINDOW");
 		if (wnd.exStyles.HasFlag(WINDOWSTYLEEX.WS_EX_TOPMOST)) return IgnoreWindow("TOPMOST");
 
@@ -1001,7 +1019,6 @@ public class WindowManager : IWindowManager
 
 		CleanGhostWindows();
 		WM_EVENT($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
-		Logger.Log($"WindowShown, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowHidden(Window wnd)
@@ -1021,15 +1038,12 @@ public class WindowManager : IWindowManager
 
 		CleanGhostWindows();
 		WM_EVENT($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}");
-		Logger.Log($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
 	}
 
 	public void WindowDestroyed(Window wnd)
 	{
 		if (wmActions.Count > 0) return;
 		if ((wnd = GetAlreadyStoredWindow(wnd)) == null) return;
-
-		//Logger.Log($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		if (focusedWorkspace.windows.Contains(wnd))
 		{
@@ -1038,8 +1052,7 @@ public class WindowManager : IWindowManager
 		}
 
 		CleanGhostWindows();
-		WM_EVENT("WindowRemoved");
-		Logger.Log($"WindowDestroyed, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		WM_EVENT($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
 	}
 
 	/* This is the best way to capture windows that have been missed by WindowShown(),
@@ -1087,8 +1100,7 @@ public class WindowManager : IWindowManager
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		WM_EVENT("WindowMoved");
-		Logger.Log($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		WM_EVENT($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
 	}
 
 	public void WindowMaximized(Window wnd)
@@ -1097,12 +1109,9 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
-		//Logger.Log($"WindowMazimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
-
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		WM_EVENT("WindowMaximized");
-		Logger.Log($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		WM_EVENT($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}");
 	}
 
 	public void WindowMinimized(Window wnd)
@@ -1111,14 +1120,12 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
-		//Logger.Log($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 		// render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
 		TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED).Wait();
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		WM_EVENT("WindowMinimized");
-		Logger.Log($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		WM_EVENT($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}");
 	}
 
 	// window unmaximized
@@ -1141,7 +1148,7 @@ public class WindowManager : IWindowManager
 		{
 			lasRestoredhWnd = wnd.hWnd;
 			lastRestoreTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-			Logger.Log("ignore window restore");
+			if (Aviyal.DEBUG) Logger.Log($"ignore window restore, {wnd.title}, {wnd.hWnd}");
 			return;
 		}
 		lasRestoredhWnd = wnd.hWnd;
@@ -1152,12 +1159,9 @@ public class WindowManager : IWindowManager
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 		if (mouseDown) return;
 
-		//Logger.Log($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
-
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		WM_EVENT($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}, wmActions: {wmActions.Count}");
-		Logger.Log($"WindowRestored, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		WM_EVENT($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
 	}
 
 	Workspace? GetWindowWorkspace(Window wnd)
@@ -1171,12 +1175,9 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
-		//Logger.Log($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
-
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
-		WM_EVENT($"WindowFocused, {wnd.title}");
-		Logger.Log($"WindowFocused, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}, floating: {wnd.floating}, exeName: {wnd.exeName}, count: {focusedWorkspace.windows.Count}");
+		WM_EVENT($"WindowFocused, {wnd.title}, {wnd.hWnd}");
 	}
 }
 

@@ -8,11 +8,14 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.ComponentModel;
 
 class Aviyal : IDisposable
 {
-	static string ver = "0.1.6";
+	static string version = "0.1.6";
 	static Aviyal? aviyal;
+
+	public static bool DEBUG = false;
 
 	public WindowManager wm;
 	public Server server;
@@ -197,7 +200,8 @@ class Aviyal : IDisposable
 			{
 				Logger.Log("Error writing to state file", ex: ex);
 			}
-			Logger.Log($"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}\n{state.ToJson()}");
+			Logger.Log($"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+			if (DEBUG) Logger.Log(state.ToJson());
 		}
 	}
 
@@ -225,6 +229,12 @@ class Aviyal : IDisposable
 
 	static void Run()
 	{
+		if (reloadCount == 0)
+		{
+			Logger.Log($"Starting aviyal, time: {DateTimeOffset.Now.ToUnixTimeSeconds()}");
+			File.Delete(Paths.logFile);
+		}
+
 		if (Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1)
 		{
 			Logger.Log("an instance is already running, exiting...");
@@ -235,11 +245,11 @@ class Aviyal : IDisposable
 
 		Paths.CreateIfAbsent();
 
-		Config config = null;
+		Config? config = null;
 		if (File.Exists(Paths.configFile))
 		{
 			string jsonString = File.ReadAllText(Paths.configFile);
-			Logger.Log(jsonString);
+			Logger.Log(jsonString, file: false);
 			try
 			{
 				config = Config.FromJson(jsonString);
@@ -338,12 +348,12 @@ as an administrator or from an elevated prompt.
 				Loop();
 				break;
 			case "--debug":
-				WindowManager.DEBUG = true;
+				DEBUG = true;
 				WindowManager.DEBUG_WND_NAME = args.ToList().ElementAtOrDefault(1) ?? "windowgen";
 				WithConsole(() => Loop());
 				break;
 			case "--version":
-				WithConsole(() => Console.WriteLine($"Aviyal version: {ver}"));
+				WithConsole(() => Console.WriteLine($"Aviyal version: {version}"));
 				break;
 			case "--help":
 				WithConsole(() =>
