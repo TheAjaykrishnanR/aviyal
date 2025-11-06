@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-	static string ver = "0.1.0";
+	static string ver = "0.1.6";
 	static Aviyal? aviyal;
 
 	public WindowManager wm;
