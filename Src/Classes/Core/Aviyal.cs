@@ -308,11 +308,7 @@ public class Workspace : IWorkspace, IMoveable
     public Guid id { get; } = Guid.NewGuid();
     public List<Window?> windows { get; } = new();
 
-    public Window? focusedWindow
-    {
-        get { return windows.FirstOrDefault(_wnd => _wnd == new Window(User32.GetForegroundWindow())); }
-        private set;
-    }
+    public Window? focusedWindow => windows.FirstOrDefault(_wnd => _wnd == new Window(User32.GetForegroundWindow()));
 
     public int? focusedWindowIndex
     {
