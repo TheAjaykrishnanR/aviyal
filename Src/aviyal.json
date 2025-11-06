@@ -11,32 +11,31 @@
   "workspaceAnimationsDirection": "horizontal",
   "floatingWindowSize": "800x400",
   "serverPort": 6969,
-  "rules": 
-  [
-	{
-	  "type": "ignore",
-	  "method": "equals",
-	  "identifierType": "windowProcess",
-	  "identifier": "Flow.Launcher"
-	},
-	{
-	  "type": "floating",
-	  "method": "equals",
-	  "identifierType": "windowProcess",
-	  "identifier": "explorer"
-	},
-	{
-	  "type": "floating",
-	  "method": "equals",
-	  "identifierType": "windowProcess",
-	  "identifier": "One Photo Viewer"
-	},
-	{
-	  "type": "floating",
-	  "method": "equals",
-	  "identifierType": "windowProcess",
-	  "identifier": "IDMan"
-	}
+  "rules": [
+    {
+      "type": "ignore",
+      "method": "equals",
+      "identifierType": "windowProcess",
+      "identifier": "Flow.Launcher"
+    },
+    {
+      "type": "floating",
+      "method": "equals",
+      "identifierType": "windowProcess",
+      "identifier": "explorer"
+    },
+    {
+      "type": "floating",
+      "method": "equals",
+      "identifierType": "windowProcess",
+      "identifier": "One Photo Viewer"
+    },
+    {
+      "type": "floating",
+      "method": "equals",
+      "identifierType": "windowProcess",
+      "identifier": "IDMan"
+    }
   ],
   "keymaps": [
     {
@@ -48,7 +47,7 @@
       "command": "FOCUS_NEXT_WORKSPACE",
       "arguments": []
     },
-	{
+    {
       "keys": [
         "RCONTROL",
         "RIGHT"
@@ -65,7 +64,7 @@
       "command": "FOCUS_PREVIOUS_WORKSPACE",
       "arguments": []
     },
-	{
+    {
       "keys": [
         "RCONTROL",
         "LEFT"
@@ -213,20 +212,20 @@
       "command": "FOCUS_WORKSPACE_9",
       "arguments": []
     },
-	{
+    {
       "keys": [
         "LCONTROL",
         "LSHIFT",
-		"R"
+        "R"
       ],
       "command": "RESTART",
       "arguments": []
     },
-	{
+    {
       "keys": [
         "LCONTROL",
         "LSHIFT",
-		"U"
+        "U"
       ],
       "command": "UPDATE",
       "arguments": []
