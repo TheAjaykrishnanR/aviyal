@@ -904,9 +904,14 @@ public class WindowManager : IWindowManager
 
 		/* not required actually because WINDOW_ADDED only fires on OBJECT_SHOW
 		 * however adding for completeness.
-		 * Ideally we shouldn't check for window visibility here because normal windows
-		 * could be invisible as well, it is indeed a valid state for a normal window
+		 * The reason we check for visibility despite the fact that a normal window
+		 * can also be invisible is because ShouldWindowBeIgnored() is basically an event
+		 * filter, and only events emitted by visible windows should be managed. Any normal
+		 * invisible window (the ones we hide ourselves as part of managing it) would anyway
+		 * emit events such as OBJECT_SHOW. i.e. we only manage windows in a valid state, 
+		 * merely being normal is not enough
 		 * */
+		if (!wnd.styles.HasFlag(WINDOWSTYLE.WS_VISIBLE)) return IgnoreWindow("INVISIBLE WINDOW");
 		if (wnd.styles.HasFlag(WINDOWSTYLE.WS_CHILD)) return IgnoreWindow("CHILD WINDOW");
 
 		/* all normal top level windows must have either "WS_OVERLAPPED" - OR - "WS_POPUP"

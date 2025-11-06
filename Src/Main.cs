@@ -185,24 +185,20 @@ class Aviyal : IDisposable
 	}
 
 	int stateCounter = 0;
-	readonly Lock @lock = new();
 	public void SaveState(string? lastAction = null)
 	{
-		lock (@lock)
+		var state = GetState();
+		server.Broadcast(state.ToJson());
+		try
 		{
-			var state = GetState();
-			server.Broadcast(state.ToJson());
-			try
-			{
-				File.WriteAllText(Paths.stateFile, state.ToJson());
-			}
-			catch (Exception ex)
-			{
-				Logger.Log("Error writing to state file", ex: ex);
-			}
-			Logger.Log($"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
-			if (DEBUG) Logger.Log(state.ToJson());
+			File.WriteAllText(Paths.stateFile, state.ToJson());
 		}
+		catch (Exception ex)
+		{
+			Logger.Log("Error writing to state file", ex: ex);
+		}
+		Logger.Log($"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}");
+		if (DEBUG) Logger.Log(state.ToJson());
 	}
 
 	public void Exec(List<string> args)

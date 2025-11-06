@@ -23,7 +23,7 @@ public class Logger
 		{
 			if (logFileInfo == null)
 			{
-				if (!File.Exists(Paths.logFile)) File.Create(Paths.logFile);
+				if (!File.Exists(Paths.logFile)) File.WriteAllText(Paths.logFile, null);
 				logFileInfo = new(Paths.logFile);
 			}
 			if (logFileInfo?.Length > 1024 * 1024) File.WriteAllText(Paths.logFile, null);
@@ -31,19 +31,15 @@ public class Logger
 		}
 	}
 
-	private static Lock @writeLock = new();
 	public static void LogToFile(string? text)
 	{
-		lock (@writeLock)
+		try
 		{
-			try
-			{
-				File.AppendAllText(Paths.logFile, $"{text}\n");
-			}
-			catch (Exception ex)
-			{
-				Log("unable to log to file", ex: ex, file: false);
-			}
+			File.AppendAllText(Paths.logFile, $"{text}\n");
+		}
+		catch (Exception ex)
+		{
+			Log("unable to log to file", ex: ex, file: false);
 		}
 	}
 
