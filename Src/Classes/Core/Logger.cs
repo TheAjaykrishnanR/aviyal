@@ -21,8 +21,12 @@ public class Logger
 		if (console) Console.WriteLine(text);
 		if (file)
 		{
-			logFileInfo ??= new(Paths.logFile);
-			if (logFileInfo.Length > 1024 * 1024) File.WriteAllText(Paths.logFile, null);
+			if (logFileInfo == null)
+			{
+				if (!File.Exists(Paths.logFile)) File.Create(Paths.logFile);
+				logFileInfo = new(Paths.logFile);
+			}
+			if (logFileInfo?.Length > 1024 * 1024) File.WriteAllText(Paths.logFile, null);
 			LogToFile(text);
 		}
 	}

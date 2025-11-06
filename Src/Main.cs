@@ -231,8 +231,8 @@ class Aviyal : IDisposable
 	{
 		if (reloadCount == 0)
 		{
-			Logger.Log($"Starting aviyal, time: {DateTimeOffset.Now.ToUnixTimeSeconds()}");
 			File.Delete(Paths.logFile);
+			Logger.Log($"Starting aviyal, time: {DateTimeOffset.Now.ToUnixTimeSeconds()}");
 		}
 
 		if (Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1)
