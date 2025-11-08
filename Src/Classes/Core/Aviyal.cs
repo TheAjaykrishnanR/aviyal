@@ -209,6 +209,7 @@ public class Window : IWindow, IMoveable
 		}
 	}
 
+
 	const SETWINDOWPOS defaultMoveFlags =
 		SETWINDOWPOS.SWP_NOSENDCHANGING |
 		SETWINDOWPOS.SWP_NOCOPYBITS |
@@ -216,6 +217,7 @@ public class Window : IWindow, IMoveable
 		SETWINDOWPOS.SWP_NOACTIVATE |
 		SETWINDOWPOS.SWP_NOZORDER;
 
+	const int MOVE_RETRIES = 10;
 	public void Move(RECT pos, bool redraw = true)
 	{
 		// remove frame bounds
@@ -237,12 +239,18 @@ public class Window : IWindow, IMoveable
 	const SETWINDOWPOS slideFlag = defaultMoveFlags | SETWINDOWPOS.SWP_NOSIZE;
 	public void Move(int? x, int? y, bool redraw = true)
 	{
+		if (x == null && y == null) return;
 		SETWINDOWPOS flags = redraw switch
 		{
 			true => slideFlag,
 			false => slideFlag | SETWINDOWPOS.SWP_NOREDRAW
 		};
-		User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, flags);
+		int _retry = 0;
+		while (this.rect.Left != x || this.rect.Top != y)
+		{
+			if (++_retry > MOVE_RETRIES) break;
+			User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, flags);
+		}
 	}
 
 	public void Close()
@@ -462,32 +470,31 @@ public class Workspace : IWorkspace, IMoveable
 		windows?.ForEach(wnd => wnd?.Redraw());
 	}
 
-	const int MOVE_RETRIES = 10;
 	public void Move(int? x, int? y, bool redraw = true)
 	{
 		for (int i = 0; i < windows.Count; i++)
 		{
 			int? absX = windows[i]!.relRect.Left + x;
 			int? absY = windows[i]!.relRect.Top + y;
-			int _retry = 0;
-			while (windows[i]!.rect.Left != absX || windows[i]!.rect.Top != absY)
-			{
-				if (++_retry > MOVE_RETRIES) break;
-				windows[i]?.Move(absX, absY, redraw);
-			}
+			windows[i]?.Move(absX, absY, redraw);
 		}
 	}
 
-	Window? lastFocusedWindow = null;
+	Window? lastFocusedWindow;
 	public void SetFocusedWindow()
 	{
-		if (lastFocusedWindow == null)
+		// always check if last focused window is actually a window in our 
+		// current workspace. It is possible that this window have been shifted
+		// to another workspace and all of a sudden you will wonder why workspaces
+		// that should be empty suddenly have windows.
+		if (windows.Contains(lastFocusedWindow))
+			lastFocusedWindow?.Focus();
+		else
 		{
 			var wnd = windows?.FirstOrDefault();
 			lastFocusedWindow = wnd;
 			wnd?.Focus();
 		}
-		else lastFocusedWindow.Focus();
 	}
 
 	public void CloseFocusedWindow()
@@ -545,13 +552,21 @@ public class Workspace : IWorkspace, IMoveable
 		if (config.layout == "stack") return;
 		wnd ??= focusedWindow;
 		if (wnd == null)
-			windows.ForEach(_wnd => _wnd!.nonTiledState = NONTILEDSTATE.NONE);
+			windows.ForEach(_wnd =>
+			{
+				if (_wnd!.nonTiledState == NONTILEDSTATE.STACKED)
+					_wnd!.nonTiledState = NONTILEDSTATE.NONE;
+			});
 		else
 		{
 			if (stackedWnd == null)
 			{
 				wnd.nonTiledState = wnd.nonTiledState != NONTILEDSTATE.STACKED ? NONTILEDSTATE.STACKED : NONTILEDSTATE.NONE;
-				windows.Where(_wnd => _wnd != wnd).ToList().ForEach(_wnd => _wnd!.nonTiledState = NONTILEDSTATE.NONE);
+				windows.Where(_wnd => _wnd != wnd).ToList().ForEach(_wnd =>
+				{
+					if (_wnd!.nonTiledState == NONTILEDSTATE.STACKED)
+						_wnd!.nonTiledState = NONTILEDSTATE.NONE;
+				});
 				stackedWnd = wnd;
 			}
 			else
