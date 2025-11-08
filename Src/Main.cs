@@ -347,7 +347,7 @@ as an administrator or from an elevated prompt.
 				break;
 			case "--debug":
 				DEBUG = true;
-				WindowManager.DEBUG_WND_NAME = args.ToList().ElementAtOrDefault(1) ?? "windowgen";
+				WindowManager.DEBUG_WND_NAME = args.ToList().ElementAtOrDefault(1);
 				WithConsole(() => Loop());
 				break;
 			case "--version":

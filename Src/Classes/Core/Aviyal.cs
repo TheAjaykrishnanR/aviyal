@@ -538,15 +538,30 @@ public class Workspace : IWorkspace, IMoveable
 		Update();
 	}
 
+	// only one stacked window in a workspace
+	private Window? stackedWnd;
 	public void ToggleStacked(Window? wnd = null)
 	{
-		wnd ??= focusedWindow;
-		if (wnd == null) return;
 		if (config.layout == "stack") return;
-		wnd.nonTiledState = wnd.nonTiledState != NONTILEDSTATE.STACKED ? NONTILEDSTATE.STACKED : NONTILEDSTATE.NONE;
-		// unlike floating windows it only makes sense to have one stacked window in a 
-		// workspace, so make all other windows tiled (NONTILEDSTATE.NONE)
-		windows.Where(_wnd => _wnd != wnd).ToList().ForEach(_wnd => _wnd!.nonTiledState = NONTILEDSTATE.NONE);
+		wnd ??= focusedWindow;
+		if (wnd == null)
+			windows.ForEach(_wnd => _wnd!.nonTiledState = NONTILEDSTATE.NONE);
+		else
+		{
+			if (stackedWnd == null)
+			{
+				wnd.nonTiledState = wnd.nonTiledState != NONTILEDSTATE.STACKED ? NONTILEDSTATE.STACKED : NONTILEDSTATE.NONE;
+				windows.Where(_wnd => _wnd != wnd).ToList().ForEach(_wnd => _wnd!.nonTiledState = NONTILEDSTATE.NONE);
+				stackedWnd = wnd;
+			}
+			else
+			{
+				// if there alread is a stacked window, unstack it instead of
+				// making the provided window stacked
+				stackedWnd.nonTiledState = NONTILEDSTATE.NONE;
+				stackedWnd = null;
+			}
+		}
 		Update();
 	}
 
@@ -606,7 +621,7 @@ public class WindowManager : IWindowManager
 	}
 
 	Config config;
-	public static string DEBUG_WND_NAME = "windowgen";
+	public static string? DEBUG_WND_NAME;
 	public WindowManager(Config config)
 	{
 		this.config = config;
@@ -623,12 +638,13 @@ public class WindowManager : IWindowManager
 			this.initWindows.ForEach(wnd => ApplyConfigsToWindow(wnd));
 		}
 
-		/* when running in debug mode, only window containing the title "windowgen" will 
-		 * be managed by the program. This is so that your ide or terminal is left free
-		 * while testing
+		/* when running in debug mode, only window containing the title passed after 
+		 * --debug flag will be managed by the program. This is so that your ide or 
+		 * terminal is left free while testing
 		 * */
-		if (Aviyal.DEBUG)
+		if (Aviyal.DEBUG && DEBUG_WND_NAME != null)
 		{
+			Logger.Log($"DebugWndName: {DEBUG_WND_NAME}");
 			this.initWindows = this.initWindows.Where(wnd => wnd.title.Contains(DEBUG_WND_NAME)).ToList();
 		}
 
