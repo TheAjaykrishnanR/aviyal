@@ -8,7 +8,7 @@
 
 1. Workspaces
 2. Workspace animations (Horizontal and vertical)
-3. Dynamic Tiling : `Dwindle`
+3. Dynamic Tiling : `Dwindle`, `Stack`
 4. Toggle floating
 5. Close focused window
 6. Shift focus 
@@ -26,6 +26,8 @@ For live debug output, run from a terminal (`cmd.exe` or `pwsh.exe`).
 
 Configuration file `aviyal.json` will be created at first run. You can modify the default settings there,
 including adding new keybindings etc. Look at the example config file [here](https://github.com/TheAjaykrishnanR/aviyal/blob/master/Src/aviyal.json)
+
+A quick summary of the values available for each key in the config is [here](https://github.com/TheAjaykrishnanR/aviyal/blob/master/Docs/Config.md)
 ## Default keybindings
 
 - `FOCUS NEXT WORKSPACE`: `LCONTROL, LSHIFT, L`
@@ -36,6 +38,8 @@ including adding new keybindings etc. Look at the example config file [here](htt
 - `FOCUS WINDOW BOTTOM`: `LCONTROL, J`
 - `SHIFT WINDOW NEXT WORKSPACE`: `LMENU (ALT), LSHIFT, L`
 - `SHIFT WINDOW PREVIOUS WORKSPACE`: `LMENU (ALT), LSHIFT, H`
+- `TOGGLE WINDOW FLOATING`: `LCONTROL, LSHIFT, Z`
+- `TOGGLE WINDOW STACKED`: `LCONTROL, LSHIFT, S`
 - `SWAP WINDOW RIGHT`: `LMENU (ALT), L`
 - `SWAP WINDOW LEFT`: `LMENU (ALT), H`
 - `RESTART APPLICATION`: `LCONTROL, LSHIFT, R` (hot reload for config)

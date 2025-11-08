@@ -32,7 +32,7 @@ public class ProgramState : IJson<ProgramState>
 						["className"] = wnd.className.ToString(),
 						["borderThickness"] = wnd.borderThickness.ToString(),
 						["elevated"] = wnd.elevated.ToString(),
-						["floating"] = wnd.floating.ToString(),
+						["nonTiledState"] = wnd.nonTiledState.ToString(),
 						["resizeable"] = wnd.resizeable.ToString(),
 						["workspace"] = wnd.workspace.ToString(),
 					};

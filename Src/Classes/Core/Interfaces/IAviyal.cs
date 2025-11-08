@@ -10,7 +10,7 @@ public interface IWindow
 	public RECT rect { get; }
 	public SHOWWINDOW state { get; }
 	public bool resizeable { get; }
-	public bool floating { get; set; }
+	public NONTILEDSTATE nonTiledState { get; set; }
 	public WINDOWSTYLE styles { get; }
 	public WINDOWSTYLEEX exStyles { get; }
 

@@ -1,6 +1,8 @@
 clear
 rm bin\aviyal.exe
 
+mkdir bin
+
 $target = "exe"
 if($args[0] -eq "winexe") {
 	$target = "winexe" 

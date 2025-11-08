@@ -30,6 +30,8 @@ public class Config : IJson<Config>
 		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.X], command= COMMAND.CLOSE_FOCUSED_WINDOW },
 		// toggle floating window
 		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.Z], command= COMMAND.TOGGLE_FLOATING_WINDOW },
+		// toggle stacked window
+		new() { keys= [VK.LCONTROL, VK.LSHIFT, VK.S], command= COMMAND.TOGGLE_STACKED_WINDOW },
 		// focus window
 		new() { keys= [VK.LCONTROL, VK.H], command= COMMAND.FOCUS_LEFT_WINDOW },
 		new() { keys= [VK.LCONTROL, VK.K], command= COMMAND.FOCUS_TOP_WINDOW },
@@ -170,7 +172,7 @@ public class Config : IJson<Config>
 
 public class WindowRule
 {
-	public string type; // ignore, notiling, startfloating
+	public string type; // ignore, floating
 	public string method; // equals, contains
 	public string identifierType; // windowProcess, windowTitle, windowClass
 	public string identifier; // search string

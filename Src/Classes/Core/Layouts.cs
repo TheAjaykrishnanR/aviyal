@@ -138,6 +138,55 @@ public class Dwindle : ILayout
 	}
 }
 
+public class Stack : ILayout
+{
+	public int left { get; set; }
+	public int top { get; set; }
+	public int right { get; set; }
+	public int bottom { get; set; }
+	public int inner { get; set; }
+
+	public RECT[] GetRects(int count)
+	{
+		(int width, int height) = Utils.GetScreenSize();
+		RECT[] fillRects = new RECT[count];
+		for (int i = 0; i < count; i++)
+		{
+			fillRects[i].Left = 0;
+			fillRects[i].Top = 0;
+			fillRects[i].Right = width;
+			fillRects[i].Bottom = height;
+		}
+		return fillRects;
+	}
+
+	public RECT[] ApplyInner(RECT[] fillRects) { return fillRects; }
+
+	public RECT[] ApplyOuter(RECT[] fillRects)
+	{
+		(int width, int height) = Utils.GetScreenSize();
+		for (int i = 0; i < fillRects.Length; i++)
+		{
+			if (fillRects[i].Left == 0) fillRects[i].Left += left;
+			if (fillRects[i].Top == 0) fillRects[i].Top += top;
+			if (fillRects[i].Right == width) fillRects[i].Right -= right;
+			if (fillRects[i].Bottom == height) fillRects[i].Bottom -= bottom;
+		}
+		return fillRects;
+	}
+
+	public int? GetAdjacent(int index, EDGE direction) { return null; }
+
+	public Stack(Config config)
+	{
+		this.left = config.left;
+		this.right = config.right;
+		this.top = config.top;
+		this.bottom = config.bottom;
+		this.inner = config.inner;
+	}
+}
+
 public enum EDGE
 {
 	LEFT, TOP, RIGHT, BOTTOM

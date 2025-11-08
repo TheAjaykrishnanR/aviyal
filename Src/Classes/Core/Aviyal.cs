@@ -63,7 +63,8 @@ public class Window : IWindow, IMoveable
 		}
 	}
 
-	public RECT relRect { get; set; } // position of window relative to workspace (without margins)
+	// position of window relative to workspace (without margins)
+	public RECT relRect { get; set; }
 
 	public SHOWWINDOW state
 	{
@@ -89,7 +90,7 @@ public class Window : IWindow, IMoveable
 		}
 	}
 
-	public bool floating { get; set; } = false;
+	public NONTILEDSTATE nonTiledState { get; set; } = NONTILEDSTATE.NONE;
 
 	public int pid
 	{
@@ -386,36 +387,57 @@ public class Workspace : IWorkspace, IMoveable
 	// applies updated relRects (provided by the layout) to the windows in the workspace
 	public void Update()
 	{
-		List<Window?> nonFloating = windows
+		/* all windows in the window manager which are in 
+		 * a workable state.
+		 * */
+		List<Window?> workableWindows = windows
 		.Where(wnd => wnd?.resizeable == true)
-		.Where(wnd => wnd?.floating == false)
 		.Where(wnd => wnd?.elevated == false)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
 		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
 		.ToList();
 
-		// non floating
-		RECT[] relRects = layout.GetRects(nonFloating.Count);
+		/* windows to tile
+		 * */
+		List<Window?> wndsToTile = workableWindows
+		.Where(wnd => wnd?.nonTiledState == NONTILEDSTATE.NONE)
+		.ToList();
+
+		RECT[] relRects = layout.GetRects(wndsToTile.Count);
 		RECT[] rects = layout.ApplyInner(layout.ApplyOuter(relRects.ToArray()));
-		for (int i = 0; i < nonFloating.Count; i++)
+		for (int i = 0; i < wndsToTile.Count; i++)
 		{
-			nonFloating[i]?.Move(rects[i]);
-			nonFloating[i]!.relRect = relRects[i];
+			wndsToTile[i]?.Move(rects[i]);
+			wndsToTile[i]!.relRect = relRects[i];
 		}
 
-		// floating
-		List<Window?> floating = windows
-		.Where(wnd => wnd?.resizeable == true)
-		.Where(wnd => wnd?.floating == true)
-		.Where(wnd => wnd?.elevated == false)
-		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
-		.Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
-		.ToList()!;
-
-		for (int i = 0; i < floating.Count; i++)
+		/* set the relRects of floating windows as their absolute position,
+		 * this is required so that window animations can move floating windows
+		 * from their current positions, we must also update the relRects of
+		 * floating windows from the WindowMoved() event handler.
+		 * */
+		List<Window?> floatingWnds = workableWindows
+		.Where(wnd => wnd?.nonTiledState == NONTILEDSTATE.FLOATING)
+		.ToList();
+		for (int i = 0; i < floatingWnds.Count; i++)
 		{
-			floating[i]!.relRect = floating[i]!.rect;
+			floatingWnds[i]!.relRect = floatingWnds[i]!.rect;
 		}
+
+		/* windows to stack (in non stacked layouts)
+		 * */
+		List<Window?> wndsToStack = workableWindows
+		.Where(wnd => wnd?.nonTiledState == NONTILEDSTATE.STACKED)
+		.ToList();
+		(int sw, int sh) = Utils.GetScreenSize();
+		for (int i = 0; i < wndsToStack.Count; i++)
+		{
+
+			RECT rect = new() { Left = config.left, Top = config.top, Right = sw - config.right, Bottom = sh - config.bottom };
+			wndsToStack[i]?.Move(rect);
+			wndsToStack[i]!.relRect = rect;
+		}
+
 	}
 
 	public void Show()
@@ -502,16 +524,29 @@ public class Workspace : IWorkspace, IMoveable
 
 	public void MakeFloating(Window wnd)
 	{
-		if (!wnd.resizeable) return;
+		if (!wnd.resizeable || wnd.state == SHOWWINDOW.SW_SHOWMAXIMIZED) return;
 		wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
 	}
 
 	public void ToggleFloating(Window? wnd = null)
 	{
-		if (wnd == null) wnd = focusedWindow;
+		wnd ??= focusedWindow;
 		if (wnd == null) return;
-		wnd.floating = !wnd.floating;
-		if (wnd.floating && wnd.resizeable) MakeFloating(wnd);
+		wnd.nonTiledState = wnd.nonTiledState != NONTILEDSTATE.FLOATING ? NONTILEDSTATE.FLOATING : NONTILEDSTATE.NONE;
+		if (wnd.nonTiledState == NONTILEDSTATE.FLOATING)
+			MakeFloating(wnd);
+		Update();
+	}
+
+	public void ToggleStacked(Window? wnd = null)
+	{
+		wnd ??= focusedWindow;
+		if (wnd == null) return;
+		if (config.layout == "stack") return;
+		wnd.nonTiledState = wnd.nonTiledState != NONTILEDSTATE.STACKED ? NONTILEDSTATE.STACKED : NONTILEDSTATE.NONE;
+		// unlike floating windows it only makes sense to have one stacked window in a 
+		// workspace, so make all other windows tiled (NONTILEDSTATE.NONE)
+		windows.Where(_wnd => _wnd != wnd).ToList().ForEach(_wnd => _wnd!.nonTiledState = NONTILEDSTATE.NONE);
 		Update();
 	}
 
@@ -600,12 +635,12 @@ public class WindowManager : IWindowManager
 		for (int i = 0; i < this.config.workspaces; i++)
 		{
 			Workspace wksp = new(config);
-			switch (config.layout)
+			wksp.layout = config.layout switch
 			{
-				case "dwindle":
-					wksp.layout = new Dwindle(config);
-					break;
-			}
+				"dwindle" => new Dwindle(config),
+				"stack" => new Stack(config),
+				_ => new Dwindle(config)
+			};
 			workspaces.Add(wksp);
 		}
 		// add all windows to 1st workspace
@@ -848,6 +883,12 @@ public class WindowManager : IWindowManager
 		WM_EVENT("ToggleFloating");
 	});
 
+	public void ToggleStacked() => SuppressEvents(() =>
+	{
+		focusedWorkspace.ToggleStacked();
+		WM_EVENT("ToggleStack");
+	});
+
 	public void Update() => SuppressEvents(() =>
 	{
 		focusedWorkspace.Update();
@@ -988,7 +1029,8 @@ public class WindowManager : IWindowManager
 
 	void ApplyConfigsToWindow(Window wnd)
 	{
-		wnd.floating = IsWindowInConfigRules(wnd, "floating");
+		if (IsWindowInConfigRules(wnd, "floating"))
+			wnd.nonTiledState = NONTILEDSTATE.FLOATING;
 	}
 
 	public delegate void wmEventHandler(string message);
@@ -1018,7 +1060,12 @@ public class WindowManager : IWindowManager
 			ApplyConfigsToWindow(wnd);
 			wnd.workspace = focusedWorkspaceIndex;
 			focusedWorkspace.Add(wnd);
-			if (wnd.floating) focusedWorkspace.MakeFloating(wnd);
+			switch (wnd.nonTiledState)
+			{
+				case NONTILEDSTATE.FLOATING:
+					focusedWorkspace.MakeFloating(wnd);
+					break;
+			}
 			SuppressEvents(() => focusedWorkspace.Update());
 		}
 
@@ -1089,19 +1136,20 @@ public class WindowManager : IWindowManager
 		if (ShouldWindowBeIgnored(wnd)) return;
 		if ((wnd = AddToStoreIfMissed(wnd)!) == null) return;
 
-		//Logger.Log($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}, class: {wnd.className}");
 
 		/* wnd -> window being moved
 		 * cursorPos
 		 * wndEnclosingCursor -> window enclosing cursor
 		 * */
-		if (!wnd.floating && wnd.resizeable)
+		if (wnd.nonTiledState == NONTILEDSTATE.NONE && wnd.resizeable)
 		{
 			User32.GetCursorPos(out POINT pt);
 			Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
 			if (wndUnderCursor == null) return;
 			SuppressEvents(() => focusedWorkspace.SwapWindows(wnd, wndUnderCursor));
 		}
+		else if (wnd.nonTiledState == NONTILEDSTATE.FLOATING)
+			wnd.relRect = wnd.rect;
 
 		SuppressEvents(() => focusedWorkspace.Update());
 		CleanGhostWindows();
@@ -1190,4 +1238,12 @@ enum FillDirection
 {
 	HORIZONTAL,
 	VERTICAL
+}
+
+// a window that is managed without being tiled can be either of these
+public enum NONTILEDSTATE
+{
+	NONE,
+	FLOATING,
+	STACKED
 }
