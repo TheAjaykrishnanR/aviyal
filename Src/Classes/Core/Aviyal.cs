@@ -209,7 +209,6 @@ public class Window : IWindow, IMoveable
 		}
 	}
 
-
 	const SETWINDOWPOS defaultMoveFlags =
 		SETWINDOWPOS.SWP_NOSENDCHANGING |
 		SETWINDOWPOS.SWP_NOCOPYBITS |
@@ -486,7 +485,8 @@ public class Workspace : IWorkspace, IMoveable
 		// always check if last focused window is actually a window in our 
 		// current workspace. It is possible that this window have been shifted
 		// to another workspace and all of a sudden you will wonder why workspaces
-		// that should be empty suddenly have windows.
+		// that should be empty suddenly have windows. And yes focusing 
+		// (SetForegroundWindow) can activate hidden windows
 		if (windows.Contains(lastFocusedWindow))
 			lastFocusedWindow?.Focus();
 		else
