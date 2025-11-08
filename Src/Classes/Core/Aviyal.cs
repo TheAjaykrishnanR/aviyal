@@ -479,16 +479,25 @@ public class Workspace : IWorkspace, IMoveable
 		}
 	}
 
-	Window? lastFocusedWindow;
+	private Window? lastFocusedWindow
+	{
+		get
+		{
+			// always check if last focused window is actually a window in our 
+			// current workspace. It is possible that this window have been shifted
+			// to another workspace and all of a sudden you will wonder why workspaces
+			// that should be empty suddenly have windows. And yes focusing 
+			// (SetForegroundWindow) can activate hidden windows
+			if (windows.Contains(field)) return field;
+			return null;
+		}
+		set;
+	}
+
 	public void SetFocusedWindow()
 	{
-		// always check if last focused window is actually a window in our 
-		// current workspace. It is possible that this window have been shifted
-		// to another workspace and all of a sudden you will wonder why workspaces
-		// that should be empty suddenly have windows. And yes focusing 
-		// (SetForegroundWindow) can activate hidden windows
-		if (windows.Contains(lastFocusedWindow))
-			lastFocusedWindow?.Focus();
+
+		if (lastFocusedWindow != null) lastFocusedWindow.Focus();
 		else
 		{
 			var wnd = windows?.FirstOrDefault();
@@ -546,7 +555,15 @@ public class Workspace : IWorkspace, IMoveable
 	}
 
 	// only one stacked window in a workspace
-	private Window? stackedWnd;
+	private Window? stackedWnd
+	{
+		get
+		{
+			if (windows.Contains(field)) return field;
+			return null;
+		}
+		set;
+	}
 	public void ToggleStacked(Window? wnd = null)
 	{
 		if (config.layout == "stack") return;
