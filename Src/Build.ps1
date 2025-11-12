@@ -29,7 +29,6 @@ dflat Main.cs `
 	  Classes\Win32\Enums.cs `
 	  Classes\Win32\Functions.cs `
 	  Classes\Win32\Structs.cs `
-	  /langversion:preview `
 	  /target:$target `
 	  /out aviyal.exe `
 
