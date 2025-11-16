@@ -7,92 +7,94 @@ using System.Threading;
 
 public class MouseEventsListener : IDisposable
 {
-    delegate int MouseProc(int code, nint wparam, nint lparam);
+	delegate int MOUSEPROC(int code, nint wparam, nint lparam);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern nint SetWindowsHookExA(int idHook, MouseProc lpfn, nint hmod, uint dwThreadId);
+	[DllImport("user32.dll", SetLastError = true)]
+	static extern nint SetWindowsHookExA(int idHook, MOUSEPROC lpfn, nint hmod, uint dwThreadId);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern int UnhookWindowsHookEx(nint hhook);
+	[DllImport("user32.dll", SetLastError = true)]
+	static extern int UnhookWindowsHookEx(nint hhook);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern int CallNextHookEx(nint hhk, int nCode, nint wparam, nint lparam);
+	[DllImport("user32.dll", SetLastError = true)]
+	static extern int CallNextHookEx(nint hhk, int nCode, nint wparam, nint lparam);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern int GetMessage(
-        out uint msg,
-        nint hWnd,
-        uint wMsgFilterMin,
-        uint wMsgFilterMax
-    );
+	[DllImport("user32.dll", SetLastError = true)]
+	public static extern int GetMessage(
+		out uint msg,
+		nint hWnd,
+		uint wMsgFilterMin,
+		uint wMsgFilterMax
+	);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool TranslateMessage(ref uint msg);
+	[DllImport("user32.dll", SetLastError = true)]
+	public static extern bool TranslateMessage(ref uint msg);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool DispatchMessage(ref uint msg);
+	[DllImport("user32.dll", SetLastError = true)]
+	public static extern bool DispatchMessage(ref uint msg);
 
-    readonly Lock @eventLock = new();
+	readonly Lock @eventLock = new();
 
-    int MouseCallback(int code, nint wparam, nint lparam)
-    {
-        lock (@eventLock)
-        {
-            var mouseStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lparam);
-            switch ((WINDOWMESSAGE)wparam)
-            {
-                case WINDOWMESSAGE.WM_LBUTTONDOWN:
-                    MOUSE_DOWN();
-                    break;
-                case WINDOWMESSAGE.WM_LBUTTONUP:
-                    MOUSE_UP();
-                    break;
-            }
-            ////Console.WriteLine($"mouseEvent: {(WINDOWMESSAGE)wparam}");
-            return CallNextHookEx(0, code, wparam, lparam);
-        }
-    }
+	MOUSEPROC mouseProcDelegate;
+	int MouseProc(int code, nint wparam, nint lparam)
+	{
+		lock (@eventLock)
+		{
+			var mouseStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lparam);
+			switch ((WINDOWMESSAGE)wparam)
+			{
+				case WINDOWMESSAGE.WM_LBUTTONDOWN:
+					MOUSE_DOWN();
+					break;
+				case WINDOWMESSAGE.WM_LBUTTONUP:
+					MOUSE_UP();
+					break;
+			}
+			////Console.WriteLine($"mouseEvent: {(WINDOWMESSAGE)wparam}");
+			return CallNextHookEx(0, code, wparam, lparam);
+		}
+	}
 
-    nint hhook;
-    bool running = true;
+	nint hhook;
+	bool running = true;
 
-    void Loop()
-    {
-        const int WH_MOUSE_LL = 14;
-        // hmod = 0, hook function is in code
-        // dwThreadId = 0, hook all threads
-        hhook = SetWindowsHookExA(
-            WH_MOUSE_LL,
-            MouseCallback,
-            Process.GetCurrentProcess().MainModule.BaseAddress,
-            0
-        );
-        // always use a message pump, instead of: while(Console.ReadLine() != ":q") { }
-        while (running)
-        {
-            int _ = GetMessage(out uint msg, 0, 0, 0);
-            TranslateMessage(ref msg);
-            DispatchMessage(ref msg);
-        }
-    }
+	void Loop()
+	{
+		const int WH_MOUSE_LL = 14;
+		// hmod = 0, hook function is in code
+		// dwThreadId = 0, hook all threads
+		hhook = SetWindowsHookExA(
+			WH_MOUSE_LL,
+			mouseProcDelegate,
+			Process.GetCurrentProcess().MainModule.BaseAddress,
+			0
+		);
+		// always use a message pump, instead of: while(Console.ReadLine() != ":q") { }
+		while (running)
+		{
+			int _ = GetMessage(out uint msg, 0, 0, 0);
+			TranslateMessage(ref msg);
+			DispatchMessage(ref msg);
+		}
+	}
 
-    public delegate void MouseEventHandler();
-    public event MouseEventHandler MOUSE_DOWN = () => { };
-    public event MouseEventHandler MOUSE_UP = () => { };
+	public delegate void MouseEventHandler();
+	public event MouseEventHandler MOUSE_DOWN = () => { };
+	public event MouseEventHandler MOUSE_UP = () => { };
 
-    public Thread thread;
+	public Thread thread;
 
-    public MouseEventsListener()
-    {
-        thread = new(Loop);
-        thread.Start();
-    }
+	public MouseEventsListener()
+	{
+		mouseProcDelegate = new(MouseProc);
+		thread = new(Loop);
+		thread.Start();
+	}
 
-    public void Dispose()
-    {
-        UnhookWindowsHookEx(hhook);
-        running = false;
-    }
+	public void Dispose()
+	{
+		UnhookWindowsHookEx(hhook);
+		running = false;
+	}
 }
 
 public class MouseEvent { }
@@ -100,9 +102,9 @@ public class MouseEvent { }
 [StructLayout(LayoutKind.Sequential)]
 public struct MSLLHOOKSTRUCT
 {
-    POINT pt;
-    uint mouseData;
-    uint flags;
-    uint time;
-    nint dwExtraInfo;
+	POINT pt;
+	uint mouseData;
+	uint flags;
+	uint time;
+	nint dwExtraInfo;
 }
