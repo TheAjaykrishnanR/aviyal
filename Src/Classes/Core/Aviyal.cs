@@ -1225,25 +1225,31 @@ public class WindowManager : IWindowManager
     public delegate void wmEventHandler(string message);
     public event wmEventHandler WM_EVENT = (message) => { };
 
+    /* Basic Event Handler Layout:
+     * 1. Check if window is already in
+     * 2. If not, check if it is valid using ShouldWindowBeIgnored()
+     * */
+
     public void WindowShown(Window wnd)
     {
         if (wmActions.Count > 0)
             return;
-        if (ShouldWindowBeIgnored(wnd))
+        /* This is for cases where an already added window gets focused without direct interaction
+         * for eg say you click a link on your terminal and your default browser is open
+         * in another workspace. The reason why we are handling it here instead of
+         * WindowFocused is because the event emmited is OBJECT_SHOW rather than
+         * EVENT_FOREGROUND_CHANGED
+         * */
+        var windows = GetAllWindows();
+        Workspace? wksp = workspaces.FirstOrDefault(wksp => wksp!.windows.Contains(wnd));
+        if (wksp != null)
+        {
+            if (wksp != focusedWorkspace)
+                FocusWorkspace(wksp);
             return;
-        foreach (var wksp in workspaces)
-            if (wksp!.windows.Contains(wnd))
-            {
-                /* This is for cases where an already added window gets focused without direct interaction
-                 * for eg say you click a link on your terminal and your default browser is open
-                 * in another workspace. The reason why we are handling it here instead of
-                 * WindowFocused is because the event emmited is OBJECT_SHOW rather than
-                 * EVENT_FOREGROUND_CHANGED
-                 * */
-                if (wksp != focusedWorkspace)
-                    FocusWorkspace(wksp);
-                return;
-            }
+        }
+        else if (ShouldWindowBeIgnored(wnd))
+            return;
 
         // Add() and CleanGhostWindows() can cause windows to be re added if they
         // occur while the other hasnt completed, so lock them
@@ -1273,7 +1279,7 @@ public class WindowManager : IWindowManager
          * */
         if (wmActions.Count > 0)
             return;
-        if ((wnd = GetAlreadyStoredWindow(wnd)) == null)
+        if ((wnd = GetAlreadyStoredWindow(wnd)!) == null)
             return;
 
         if (focusedWorkspace.windows.Contains(wnd))
@@ -1290,7 +1296,7 @@ public class WindowManager : IWindowManager
     {
         if (wmActions.Count > 0)
             return;
-        if ((wnd = GetAlreadyStoredWindow(wnd)) == null)
+        if ((wnd = GetAlreadyStoredWindow(wnd)!) == null)
             return;
 
         if (focusedWorkspace.windows.Contains(wnd))
@@ -1312,6 +1318,10 @@ public class WindowManager : IWindowManager
      * that way but this is better because if one were to call AddToStoreIfMissed() on
      * events that only fire on "real windows" such as WindowMoved, WindowFocused,
      * WindowRestored, WindowMin and Max, then we'll add the window there.
+     *
+     * Since we are adding the window by firing the WindowShown() event handler, we do not
+     * need to check if the window is a valid one using ShouldWindowBeIgnored(), i.e. only
+     * call ShouldWindowBeIgnored() if the window isn't already inside the wm.
      * */
 
     public Window? AddToStoreIfMissed(Window _wnd)
@@ -1325,13 +1335,13 @@ public class WindowManager : IWindowManager
         return wnd;
     }
 
-    // window handlers should onlu check window properties of the the already stored window
+    // window handlers should only check window properties of the the already stored window
     public void WindowMoved(Window wnd)
     {
         if (wmActions.Count > 0)
             return;
-        if (ShouldWindowBeIgnored(wnd))
-            return;
+        //if (ShouldWindowBeIgnored(wnd))
+        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
@@ -1359,8 +1369,8 @@ public class WindowManager : IWindowManager
     {
         if (wmActions.Count > 0)
             return;
-        if (ShouldWindowBeIgnored(wnd))
-            return;
+        //if (ShouldWindowBeIgnored(wnd))
+        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
@@ -1373,8 +1383,8 @@ public class WindowManager : IWindowManager
     {
         if (wmActions.Count > 0)
             return;
-        if (ShouldWindowBeIgnored(wnd))
-            return;
+        //if (ShouldWindowBeIgnored(wnd))
+        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
@@ -1417,8 +1427,8 @@ public class WindowManager : IWindowManager
 
         if (wmActions.Count > 0)
             return;
-        if (ShouldWindowBeIgnored(wnd))
-            return;
+        //if (ShouldWindowBeIgnored(wnd))
+        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
         if (mouseDown)
@@ -1438,8 +1448,8 @@ public class WindowManager : IWindowManager
     {
         if (wmActions.Count > 0)
             return;
-        if (ShouldWindowBeIgnored(wnd))
-            return;
+        //if (ShouldWindowBeIgnored(wnd))
+        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
