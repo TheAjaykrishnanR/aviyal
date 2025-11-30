@@ -150,31 +150,13 @@ public partial class Utils
 
     public static string? GetExePathFromHWND(nint hWnd)
     {
-        User32.GetWindowThreadProcessId(hWnd, out uint processId);
-
-        if (Environment.IsPrivilegedProcess)
-        {
-            try
-            {
-                List<GUIProcess?> allWindows = EnumWindowProcesses();
-                Process? process = allWindows
-                    .FirstOrDefault(guiProcess => guiProcess?.process.Id == processId)
-                    ?.process;
-                return process?.MainModule?.FileName;
-            }
-            catch (Exception ex)
-            {
-                // can fail due to a myriad number of reason, including trying to query a
-                // closing process
-                Logger.Log("System.Diagnostics.Process gave up :(", ex: ex);
-            }
-        }
-
         /// <summary>
         /// Getting module filenames without elevated privileges
         /// NtQuerySystemInformation() := undocumented internal API
         /// https://stackoverflow.com/a/75084784/14588925
         /// </summary>
+        User32.GetWindowThreadProcessId(hWnd, out uint processId);
+
         SYSTEM_PROCESS_ID_INFORMATION info = new()
         {
             ProcessId = (nint)processId,
@@ -466,6 +448,18 @@ public partial class Utils
         if (info.TokenIsElevated == 0)
             return false;
         return true;
+    }
+
+    /// <summary>
+    /// Measures time taken to complete a function
+    /// </summary>
+    public static T? MeasureTime<T>(Func<T> func, out long dt, string? funcName = null)
+    {
+        long start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        T? obj = func();
+        dt = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start;
+        Logger.Log($"{funcName}() finished in {dt} ms");
+        return obj;
     }
 }
 

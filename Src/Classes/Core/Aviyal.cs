@@ -30,14 +30,21 @@ public class Window : IWindow, IMoveable
             // for a process once its found
             if (field == null)
             {
-                field =
-                    Utils.GetExePathFromHWND(this.hWnd)
-                    ?? Utils
-                        .EnumWindowProcesses()
-                        .FirstOrDefault(wndProcess =>
-                            wndProcess.windows.Select(wndp => wndp.hWnd).Contains(this.hWnd)
-                        )
-                        ?.process.MainModule?.FileName;
+                try
+                {
+                    field =
+                        Utils.GetExePathFromHWND(this.hWnd)
+                        ?? Utils
+                            .EnumWindowProcesses()
+                            .FirstOrDefault(wndProcess =>
+                                wndProcess.windows.Select(wndp => wndp.hWnd).Contains(this.hWnd)
+                            )
+                            ?.process.MainModule?.FileName;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Couldn't find exe", ex: ex);
+                }
             }
             return field;
         }
@@ -714,6 +721,19 @@ public class WindowManager : IWindowManager
     public List<Workspace?> workspaces { get; } = new();
     public Workspace focusedWorkspace { get; private set; }
 
+    // all windows managed by the wm
+    public List<Window?> windows
+    {
+        get
+        {
+            List<Window?> windows = new();
+            foreach (var wksp in workspaces)
+            foreach (var wnd in wksp!.windows)
+                windows.Add(wnd);
+            return windows;
+        }
+    }
+
     public int focusedWorkspaceIndex
     {
         get
@@ -788,15 +808,6 @@ public class WindowManager : IWindowManager
         {
             windows.Add(new(hWnd));
         });
-        return windows;
-    }
-
-    public List<Window?> GetAllWindows()
-    {
-        List<Window?> windows = new();
-        foreach (var wksp in workspaces)
-        foreach (var wnd in wksp!.windows)
-            windows.Add(wnd);
         return windows;
     }
 
@@ -1094,14 +1105,14 @@ public class WindowManager : IWindowManager
                 _ => (x, y) => false,
             };
 
-            string wndAttribute = rule.identifierType switch
+            string? wndAttribute = rule.identifierType switch
             {
                 "windowProcess" => wnd.exeName,
                 "windowTitle" => wnd.title,
                 "windowClass" => wnd.className,
                 _ => "",
             };
-            if (condition(wndAttribute, rule.identifier))
+            if (condition(wndAttribute!, rule.identifier))
                 return true;
         }
         return false;
@@ -1232,23 +1243,24 @@ public class WindowManager : IWindowManager
 
     public void WindowShown(Window wnd)
     {
+        long dt = 0;
         if (wmActions.Count > 0)
             return;
-        /* This is for cases where an already added window gets focused without direct interaction
-         * for eg say you click a link on your terminal and your default browser is open
-         * in another workspace. The reason why we are handling it here instead of
-         * WindowFocused is because the event emmited is OBJECT_SHOW rather than
-         * EVENT_FOREGROUND_CHANGED
-         * */
-        var windows = GetAllWindows();
-        Workspace? wksp = workspaces.FirstOrDefault(wksp => wksp!.windows.Contains(wnd));
-        if (wksp != null)
+        if (windows.Contains(wnd))
         {
+            Workspace wksp = workspaces.FirstOrDefault(wksp => wksp!.windows.Contains(wnd))!;
+            /* This is for cases where an already added window gets focused without direct interaction
+             * for eg say you click a link on your terminal and your default browser is open
+             * in another workspace. The reason why we are handling it here instead of
+             * WindowFocused is because the event emmited is OBJECT_SHOW rather than
+             * EVENT_FOREGROUND_CHANGED
+             * */
             if (wksp != focusedWorkspace)
-                FocusWorkspace(wksp);
+                SuppressEvents(() => FocusWorkspace(wksp));
+
             return;
         }
-        else if (ShouldWindowBeIgnored(wnd))
+        else if (Utils.MeasureTime(() => ShouldWindowBeIgnored(wnd), out dt))
             return;
 
         // Add() and CleanGhostWindows() can cause windows to be re added if they
@@ -1268,7 +1280,7 @@ public class WindowManager : IWindowManager
         }
 
         CleanGhostWindows();
-        WM_EVENT($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
+        WM_EVENT($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}, Should(): {dt}");
     }
 
     public void WindowHidden(Window wnd)

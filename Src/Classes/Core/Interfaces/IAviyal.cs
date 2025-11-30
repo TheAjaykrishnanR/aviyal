@@ -50,6 +50,7 @@ public interface IWindowManager
     public List<Workspace> workspaces { get; }
     public Workspace focusedWorkspace { get; }
     public int focusedWorkspaceIndex { get; }
+    public List<Window?> windows { get; }
 
     public void FocusWorkspace(int index);
     public void FocusNextWorkspace() { }

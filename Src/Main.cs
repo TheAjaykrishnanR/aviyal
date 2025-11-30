@@ -187,7 +187,7 @@ class Aviyal : IDisposable
     public ProgramState GetState()
     {
         ProgramState state = new();
-        wm.GetAllWindows().ForEach(wnd => state.windows.Add(wnd!));
+        wm.windows.ForEach(wnd => state.windows.Add(wnd!));
         state.focusedWorkspaceIndex = wm.focusedWorkspaceIndex;
         state.workspaceCount = wm.workspaces.Count;
         state.keysHookThreadState = kbdListener.thread.ThreadState.ToString();
@@ -283,7 +283,7 @@ class Aviyal : IDisposable
         Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
 
         // collect windows to restore when reloaded (when reloaded all windows will be put to workspace 0)
-        var windows = aviyal?.wm.GetAllWindows();
+        var windows = aviyal?.wm.windows;
         aviyal?.Dispose();
         aviyal = new(config);
         aviyal.wm.initWindows = windows!;

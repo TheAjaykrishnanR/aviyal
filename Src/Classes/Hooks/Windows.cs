@@ -64,22 +64,21 @@ public class WindowEventsListener : IDisposable
         //&& !Utils.GetStylesFromHwnd(hWnd).Contains("WS_CHILD")
         )
         {
+            dt = dwmsEventTime - lastTime;
+            lastTime = dwmsEventTime;
+
+            if (Aviyal.DEBUG)
+                Logger.Log(
+                    $"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, dt: {dt}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}"
+                );
+
             lock (@eventLock)
             {
-                dt = dwmsEventTime - lastTime;
-                lastTime = dwmsEventTime;
-
-                if (Aviyal.DEBUG)
-                    Logger.Log(
-                        $"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, dt: {dt}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}"
-                    );
-
                 switch (msg)
                 {
                     case WINEVENT.OBJECT_CREATE:
                         break;
                     case WINEVENT.OBJECT_SHOW:
-                        //Console.WriteLine($"WINDOW_ADDED: {hWnd}");
                         WINDOW_SHOWN(new Window(hWnd));
                         break;
                     case WINEVENT.OBJECT_HIDE:
