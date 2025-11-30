@@ -1,5 +1,7 @@
 # Aviyal
 
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/TheAjaykrishnanR/aviyal/total?color=green)
+
 > Window manager for windows written purely in C# thats simple, lightweight and portable.
 
 ![showcase_1](https://github.com/TheAjaykrishnanR/aviyal/blob/master/Imgs/showcase.png)
