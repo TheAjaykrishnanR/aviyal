@@ -1243,7 +1243,6 @@ public class WindowManager : IWindowManager
 
     public void WindowShown(Window wnd)
     {
-        long dt = 0;
         if (wmActions.Count > 0)
             return;
         if (windows.Contains(wnd))
@@ -1260,7 +1259,7 @@ public class WindowManager : IWindowManager
 
             return;
         }
-        else if (Utils.MeasureTime(() => ShouldWindowBeIgnored(wnd), out dt))
+        else if (ShouldWindowBeIgnored(wnd))
             return;
 
         // Add() and CleanGhostWindows() can cause windows to be re added if they
@@ -1280,7 +1279,7 @@ public class WindowManager : IWindowManager
         }
 
         CleanGhostWindows();
-        WM_EVENT($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}, Should(): {dt}");
+        WM_EVENT($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
     }
 
     public void WindowHidden(Window wnd)
