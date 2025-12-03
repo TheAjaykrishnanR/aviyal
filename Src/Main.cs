@@ -211,7 +211,7 @@ class Aviyal : IDisposable
             Logger.Log("Error writing to state file", ex: ex);
         }
         Logger.Log(
-            $"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}"
+            $"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}, focusedWorkspace: {state.focusedWorkspaceIndex}"
         );
         if (DEBUG)
             Logger.Log(state.ToJson());

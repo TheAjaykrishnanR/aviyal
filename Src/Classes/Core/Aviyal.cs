@@ -797,7 +797,7 @@ public class WindowManager : IWindowManager
             wnd.workspace = 0;
             workspaces.FirstOrDefault()?.windows.Add(wnd);
         });
-        FocusWorkspace(workspaces?.FirstOrDefault()!);
+        FocusWorkspace(workspaces?.FirstOrDefault()!, "Start()");
     }
 
     public List<Window?> GetVisibleWindows()
@@ -824,11 +824,12 @@ public class WindowManager : IWindowManager
 
     /* Atomic actions
      * */
-    private void FocusWorkspace(Workspace wksp)
+    private void FocusWorkspace(Workspace wksp, string? dbgStr = null)
     {
         workspaces.ForEach(wksp => wksp?.Hide());
         wksp.Focus();
         focusedWorkspace = wksp;
+        Logger.Log($"Focusing wksp to {focusedWorkspaceIndex} by {dbgStr}");
     }
 
     private void ShiftFocusedWindowToWorkspace(int index)
@@ -841,7 +842,7 @@ public class WindowManager : IWindowManager
         focusedWorkspace.Remove(wnd);
         wnd.workspace = index;
         workspaces[index]?.Add(wnd);
-        FocusWorkspace(workspaces[index]!);
+        FocusWorkspace(workspaces[index]!, "ShiftFocusedWindowToWorkspace()");
         focusedWorkspace = workspaces[index]!;
         wnd.Focus();
     }
@@ -881,7 +882,7 @@ public class WindowManager : IWindowManager
     {
         if (workspaceIndex < 0 || workspaceIndex > workspaces.Count - 1)
             return;
-        SuppressEvents(() => FocusWorkspace(workspaces[workspaceIndex]!));
+        SuppressEvents(() => FocusWorkspace(workspaces[workspaceIndex]!, "WmPublic"));
 
         WM_EVENT("FocusWorkspace");
     }
@@ -1237,30 +1238,30 @@ public class WindowManager : IWindowManager
     public event wmEventHandler WM_EVENT = (message) => { };
 
     /* Basic Event Handler Layout:
-     * 1. Check if window is already in
-     * 2. If not, check if it is valid using ShouldWindowBeIgnored()
+     * 1. Reject invalid windows using ShouldWindowBeIgnored()
+     * 2. check if window is already in, if so just update focusedWorkspace
      * */
 
     public void WindowShown(Window wnd)
     {
         if (wmActions.Count > 0)
             return;
+        if (ShouldWindowBeIgnored(wnd))
+            return;
         if (windows.Contains(wnd))
         {
-            Workspace wksp = workspaces.FirstOrDefault(wksp => wksp!.windows.Contains(wnd))!;
+            Workspace? wksp = workspaces.FirstOrDefault(wksp => wksp!.windows.Contains(wnd))!;
             /* This is for cases where an already added window gets focused without direct interaction
              * for eg say you click a link on your terminal and your default browser is open
              * in another workspace. The reason why we are handling it here instead of
              * WindowFocused is because the event emmited is OBJECT_SHOW rather than
              * EVENT_FOREGROUND_CHANGED
              * */
-            if (wksp != focusedWorkspace)
-                SuppressEvents(() => FocusWorkspace(wksp));
+            if (wksp != focusedWorkspace && wksp != null)
+                SuppressEvents(() => FocusWorkspace(wksp, "WindowShown()"));
 
             return;
         }
-        else if (ShouldWindowBeIgnored(wnd))
-            return;
 
         // Add() and CleanGhostWindows() can cause windows to be re added if they
         // occur while the other hasnt completed, so lock them
@@ -1279,7 +1280,7 @@ public class WindowManager : IWindowManager
         }
 
         CleanGhostWindows();
-        WM_EVENT($"WindowShown, wnd: {wnd.title}, exe: {wnd.exe}");
+        WM_EVENT($"WindowShown, wnd: {wnd.title}, hWnd: {wnd.hWnd}, exe: {wnd.exe}");
     }
 
     public void WindowHidden(Window wnd)
@@ -1300,7 +1301,7 @@ public class WindowManager : IWindowManager
         }
 
         CleanGhostWindows();
-        WM_EVENT($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}");
+        WM_EVENT($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}, exe: {wnd.exe}");
     }
 
     public void WindowDestroyed(Window wnd)
