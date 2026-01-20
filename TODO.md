@@ -1,0 +1,2 @@
+- scrolling workspaces
+- fix rogue hidden window: GameInputSvc
