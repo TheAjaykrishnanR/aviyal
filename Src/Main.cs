@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.1.7";
+    static string version = "0.1.8";
     static Aviyal? aviyal;
 
     public static bool DEBUG = false;
