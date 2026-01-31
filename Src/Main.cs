@@ -49,6 +49,15 @@ class Aviyal : IDisposable
                 COMMAND.SHIFT_WINDOW_PREVIOUS_WORKSPACE,
                 () => wm.ShiftFocusedWindowToPreviousWorkspace()
             },
+            { COMMAND.SHIFT_WINDOW_WORKSPACE_1, () => wm.ShiftFocusedWindowToNumWorkspace(0) },
+            { COMMAND.SHIFT_WINDOW_WORKSPACE_2, () => wm.ShiftFocusedWindowToNumWorkspace(1) },
+            { COMMAND.SHIFT_WINDOW_WORKSPACE_3, () => wm.ShiftFocusedWindowToNumWorkspace(2) },
+            { COMMAND.SHIFT_WINDOW_WORKSPACE_4, () => wm.ShiftFocusedWindowToNumWorkspace(3) },
+            { COMMAND.SHIFT_WINDOW_WORKSPACE_5, () => wm.ShiftFocusedWindowToNumWorkspace(4) },
+            { COMMAND.SHIFT_WINDOW_WORKSPACE_6, () => wm.ShiftFocusedWindowToNumWorkspace(5) },
+            { COMMAND.SHIFT_WINDOW_WORKSPACE_7, () => wm.ShiftFocusedWindowToNumWorkspace(6) },
+            { COMMAND.SHIFT_WINDOW_WORKSPACE_8, () => wm.ShiftFocusedWindowToNumWorkspace(7) },
+            { COMMAND.SHIFT_WINDOW_WORKSPACE_9, () => wm.ShiftFocusedWindowToNumWorkspace(8) },
             { COMMAND.TOGGLE_FLOATING_WINDOW, () => wm.ToggleFloating() },
             { COMMAND.TOGGLE_STACKED_WINDOW, () => wm.ToggleStacked() },
             { COMMAND.FOCUS_WORKSPACE_1, () => wm.FocusWorkspace(0) },
@@ -417,11 +426,20 @@ public enum COMMAND
     FOCUS_LEFT_WINDOW,
     FOCUS_BOTTOM_WINDOW,
 
-    SHIFT_FOCUSED_WINDOW_RIGHT,
+    SHIFT_FOCUSED_WINDOW_RIGHT, // same workspace
     SHIFT_FOCUSED_WINDOW_LEFT,
 
     SHIFT_WINDOW_NEXT_WORKSPACE,
     SHIFT_WINDOW_PREVIOUS_WORKSPACE,
+    SHIFT_WINDOW_WORKSPACE_1,
+    SHIFT_WINDOW_WORKSPACE_2,
+    SHIFT_WINDOW_WORKSPACE_3,
+    SHIFT_WINDOW_WORKSPACE_4,
+    SHIFT_WINDOW_WORKSPACE_5,
+    SHIFT_WINDOW_WORKSPACE_6,
+    SHIFT_WINDOW_WORKSPACE_7,
+    SHIFT_WINDOW_WORKSPACE_8,
+    SHIFT_WINDOW_WORKSPACE_9,
 
     TOGGLE_FLOATING_WINDOW,
     TOGGLE_STACKED_WINDOW,

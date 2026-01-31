@@ -1047,6 +1047,13 @@ public class WindowManager : IWindowManager
         WM_EVENT("ShiftWindowToPreviousWorkspace");
     }
 
+    public void ShiftFocusedWindowToNumWorkspace(int num)
+    {
+        SuppressEvents(() => ShiftFocusedWindowToWorkspace(num));
+
+        WM_EVENT($"ShiftWindowToNumWorkspace, wksp: {num}");
+    }
+
     public void CloseFocusedWindow() =>
         SuppressEvents(() =>
         {
