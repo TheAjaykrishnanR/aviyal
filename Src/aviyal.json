@@ -1,15 +1,15 @@
 {
   "layout": "dwindle",
   "left": 10,
-  "top": 40,
+  "top": 30,
   "right": 10,
   "bottom": 10,
   "inner": 10,
   "workspaces": 9,
-  "workspaceAnimations": true,
+  "workspaceAnimations": false,
   "workspaceAnimationsDuration": 500,
   "workspaceAnimationsDirection": "horizontal",
-  "floatingWindowSize": "800x400",
+  "floatingWindowSize": "800x600",
   "serverPort": 6969,
   "rules": 
   [
@@ -18,6 +18,18 @@
 	  "method": "equals",
 	  "identifierType": "windowProcess",
 	  "identifier": "Flow.Launcher"
+	},
+	{
+	  "type": "floating",
+	  "method": "equals",
+	  "identifierType": "windowTitle",
+	  "identifier": "Snipping Tool"
+	},
+	{
+	  "type": "floating",
+	  "method": "equals",
+	  "identifierType": "windowProcess",
+	  "identifier": "Explorer"
 	},
 	{
 	  "type": "floating",
@@ -36,6 +48,12 @@
 	  "method": "equals",
 	  "identifierType": "windowProcess",
 	  "identifier": "IDMan"
+	},
+	{
+	  "type": "floating",
+	  "method": "equals",
+	  "identifierType": "windowProcess",
+	  "identifier": "Minimal.Image.Viewer"
 	}
   ],
   "keymaps": [
@@ -91,6 +109,15 @@
       "command": "TOGGLE_FLOATING_WINDOW",
       "arguments": []
     },
+	{
+      "keys": [
+        "LCONTROL",
+        "LSHIFT",
+        "S"
+      ],
+      "command": "TOGGLE_STACKED_WINDOW",
+      "arguments": []
+    },
     {
       "keys": [
         "LCONTROL",
@@ -139,6 +166,87 @@
         "H"
       ],
       "command": "SHIFT_WINDOW_PREVIOUS_WORKSPACE",
+      "arguments": []
+    },
+	{
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "NUM1"
+      ],
+      "command": "SHIFT_WINDOW_WORKSPACE_1",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "NUM2"
+      ],
+      "command": "SHIFT_WINDOW_WORKSPACE_2",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "NUM3"
+      ],
+      "command": "SHIFT_WINDOW_WORKSPACE_3",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "NUM4"
+      ],
+      "command": "SHIFT_WINDOW_WORKSPACE_4",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "NUM5"
+      ],
+      "command": "SHIFT_WINDOW_WORKSPACE_5",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "NUM6"
+      ],
+      "command": "SHIFT_WINDOW_WORKSPACE_6",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "NUM7"
+      ],
+      "command": "SHIFT_WINDOW_WORKSPACE_7",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "NUM8"
+      ],
+      "command": "SHIFT_WINDOW_WORKSPACE_8",
+      "arguments": []
+    },
+    {
+      "keys": [
+        "LMENU",
+        "LSHIFT",
+        "NUM9"
+      ],
+      "command": "SHIFT_WINDOW_WORKSPACE_9",
       "arguments": []
     },
     {
@@ -230,6 +338,31 @@
       ],
       "command": "UPDATE",
       "arguments": []
+    },
+	{
+      "keys": [
+        "LCONTROL",
+        "OEM_1"
+      ],
+      "command": "EXEC",
+      "arguments": ["C:\\Users\\Jayakuttan\\Programs\\terminal\\wt.exe"]
+    },
+	{
+      "keys": [
+        "LCONTROL",
+        "LMENU",
+		"A"
+      ],
+      "command": "EXEC",
+      "arguments": ["C:\\Windows\\explorer.exe"]
+    },
+	{
+      "keys": [
+        "LCONTROL",
+		"E"
+      ],
+      "command": "EXEC",
+      "arguments": ["C:\\Users\\Jayakuttan\\Programs\\emacs\\bin\\runemacs.exe"]
     }
   ]
 }
