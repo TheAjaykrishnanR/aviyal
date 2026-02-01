@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using ThreadState = System.Threading.ThreadState;
 
 public class KeyEventsListener : IDisposable
 {
@@ -118,9 +119,13 @@ public class KeyEventsListener : IDisposable
 
     nint hhook;
     bool running = true;
+    bool monitorRunning = true;
 
     void Loop()
     {
+        // store the thread id
+        threadId = Kernel32.GetCurrentThreadId();
+
         const int WH_KEYBOARD_LL = 13;
         // hmod = 0, hook function is in code
         // dwThreadId = 0, hook all threads
@@ -142,7 +147,9 @@ public class KeyEventsListener : IDisposable
     public delegate void HotkeyPressedEventHandler(Keymap keymap);
     public event HotkeyPressedEventHandler HOTKEY_PRESSED = (keymap) => { };
 
-    public Thread thread;
+    public Thread thread; // hookThread
+    public uint threadId;
+    public Task hookThreadMonitor;
 
     public KeyEventsListener(Config config)
     {
@@ -151,12 +158,40 @@ public class KeyEventsListener : IDisposable
 
         thread = new(Loop);
         thread.Start();
+
+        // to monitor if hookThread goes into WaitSleepJoin
+        // if it does kill it and spawn a new one
+        hookThreadMonitor = new(async () =>
+        {
+            while (monitorRunning)
+            {
+                if (Aviyal.DEBUG)
+                    Console.WriteLine($"hookThread: {thread.ThreadState}");
+
+                if (thread.ThreadState == ThreadState.WaitSleepJoin)
+                {
+                    Logger.Log($"hookThread down... spawning a new one");
+
+                    // kill the thread
+                    running = false;
+                    User32.PostThreadMessage(threadId, (uint)WINDOWMESSAGE.WM_QUIT, 0, 0);
+
+                    // respawn a thread as hookThread
+                    running = true;
+                    thread = new(Loop);
+                    thread.Start();
+                }
+                await Task.Delay(1000);
+            }
+        });
+        hookThreadMonitor.Start();
     }
 
     public void Dispose()
     {
         UnhookWindowsHookEx(hhook);
         running = false;
+        monitorRunning = false;
     }
 }
 

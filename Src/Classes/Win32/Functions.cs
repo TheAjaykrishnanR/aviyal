@@ -178,6 +178,9 @@ public class User32
     public static extern int SendMessage(nint hWnd, uint msg, nint wParam, nint lParam);
 
     [DllImport("user32.dll", SetLastError = true)]
+    public static extern int PostThreadMessage(uint threadId, uint msg, nint wParam, nint lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
     public static extern void keybd_event(
         byte vk, // virtual key code
         byte scan, // scan code that identifies the key irrespective of
