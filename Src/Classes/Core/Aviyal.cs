@@ -522,9 +522,7 @@ public class Workspace : IWorkspace, IMoveable
 
     public void Focus()
     {
-        Console.WriteLine($"wmAction started");
         Update();
-        Console.WriteLine($"wmAction ended");
         Show();
         SetFocusedWindow();
     }
