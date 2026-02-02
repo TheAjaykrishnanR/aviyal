@@ -1,6 +1,6 @@
 ```json
 {
-    "layout": "dwindle", // dwindle, stack
+    "layout": "dwindle", // dwindle, stack, master
     "left": 10, // left margin
     "top": 40, // top margin
     "right": 10, // right margin
@@ -11,7 +11,7 @@
     "workspaceAnimationsDuration": 500, // milliseconds
     "workspaceAnimationsDirection": "horizontal", // horizontal, vertical
     "floatingWindowSize": "800x400",
-    "serverPort": 6969, // websocker port
+    "serverPort": 6969, // websocket port
     "rules": 
     [
         {

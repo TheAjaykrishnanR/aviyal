@@ -223,6 +223,144 @@ public class Stack : ILayout
     }
 }
 
+/* One main window on the left and the rest are vertically stacked on the right
+ * */
+public class Master : ILayout
+{
+    public int left { get; set; }
+    public int top { get; set; }
+    public int right { get; set; }
+    public int bottom { get; set; }
+    public int inner { get; set; }
+
+    RECT[] rects = null;
+    RECT[] fillRects = null;
+
+    public RECT[] GetRects(int count)
+    {
+        rects = new RECT[count];
+        fillRects = new RECT[count];
+
+        if (count == 0)
+            return fillRects;
+
+        (int width, int height) = Utils.GetScreenSize();
+
+        fillRects[0] = new()
+        {
+            Left = 0,
+            Top = 0,
+            Right = width,
+            Bottom = height,
+        };
+        if (count == 1)
+            return fillRects;
+
+        fillRects[0] = new()
+        {
+            Left = 0,
+            Top = 0,
+            Right = width / 2,
+            Bottom = height,
+        };
+        int dy = height / (count - 1);
+        for (int i = 1; i < count; i++)
+        {
+            fillRects[i] = new()
+            {
+                Left = width / 2,
+                Top = (i - 1) * dy,
+                Right = width,
+                Bottom = i * dy,
+            };
+        }
+
+        return fillRects;
+    }
+
+    public RECT[] ApplyOuter(RECT[] fillRects)
+    {
+        (int width, int height) = Utils.GetScreenSize();
+        for (int i = 0; i < fillRects.Length; i++)
+        {
+            if (fillRects[i].Left == 0)
+                fillRects[i].Left += left;
+            if (fillRects[i].Top == 0)
+                fillRects[i].Top += top;
+            if (fillRects[i].Right == width)
+                fillRects[i].Right -= right;
+            if (fillRects[i].Bottom == height)
+                fillRects[i].Bottom -= bottom;
+        }
+        return fillRects;
+    }
+
+    // applies inner margins (apply only after outer)
+    public RECT[] ApplyInner(RECT[] fillRects)
+    {
+        (int width, int height) = Utils.GetScreenSize();
+        for (int i = 0; i < fillRects.Length; i++)
+        {
+            if (fillRects[i].Left != left)
+                fillRects[i].Left += (int)(inner / 2);
+            if (fillRects[i].Top != top)
+                fillRects[i].Top += (int)(inner / 2);
+            if (fillRects[i].Right != width - right)
+                fillRects[i].Right -= (int)(inner / 2);
+            if (fillRects[i].Bottom != height - bottom)
+                fillRects[i].Bottom -= (int)(inner / 2);
+        }
+        return fillRects;
+    }
+
+    public int? GetAdjacent(int index, EDGE direction)
+    {
+        if (index == 0)
+        {
+            if (direction == EDGE.RIGHT)
+                return 1;
+            return null; // LEFT, TOP, BOTTOM
+        }
+        if (index == 1)
+        {
+            if (direction == EDGE.TOP || direction == EDGE.RIGHT)
+                return null;
+            if (direction == EDGE.BOTTOM)
+                return 2;
+            return 0; // LEFT
+        }
+        if (index == fillRects.Length - 1)
+        {
+            if (direction == EDGE.BOTTOM || direction == EDGE.RIGHT)
+                return null;
+            if (direction == EDGE.TOP)
+                return index - 1;
+            return 0; // LEFT
+        }
+
+        // windows in the middle of the right vertical stack
+        if (direction == EDGE.RIGHT)
+            return null;
+        if (direction == EDGE.LEFT)
+            return 0;
+        if (direction == EDGE.TOP)
+            return index - 1;
+        if (direction == EDGE.BOTTOM)
+            return index + 1;
+
+        return null;
+    }
+
+    public Master(Config config)
+    {
+        this.left = config.left;
+        this.right = config.right;
+        this.top = config.top;
+        this.bottom = config.bottom;
+        this.inner = config.inner;
+    }
+}
+
 public enum EDGE
 {
     LEFT,

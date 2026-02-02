@@ -10,7 +10,7 @@
 
 1. Workspaces
 2. Workspace animations (Horizontal and vertical)
-3. Dynamic Tiling : `Dwindle`, `Stack`
+3. Dynamic Tiling : `Dwindle`, `Stack`, `Master`
 4. Toggle floating
 5. Close focused window
 6. Shift focus 

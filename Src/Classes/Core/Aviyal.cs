@@ -522,7 +522,9 @@ public class Workspace : IWorkspace, IMoveable
 
     public void Focus()
     {
+        Console.WriteLine($"wmAction started");
         Update();
+        Console.WriteLine($"wmAction ended");
         Show();
         SetFocusedWindow();
     }
@@ -787,6 +789,7 @@ public class WindowManager : IWindowManager
             {
                 "dwindle" => new Dwindle(config),
                 "stack" => new Stack(config),
+                "master" => new Master(config),
                 _ => new Dwindle(config),
             };
             workspaces.Add(wksp);
