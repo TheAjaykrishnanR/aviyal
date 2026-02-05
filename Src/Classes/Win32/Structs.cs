@@ -309,3 +309,50 @@ public struct WINDOWINFO
     public ushort atomWindowType;
     public ushort wCreatorVersion;
 }
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+public struct STARTUPINFO
+{
+    public int cb;
+    public string lpReserved;
+    public string lpDesktop;
+    public string lpTitle;
+    public int dwX;
+    public int dwY;
+    public int dwXSize;
+    public int dwYSize;
+    public int dwXCountChars;
+    public int dwYCountChars;
+    public int dwFillAttribute;
+    public int dwFlags;
+    public short wShowWindow;
+    public short cbReserved2;
+    public nint lpReserved2;
+    public nint hStdInput;
+    public nint hStdOutput;
+    public nint hStdError;
+}
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+public struct STARTUPINFOEX
+{
+    public STARTUPINFO StartupInfo;
+    public nint lpAttributeList;
+}
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+public struct PROCESS_INFORMATION
+{
+    public nint hProcess;
+    public nint hThread;
+    public int dwProcessId;
+    public int dwThreadId;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct SECURITY_ATTRIBUTES
+{
+    public int nLength;
+    public nint lpSecurityDescriptor;
+    public bool bInheritHandle;
+}

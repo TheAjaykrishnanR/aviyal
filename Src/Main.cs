@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.1.9";
+    static string version = "0.2.0";
     static Aviyal? aviyal;
 
     public static bool DEBUG = false;
@@ -226,22 +226,44 @@ class Aviyal : IDisposable
             Logger.Log(state.ToJson());
     }
 
-    public void Exec(List<string> args)
+    public void Exec(List<string> args, bool elevated = false)
     {
         if (args.Count == 0)
             return;
-        try
+
+        ProcessStartInfo psi = new();
+        psi.FileName = args[0];
+        //if (args.Count > 0) psi.Arguments = args[1];
+        Process process = new();
+        process.StartInfo = psi;
+
+        if (Environment.IsPrivilegedProcess == elevated)
         {
-            ProcessStartInfo psi = new();
-            psi.FileName = args[0];
-            //if (args.Count > 0) psi.Arguments = args[1];
-            Process process = new();
-            process.StartInfo = psi;
-            process.Start();
+            try
+            {
+                process.Start();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Unable to execute command", ex: ex);
+            }
         }
-        catch (Exception ex)
+        else if (elevated)
         {
-            Logger.Log("Unable to execute command", ex: ex);
+            psi.Verb = "runas";
+            try
+            {
+                process.Start();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Unable to execute command", ex: ex);
+            }
+        }
+        else
+        {
+            string cmdLine = string.Join(" ", args);
+            Utils.ExecuteUnelevated(cmdLine);
         }
     }
 
@@ -382,10 +404,10 @@ as an administrator or from an elevated prompt.
                 WithConsole(() =>
                 {
                     Console.WriteLine(
-                        @"
+                        @$"
 ,_______________________________,
-|   Aviyal Window Manager |__|__|
-|___ver_0.1.0-alpha_______|__|__|
+|  Aviyal Dynamic Tiling  |__|__|
+|______Window Manager_____|__|__|
 |Author:  Ajaykrishnan.R  |\/ \/|
 |/\/\/\/\/\/\/\/\/\/\/\/\/|/\_/\|
 |________C# .NET 10_______|++++++
@@ -393,6 +415,8 @@ as an administrator or from an elevated prompt.
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 Aviyal is a window manager that dynamically tiles your windows, organizes them inside workspaces, allows navigation through keybindings, and more :)
+
+ver: {version}
 
 aviyal: https://github.com/TheAjaykrishnanR/aviyal
 dflat: https://github.com/TheAjaykrishnanR/dflat

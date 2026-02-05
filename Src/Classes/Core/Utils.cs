@@ -461,6 +461,66 @@ public partial class Utils
         Logger.Log($"{funcName}() finished in {dt} ms");
         return obj;
     }
+
+    /// <summary>
+    /// Launch unelevated processes from an elevated process
+    /// https://devblogs.microsoft.com/oldnewthing/20190425-00/?p=102443
+    /// https://stackoverflow.com/questions/69836929/access-violation-calling-createprocess-in-c-sharp
+    /// </summary>
+    public static void ExecuteUnelevated(string cmdLine)
+    {
+        nint procThreadAttrListSize = 0;
+        Kernel32.InitializeProcThreadAttributeList(0, 1, 0, ref procThreadAttrListSize);
+
+        STARTUPINFOEX si = new();
+        si.StartupInfo.cb = Marshal.SizeOf<STARTUPINFOEX>();
+        si.lpAttributeList = Marshal.AllocHGlobal(procThreadAttrListSize);
+
+        Kernel32.InitializeProcThreadAttributeList(
+            si.lpAttributeList,
+            1,
+            0,
+            ref procThreadAttrListSize
+        );
+
+        User32.GetWindowThreadProcessId(User32.GetShellWindow(), out uint shellPid);
+        nint shellProcessPtr = Marshal.AllocHGlobal(IntPtr.Size);
+        const uint PROCESS_CREATE_PROCESS = 0x0080;
+        Marshal.WriteIntPtr(
+            shellProcessPtr,
+            Kernel32.OpenProcess(PROCESS_CREATE_PROCESS, false, (int)shellPid)
+        );
+
+        const uint PROC_THREAD_ATTRIBUTE_PARENT_PROCESS = 131072U;
+        Kernel32.UpdateProcThreadAttribute(
+            si.lpAttributeList,
+            0,
+            (nint)PROC_THREAD_ATTRIBUTE_PARENT_PROCESS,
+            shellProcessPtr,
+            IntPtr.Size,
+            0,
+            0
+        );
+
+        int cb = Marshal.SizeOf<SECURITY_ATTRIBUTES>();
+        SECURITY_ATTRIBUTES psa = new() { nLength = cb };
+        SECURITY_ATTRIBUTES tsa = new() { nLength = cb };
+
+        const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
+        const uint CREATE_NEW_CONSOLE = 0x00000010;
+        bool result = Kernel32.CreateProcess(
+            null,
+            cmdLine,
+            ref psa,
+            ref tsa,
+            false,
+            EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE,
+            0,
+            null,
+            ref si,
+            out PROCESS_INFORMATION pi
+        );
+    }
 }
 
 public class _Window

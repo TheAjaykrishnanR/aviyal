@@ -110,6 +110,9 @@ public class User32
     public static extern bool GetWindowThreadProcessId(nint hWnd, out uint processId);
 
     [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint GetShellWindow();
+
+    [DllImport("user32.dll", SetLastError = true)]
     public static extern nint CreateWindowEx(
         WINDOWSTYLE dwExStyle,
         string lpClassName,
@@ -269,6 +272,47 @@ public class Kernel32
 
     [DllImport("kernel32.dll")]
     public static extern uint GetCurrentThreadId();
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+    public static extern bool CreateProcess(
+        string lpApplicationName,
+        string lpCommandLine,
+        ref SECURITY_ATTRIBUTES lpProcessAttributes,
+        ref SECURITY_ATTRIBUTES lpThreadAttributes,
+        bool bInheritHandles,
+        uint dwCreationFlags,
+        nint lpEnvironment,
+        string lpCurrentDirectory,
+        ref STARTUPINFOEX StartupInfoEx,
+        out PROCESS_INFORMATION lpProcessInformation
+    );
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool InitializeProcThreadAttributeList(
+        nint lpAttributeList,
+        int dwAttributeCount,
+        int dwFlags,
+        ref nint lpSize
+    );
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool UpdateProcThreadAttribute(
+        nint lpAttributeList,
+        uint dwFlags,
+        nint Attribute,
+        nint lpValue,
+        nint cbSize,
+        nint lpPreviousValue,
+        nint lpReturnSize
+    );
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool DeleteProcThreadAttributeList(nint lpAttributeList);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(nint hObject);
 }
 
 public class Advapi32
