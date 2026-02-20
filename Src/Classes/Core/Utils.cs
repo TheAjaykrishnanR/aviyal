@@ -520,6 +520,9 @@ public partial class Utils
             ref si,
             out PROCESS_INFORMATION pi
         );
+
+        Marshal.FreeHGlobal(si.lpAttributeList);
+        Marshal.FreeHGlobal(shellProcessPtr);
     }
 }
 
