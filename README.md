@@ -4,6 +4,8 @@
 
 > Window manager for windows written purely in C# thats simple, lightweight and portable.
 
+This project was **NOT** vibecoded.
+
 ![showcase_1](https://github.com/TheAjaykrishnanR/aviyal/blob/master/Imgs/showcase.png)
 
 ## Features
