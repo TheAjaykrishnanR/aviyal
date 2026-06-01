@@ -12,7 +12,13 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.2.1";
+    static string version = "0.2.2";
+    static string changelog =
+        @"
+- Removed ignoring of BORDERLESS windows
+- Better handles windows which dont emit a MOVESIZEEND after being moved
+- version bump
+";
     static Aviyal? aviyal;
 
     public static bool DEBUG = false;
@@ -402,6 +408,9 @@ as an administrator or from an elevated prompt.
             case "--version":
                 WithConsole(() => Console.WriteLine($"Aviyal version: {version}"));
                 break;
+            case "--changelog":
+                WithConsole(() => Console.WriteLine($"CHANGELOG [{version}]:\n {changelog}"));
+                break;
             case "--help":
                 WithConsole(() =>
                 {
@@ -427,10 +436,11 @@ USAGE: aviyal <options> <arguments>
 
 available options:
 
---help:     prints this help text
---debug:    flag for running the program in debug mode. Only special windows are tiled.
---version:  prints the version
---restore:  restores windows from a previous state. Useful when crashed and windows are hidden.
+--help:     	prints this help text.
+--debug:    	flag for running the program in debug mode. Only special windows are tiled.
+--version:  	prints the version.
+--changelog:	prints the changes in the current version.
+--restore:  	restores windows from a previous state. Useful when crashed and windows are hidden.
 "
                     );
                 });

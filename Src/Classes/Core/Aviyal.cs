@@ -85,7 +85,10 @@ public class Window : IWindow, IMoveable
     {
         get
         {
-            if (!this.styles.HasFlag(WINDOWSTYLE.WS_THICKFRAME))
+            if (
+                !this.styles.HasFlag(WINDOWSTYLE.WS_THICKFRAME)
+                && !this.styles.HasFlag(WINDOWSTYLE.WS_MAXIMIZEBOX)
+            )
                 return false;
             if (
                 this.className.Contains("OperationStatusWindow")
@@ -1196,10 +1199,14 @@ public class WindowManager : IWindowManager
         if (wnd.className.Contains("#32768") || wnd.className.Contains("#32772"))
             return IgnoreWindow("MENUS");
 
-        // filter out windows without the normal/default border thickness
-        const int SM_CXSIZEFRAME = 32;
-        if (wnd.borderThickness < User32.GetSystemMetrics(SM_CXSIZEFRAME))
-            return IgnoreWindow("BORDERLESS");
+        /*
+         * - filter out windows without the normal/default border thickness -
+         *   had this earlier to prevent pop ups and application startup dialogs be ignored
+         *   but filters out real borderless windows like FL Studio
+         * */
+        // const int SM_CXSIZEFRAME = 32;
+        // if (wnd.borderThickness < User32.GetSystemMetrics(SM_CXSIZEFRAME))
+        //     return IgnoreWindow("BORDERLESS");
 
         if (IsWindowInConfigRules(wnd, "ignore"))
             return IgnoreWindow("IN CONFIG RULES");
@@ -1422,6 +1429,38 @@ public class WindowManager : IWindowManager
     nint lasRestoredhWnd = 0;
     long lastRestoreTime = 0;
 
+    class EventStream<TEventObj>
+    {
+        private System.Timers.Timer _t;
+        public delegate void EventStreamOver(TEventObj obj);
+        public event EventStreamOver OVER = (_) => { };
+        public bool disposed { get; private set; } = false;
+
+        public EventStream(int interval)
+        {
+            _t = new(interval);
+            _t.Elapsed += (o, e) =>
+            {
+                disposed = true;
+                _t.Stop();
+                _t.Close();
+                if (lastEventObj != null)
+                    OVER(lastEventObj);
+            };
+        }
+
+        private TEventObj lastEventObj;
+
+        public void Add(TEventObj obj)
+        {
+            _t.Stop();
+            lastEventObj = obj;
+            _t.Start();
+        }
+    }
+
+    EventStream<Window> restoreStream;
+
     public void WindowRestored(Window wnd)
     {
         /* To catch window being restored to normal from mazimized state.
@@ -1430,6 +1469,13 @@ public class WindowManager : IWindowManager
          * only the one-off restore action
          * */
 
+        // +[CHANGE: resize event stream] except the last one as some fricking windows upon
+        // being moved wont fire a MOVESIZEEND (FL Studio)
+        if (restoreStream == null || restoreStream.disposed)
+        {
+            restoreStream = new(WINEVENT_RESTORE_TIMEOUT);
+            restoreStream.OVER += WindowMoved;
+        }
         // ignore window restore events that appear in rapid succession
         if (
             DateTimeOffset.Now.ToUnixTimeMilliseconds() - lastRestoreTime < WINEVENT_RESTORE_TIMEOUT
@@ -1438,6 +1484,7 @@ public class WindowManager : IWindowManager
         {
             lasRestoredhWnd = wnd.hWnd;
             lastRestoreTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            restoreStream?.Add(wnd); // [+ for firing for the last event]
             if (Aviyal.DEBUG)
                 Logger.Log($"ignore window restore, {wnd.title}, {wnd.hWnd}");
             return;
