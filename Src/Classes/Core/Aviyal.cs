@@ -81,23 +81,45 @@ public class Window : IWindow, IMoveable
         }
     }
 
-    public bool resizeable
+    /* "To be or not to be"
+     * i have been thinking about whether the should be about if the window CAN actually be resized
+     * or if it SHOULD be ?
+     * its probably the latter as achieving the former is not so easy.
+     * */
+    public bool? resizeable
     {
         get
         {
-            if (
-                !this.styles.HasFlag(WINDOWSTYLE.WS_THICKFRAME)
-                && !this.styles.HasFlag(WINDOWSTYLE.WS_MAXIMIZEBOX)
-            )
-                return false;
+            if (field != null)
+                return field;
             if (
                 this.className.Contains("OperationStatusWindow")
                 || // copy, paste status windows
                 this.className.Contains("DS_MODALFRAME")
             )
                 return false;
-            return true;
+            if (
+                /* [Long monologue ahead]: only windows that have the WS_THICKFRAME flag are
+                 * those that can be easily resized (resize functionality provided by the OS)
+                 * However that doesn't mean that they can't be resized through other means i.e.
+                 * if the window implements its own resizing through handling WM_NCHITTEST messages.
+                 * This is likely how applications like FL Studio does resizing and probing it would
+                 * be difficult.
+                 * */
+                this.styles.HasFlag(WINDOWSTYLE.WS_THICKFRAME)
+                ||
+                /* However the above problem is partly solved by looking for the WS_MAXIMIZEBOX flag
+                 * If this flag exists we can infer that the window is MEANT to be resized irrespective
+                 * of how it does so (OS or itself). If the window has this flag but is actually unresizeable
+                 * then it will silently fail in the sizing operation so no worries, aaah ! maybe we can
+                 * try checking it there ?!?
+                 * */
+                this.styles.HasFlag(WINDOWSTYLE.WS_MAXIMIZEBOX)
+            )
+                return true;
+            return false;
         }
+        private set;
     }
 
     public NONTILEDSTATE nonTiledState { get; set; } = NONTILEDSTATE.NONE;
@@ -158,7 +180,6 @@ public class Window : IWindow, IMoveable
 
     public override bool Equals(object? obj)
     {
-        //if (base.Equals(obj)) return true;
         if (obj is null)
             return false;
         if (((Window)obj).hWnd == this.hWnd)
@@ -185,46 +206,65 @@ public class Window : IWindow, IMoveable
         this.hWnd = hWnd;
     }
 
-    int SHOWHIDE_RETRIES = 10;
+    /* A useful wrapper for calling window functions multiple times until target condition is
+     * achieved
+     * */
+    private void DoUntil(
+        Action func,
+        Func<bool> targetCondition,
+        int retries = 10,
+        int dt = 10,
+        Action? failure = null
+    )
+    {
+        int i = 0;
+        while (!targetCondition())
+        {
+            if (++i > retries)
+                break;
+            func();
+            Thread.Sleep(dt);
+        }
+        if (!targetCondition() && failure != null)
+            failure();
+    }
 
     public void Hide()
     {
         ToggleAnimation(false);
-        int _retry = 0;
-        while (User32.IsWindowVisible(this.hWnd))
-        {
-            if (++_retry > SHOWHIDE_RETRIES)
-                break;
-            User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_HIDE);
-        }
+        DoUntil(
+            () =>
+            {
+                User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_HIDE);
+            },
+            () => !User32.IsWindowVisible(this.hWnd)
+        );
         ToggleAnimation(true);
     }
 
     public void Show()
     {
         ToggleAnimation(false);
-        int _retry = 0;
-        while (!User32.IsWindowVisible(this.hWnd))
-        {
-            if (++_retry > SHOWHIDE_RETRIES)
-                break;
-            User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOWNA);
-        }
+        DoUntil(
+            () =>
+            {
+                User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOWNA);
+            },
+            () => User32.IsWindowVisible(this.hWnd)
+        );
         ToggleAnimation(true);
     }
 
-    const int FOCUS_RETRIES = 10;
-
     public void Focus()
     {
-        int _retry = 0;
-        while (User32.GetForegroundWindow() != this.hWnd)
-        {
-            if (++_retry > FOCUS_RETRIES)
-                break;
-            User32.keybd_event(0, 0, 0, Globals.FOREGROUND_FAKE_KEY);
-            User32.SetForegroundWindow(this.hWnd);
-        }
+        DoUntil(
+            () =>
+            {
+                User32.keybd_event(0, 0, 0, Globals.FOREGROUND_FAKE_KEY);
+                User32.SetForegroundWindow(this.hWnd);
+            },
+            () => User32.GetForegroundWindow() == this.hWnd
+        );
     }
 
     const SETWINDOWPOS defaultMoveFlags =
@@ -233,8 +273,6 @@ public class Window : IWindow, IMoveable
         | SETWINDOWPOS.SWP_ASYNCWINDOWPOS
         | SETWINDOWPOS.SWP_NOACTIVATE
         | SETWINDOWPOS.SWP_NOZORDER;
-
-    const int MOVE_RETRIES = 10;
 
     public void Move(RECT pos, bool redraw = true)
     {
@@ -251,14 +289,33 @@ public class Window : IWindow, IMoveable
             false => defaultMoveFlags | SETWINDOWPOS.SWP_NOREDRAW,
         };
 
-        User32.SetWindowPos(
-            this.hWnd,
-            0,
-            pos.Left,
-            pos.Top,
-            pos.Right - pos.Left,
-            pos.Bottom - pos.Top,
-            flags
+        RECT _before = this.rect; // we store a copy of the wnd rect before the move action
+        // so that we can figure out if the action had any effect at all irrespective of
+        // whether the target rect dimensions were achieved
+
+        DoUntil(
+            () =>
+            {
+                User32.SetWindowPos(
+                    this.hWnd,
+                    0,
+                    pos.Left,
+                    pos.Top,
+                    pos.Right - pos.Left,
+                    pos.Bottom - pos.Top,
+                    flags
+                );
+            },
+            () => RectEqual(this.rect, pos),
+            /* remember when i talked earlier about the only way to know if a window is resizeable is
+             * to test is and see if it fails ? yeah thats what we are doing here
+             * */
+            failure: () =>
+            {
+                Logger.Log($"DO FAILED: {this.className}");
+                if (RectEqual(_before, this.rect))
+                    resizeable = false;
+            }
         );
     }
 
@@ -273,13 +330,14 @@ public class Window : IWindow, IMoveable
             true => slideFlag,
             false => slideFlag | SETWINDOWPOS.SWP_NOREDRAW,
         };
-        int _retry = 0;
-        while (this.rect.Left != x || this.rect.Top != y)
-        {
-            if (++_retry > MOVE_RETRIES)
-                break;
-            User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, flags);
-        }
+
+        DoUntil(
+            () =>
+            {
+                User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, flags);
+            },
+            () => this.rect.Left == x && this.rect.Top == y
+        );
     }
 
     public void Close()
@@ -612,7 +670,7 @@ public class Workspace : IWorkspace, IMoveable
 
     public void MakeFloating(Window wnd)
     {
-        if (!wnd.resizeable || wnd.state == SHOWWINDOW.SW_SHOWMAXIMIZED)
+        if (!(bool)wnd.resizeable || wnd.state == SHOWWINDOW.SW_SHOWMAXIMIZED)
             return;
         wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
     }
@@ -1376,7 +1434,7 @@ public class WindowManager : IWindowManager
          * cursorPos
          * wndEnclosingCursor -> window enclosing cursor
          * */
-        if (wnd.nonTiledState == NONTILEDSTATE.NONE && wnd.resizeable)
+        if (wnd.nonTiledState == NONTILEDSTATE.NONE && (bool)wnd.resizeable)
         {
             User32.GetCursorPos(out POINT pt);
             Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
@@ -1429,6 +1487,8 @@ public class WindowManager : IWindowManager
     nint lasRestoredhWnd = 0;
     long lastRestoreTime = 0;
 
+    /* a simple class that emits an event with the last member of a rapidly firing event stream
+     * */
     class EventStream<TEventObj>
     {
         private System.Timers.Timer _t;

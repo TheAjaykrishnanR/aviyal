@@ -3,3 +3,6 @@
 - dont exit if another instance is running inside a different user
 
 # working on: LookupAccountSid() in `Classes\Core\Utils.cs`
+
+- custom window sizes in layouts
+- window size validation after movement

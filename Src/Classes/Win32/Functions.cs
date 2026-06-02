@@ -220,6 +220,15 @@ public class User32
 
     [DllImport("user32.dll")]
     public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+    /* Functions to figure out if a window is MAXIMIZED or MINIMIZED
+     * (funny how i didnt know about this until now because WINEVENTS doesnt have a maximized event)
+     * */
+    [DllImport("user32.dll")]
+    public static extern bool IsZoomed(nint hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsIconic(nint hWnd);
 }
 
 public class Shell32
