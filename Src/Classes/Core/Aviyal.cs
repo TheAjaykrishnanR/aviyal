@@ -312,7 +312,6 @@ public class Window : IWindow, IMoveable
              * */
             failure: () =>
             {
-                Logger.Log($"DO FAILED: {this.className}");
                 if (RectEqual(_before, this.rect))
                     resizeable = false;
             }
@@ -835,7 +834,7 @@ public class WindowManager : IWindowManager
          * */
         if (Aviyal.DEBUG && DEBUG_WND_NAME != null)
         {
-            Logger.Log($"DebugWndName: {DEBUG_WND_NAME}");
+            Logger.Log($"DebugWndName: {DEBUG_WND_NAME}", file: false);
             this.initWindows = this
                 .initWindows.Where(wnd => wnd.title.Contains(DEBUG_WND_NAME))
                 .ToList();

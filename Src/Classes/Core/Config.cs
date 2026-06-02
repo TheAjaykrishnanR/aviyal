@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 public class Config : IJson<Config>
 {
+    public string loglevel { get; set; } = "low";
     public string layout { get; set; } = "dwindle";
 
     // margins
@@ -79,6 +80,7 @@ public class Config : IJson<Config>
     {
         JsonObject j = new()
         {
+            ["loglevel"] = loglevel,
             ["layout"] = layout,
             ["left"] = left,
             ["top"] = top,
@@ -125,6 +127,7 @@ public class Config : IJson<Config>
         JsonNode node = JsonNode.Parse(json);
 
         Config config = new();
+        config.loglevel = node["loglevel"].ToString();
         config.layout = node["layout"].ToString();
         config.inner = Convert.ToInt32(node["inner"].ToString());
         config.left = Convert.ToInt32(node["left"].ToString());

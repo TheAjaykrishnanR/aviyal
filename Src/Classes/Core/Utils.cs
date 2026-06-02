@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -528,38 +529,31 @@ public partial class Utils
     /// <summary>
     /// Gets the username associated with a process
     /// </summary>
-    public static string GetProcessUserName(string processName)
+    public static string GetProcessUserName(uint processId)
     {
-        const int PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
-        int pid = Process.GetProcessesByName(processName).ToList().First().Id;
-        nint handle = Kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
-        const int TOKEN_QUERY = 0x0008;
-        Advapi32.OpenProcessToken(handle, TOKEN_QUERY, out nint tokenHandle);
-        TOKEN_USER info = new();
-        HandleWin32(
-            Advapi32.GetTokenInformation(
-                tokenHandle,
-                TOKEN_INFORMATION_CLASS.TokenUser,
-                ref info,
-                //sizeof(uint) + (uint)nint.Size,
-                44,
-                out uint returnLength
-            )
+        const uint PROCESS_QUERY_INFORMATION = 0x0400;
+        nint hProcess = Kernel32.OpenProcess(PROCESS_QUERY_INFORMATION, false, (int)processId);
+        const uint TOKEN_QUERY = 0x0008;
+        Advapi32.OpenProcessToken(hProcess, TOKEN_QUERY, out nint tokenHandle);
+        Advapi32.GetTokenInformation(
+            tokenHandle,
+            TOKEN_INFORMATION_CLASS.TokenUser,
+            0,
+            0,
+            out uint returnLength
         );
-        Console.WriteLine($"psid: {info.User.Sid}");
-        StringBuilder name = new(200);
-        HandleWin32(
-            Advapi32.LookupAccountSid(
-                null,
-                info.User.Sid,
-                name,
-                out uint _,
-                new StringBuilder(200),
-                out uint _,
-                out nint _
-            )
+        nint buffer = Marshal.AllocHGlobal((int)returnLength);
+        Advapi32.GetTokenInformation(
+            tokenHandle,
+            TOKEN_INFORMATION_CLASS.TokenUser,
+            buffer,
+            returnLength,
+            out returnLength
         );
-        return name.ToString();
+        nint pSid = Marshal.ReadIntPtr(buffer);
+        SecurityIdentifier sid = new(pSid);
+        NTAccount account = (NTAccount)sid.Translate(typeof(NTAccount));
+        return account.Value;
     }
 
     public static void HandleWin32(int returnValue, string? funcName = null)

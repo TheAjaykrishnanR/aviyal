@@ -12,11 +12,11 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.2.2";
+    static string version = "0.2.3";
     static string changelog =
         @"
-- Removed ignoring of BORDERLESS windows
-- Better handles windows which dont emit a MOVESIZEEND after being moved
+- ignore application instances running as other uses
+- changed window resizeability checks
 - version bump
 ";
     static Aviyal? aviyal;
@@ -148,9 +148,10 @@ class Aviyal : IDisposable
 
     public void HotkeyPressed(Keymap keymap)
     {
-        Logger.Log(
-            $"Hotekey Pressed: {keymap.command}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}"
-        );
+        if (DEBUG)
+            Logger.Log(
+                $"Hotekey Pressed: {keymap.command}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}"
+            );
         if (keymap.command == COMMAND.EXEC)
             Exec(keymap.arguments);
         else
@@ -226,7 +227,8 @@ class Aviyal : IDisposable
             Logger.Log("Error writing to state file", ex: ex);
         }
         Logger.Log(
-            $"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}, focusedWorkspace: {state.focusedWorkspaceIndex}"
+            $"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}, focusedWorkspace: {state.focusedWorkspaceIndex}",
+            file: false
         );
         if (DEBUG)
             Logger.Log(state.ToJson());
@@ -285,12 +287,22 @@ class Aviyal : IDisposable
             Logger.Log($"Starting aviyal, time: {DateTimeOffset.Now.ToUnixTimeSeconds()}");
         }
 
-        if (Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1)
+        var psWithSameName = Process
+            .GetProcessesByName(Process.GetCurrentProcess().ProcessName)
+            .ToList();
+        if (psWithSameName.Count > 1)
         {
             Logger.Log("an instance is already running, exiting...");
-            string userName = Utils.GetProcessUserName(Process.GetCurrentProcess().ProcessName);
-            Console.WriteLine($"userName: {userName}");
-            return;
+            var opsWithSameName = psWithSameName
+                .Where(p => p.Id != Process.GetCurrentProcess().Id)
+                .ToList();
+            string currentUser = Utils.GetProcessUserName((uint)Process.GetCurrentProcess().Id);
+            // only exit if another process is running on the same user
+            foreach (var p in opsWithSameName)
+            {
+                if (Utils.GetProcessUserName((uint)p.Id) == currentUser)
+                    return;
+            }
         }
 
         Logger.Log($"Running aviyal instance, reload count: {reloadCount}");
@@ -315,7 +327,7 @@ class Aviyal : IDisposable
         else
         {
             config = new();
-            Logger.Log("Default config: ");
+            Logger.Log("Default config: ", file: false);
             File.AppendAllText(Paths.configFile, config.ToJson());
         }
 

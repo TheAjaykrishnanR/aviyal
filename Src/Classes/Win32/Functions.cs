@@ -337,6 +337,15 @@ public class Advapi32
     public static extern int GetTokenInformation(
         nint handle,
         TOKEN_INFORMATION_CLASS informationClass,
+        nint info,
+        uint infoSize,
+        out uint returnLength
+    );
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    public static extern int GetTokenInformation(
+        nint handle,
+        TOKEN_INFORMATION_CLASS informationClass,
         ref TOKEN_ELEVATION info,
         uint infoSize,
         out uint returnLength
