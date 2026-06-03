@@ -8,7 +8,7 @@ public interface IWindow
     public string className { get; }
     public string? exe { get; }
     public RECT rect { get; }
-    public SHOWWINDOW state { get; }
+    public WINDOWSTATE state { get; }
     public bool? resizeable { get; }
     public NONTILEDSTATE nonTiledState { get; set; }
     public WINDOWSTYLE styles { get; }
@@ -68,6 +68,7 @@ public interface IWindowManager
     public void WindowMaximized(Window wnd);
     public void WindowMinimized(Window wnd);
     public void WindowRestored(Window wnd);
+    public void WindowFullscreened(Window wnd);
 }
 
 public interface ILayout

@@ -69,15 +69,48 @@ public class Window : IWindow, IMoveable
     // position of window relative to workspace (without margins)
     public RECT relRect { get; set; }
 
-    public SHOWWINDOW state
+    public SHOWWINDOW _state
     {
         get
         {
             WINDOWPLACEMENT wndPlmnt = new();
             User32.GetWindowPlacement(this.hWnd, ref wndPlmnt);
             var state = (SHOWWINDOW)wndPlmnt.showCmd;
-            //Logger.Log($"state: {state}");
             return state;
+        }
+    }
+
+    public WINDOWSTATE state
+    {
+        get
+        {
+            field = _state switch
+            {
+                SHOWWINDOW.SW_HIDE => WINDOWSTATE.HIDDEN,
+                SHOWWINDOW.SW_MAXIMIZE => WINDOWSTATE.MAXIMIZED,
+                SHOWWINDOW.SW_MINIMIZE => WINDOWSTATE.MINIMIZED,
+                SHOWWINDOW.SW_SHOWMINIMIZED => WINDOWSTATE.MINIMIZED,
+                SHOWWINDOW.SW_SHOWMINNOACTIVE => WINDOWSTATE.MINIMIZED,
+                SHOWWINDOW.SW_FORCEMINIMIZE => WINDOWSTATE.MINIMIZED,
+                _ => WINDOWSTATE.NORMAL,
+            };
+
+            RECT screen = Utils.GetScreenRect();
+            if (field == WINDOWSTATE.NORMAL)
+                if (
+                    this.rect == screen
+                    ||
+                    /* windows 11 has a 1px gap at the bottom when taskbar is disabled
+                     * or set to auto hide
+                     * */
+                    new RECT(this.rect) { Bottom = this.rect.Bottom - 1 } == screen
+                    || new RECT(this.rect) { Bottom = this.rect.Top - 1 } == screen
+                    || new RECT(this.rect) { Bottom = this.rect.Right - 1 } == screen
+                    || new RECT(this.rect) { Bottom = this.rect.Left - 1 } == screen
+                )
+                    field = WINDOWSTATE.FULLSCREEN;
+
+            return field;
         }
     }
 
@@ -420,7 +453,8 @@ public class Window : IWindow, IMoveable
             {
                 User32.ShowWindow(hWnd, SHOWWINDOW.SW_MAXIMIZE);
             },
-            () => this.state == SHOWWINDOW.SW_MAXIMIZE
+            // ugh aesthetically i should be using this.state but whatever
+            () => this._state == SHOWWINDOW.SW_MAXIMIZE
         );
     }
 
@@ -431,7 +465,7 @@ public class Window : IWindow, IMoveable
             {
                 User32.ShowWindow(hWnd, SHOWWINDOW.SW_MINIMIZE);
             },
-            () => this.state == SHOWWINDOW.SW_MINIMIZE
+            () => this._state == SHOWWINDOW.SW_MINIMIZE
         );
     }
 }
@@ -531,8 +565,9 @@ public class Workspace : IWorkspace, IMoveable
         List<Window?> workableWindows = windows
             .Where(wnd => wnd?.resizeable == true)
             .Where(wnd => wnd?.elevated == false)
-            .Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMAXIMIZED)
-            .Where(wnd => wnd?.state != SHOWWINDOW.SW_SHOWMINIMIZED)
+            .Where(wnd => wnd?.state != WINDOWSTATE.MAXIMIZED)
+            .Where(wnd => wnd?.state != WINDOWSTATE.MINIMIZED)
+            .Where(wnd => wnd?.state != WINDOWSTATE.FULLSCREEN)
             .ToList();
 
         /* windows to tile
@@ -711,7 +746,7 @@ public class Workspace : IWorkspace, IMoveable
 
     public void MakeFloating(Window wnd)
     {
-        if (!(bool)wnd.resizeable || wnd.state == SHOWWINDOW.SW_SHOWMAXIMIZED)
+        if (!(bool)wnd.resizeable || wnd.state == WINDOWSTATE.MAXIMIZED)
             return;
         wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
     }
@@ -1478,8 +1513,6 @@ public class WindowManager : IWindowManager
     {
         if (wmActions.Count > 0)
             return;
-        //if (ShouldWindowBeIgnored(wnd))
-        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
@@ -1507,8 +1540,6 @@ public class WindowManager : IWindowManager
     {
         if (wmActions.Count > 0)
             return;
-        //if (ShouldWindowBeIgnored(wnd))
-        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
@@ -1521,13 +1552,11 @@ public class WindowManager : IWindowManager
     {
         if (wmActions.Count > 0)
             return;
-        //if (ShouldWindowBeIgnored(wnd))
-        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
         // render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
-        TaskEx.WaitUntil(() => wnd.state == SHOWWINDOW.SW_SHOWMINIMIZED).Wait();
+        TaskEx.WaitUntil(() => wnd.state == WINDOWSTATE.MINIMIZED).Wait();
 
         SuppressEvents(() => focusedWorkspace.Update());
         CleanGhostWindows();
@@ -1617,17 +1646,10 @@ public class WindowManager : IWindowManager
         WM_EVENT($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
-    Workspace? GetWindowWorkspace(Window wnd)
-    {
-        return workspaces.FirstOrDefault(wksp => wksp!.windows.Contains(wnd));
-    }
-
     public void WindowFocused(Window wnd)
     {
         if (wmActions.Count > 0)
             return;
-        //if (ShouldWindowBeIgnored(wnd))
-        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
@@ -1635,6 +1657,27 @@ public class WindowManager : IWindowManager
         CleanGhostWindows();
         WM_EVENT($"WindowFocused, {wnd.title}, {wnd.hWnd}");
     }
+
+    public void WindowFullscreened(Window wnd)
+    {
+        if (wmActions.Count > 0)
+            return;
+        if ((wnd = AddToStoreIfMissed(wnd)!) == null)
+            return;
+
+        SuppressEvents(() => focusedWorkspace.Update());
+        CleanGhostWindows();
+        WM_EVENT($"WindowFullscreened, {wnd.title}, {wnd.hWnd}");
+    }
+}
+
+public enum WINDOWSTATE
+{
+    NORMAL,
+    MAXIMIZED,
+    MINIMIZED,
+    FULLSCREEN,
+    HIDDEN,
 }
 
 enum FillDirection

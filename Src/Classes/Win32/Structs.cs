@@ -45,6 +45,14 @@ public struct RECT
         Bottom = d;
     }
 
+    public RECT(RECT rect)
+    {
+        Left = rect.Left;
+        Top = rect.Top;
+        Right = rect.Right;
+        Bottom = rect.Bottom;
+    }
+
     public override bool Equals(object? obj)
     {
         if (obj is null)

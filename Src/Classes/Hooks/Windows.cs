@@ -67,9 +67,11 @@ public class WindowEventsListener : IDisposable
             dt = dwmsEventTime - lastTime;
             lastTime = dwmsEventTime;
 
+            Window wnd = new(hWnd);
+
             if (Aviyal.DEBUG)
                 Logger.Log(
-                    $"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, STATE: {new Window(hWnd).state}, dt: {dt}, time: {Utils.FastTime_milli()}"
+                    $"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, STATE: {wnd.state}, dt: {dt}, time: {Utils.FastTime_milli()}"
                 );
 
             lock (@eventLock)
@@ -79,22 +81,22 @@ public class WindowEventsListener : IDisposable
                     case WINEVENT.OBJECT_CREATE:
                         break;
                     case WINEVENT.OBJECT_SHOW:
-                        WINDOW_SHOWN(new Window(hWnd));
+                        WINDOW_SHOWN(wnd);
                         break;
                     case WINEVENT.OBJECT_HIDE:
-                        WINDOW_HIDDEN(new Window(hWnd));
+                        WINDOW_HIDDEN(wnd);
                         break;
                     case WINEVENT.OBJECT_DESTROY:
-                        WINDOW_DESTROYED(new Window(hWnd));
+                        WINDOW_DESTROYED(wnd);
                         break;
                     case WINEVENT.EVENT_SYSTEM_MOVESIZEEND:
-                        WINDOW_MOVED(new Window(hWnd));
+                        WINDOW_MOVED(wnd);
                         break;
                     case WINEVENT.EVENT_SYSTEM_MINIMIZESTART:
-                        WINDOW_MINIMIZED(new Window(hWnd));
+                        WINDOW_MINIMIZED(wnd);
                         break;
                     case WINEVENT.EVENT_SYSTEM_MINIMIZEEND:
-                        WINDOW_RESTORED(new Window(hWnd));
+                        WINDOW_RESTORED(wnd);
                         break;
                     case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
                         WINDOWPLACEMENT wndPlmnt = new();
@@ -102,18 +104,26 @@ public class WindowEventsListener : IDisposable
                         SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;
                         if (state == SHOWWINDOW.SW_MAXIMIZE)
                         {
-                            WINDOW_MAXIMIZED(new Window(hWnd)); // to catch windows that might not send OBJECT_SHOW
+                            WINDOW_MAXIMIZED(wnd); // to catch windows that might not send OBJECT_SHOW
                         }
-                        if (state == SHOWWINDOW.SW_SHOWNORMAL)
+                        else if (state == SHOWWINDOW.SW_SHOWNORMAL)
                         {
-                            WINDOW_RESTORED(new Window(hWnd));
+                            // we query the windows own state for full screen because
+                            // winevents doesnt directly report windows going full screen
+                            if (wnd.state == WINDOWSTATE.FULLSCREEN)
+                            {
+                                Logger.Log($"WINDOW LAUNCHED IN FULLSCREEN: {wnd.title}");
+                                break;
+                            }
+
+                            WINDOW_RESTORED(wnd);
                         }
                         break;
                     case WINEVENT.EVENT_SYSTEM_FOREGROUND:
-                        WINDOW_FOCUSED(new Window(hWnd));
+                        WINDOW_FOCUSED(wnd);
                         break;
                     case WINEVENT.EVENT_OBJECT_UNCLOAKED:
-                        WINDOW_SHOWN(new Window(hWnd));
+                        WINDOW_SHOWN(wnd);
                         break;
                 }
             }

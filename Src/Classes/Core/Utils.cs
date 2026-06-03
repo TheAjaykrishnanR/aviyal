@@ -377,10 +377,21 @@ public partial class Utils
     /// </summary>
     public static (int, int) GetScreenSize()
     {
-        //double scale = Utils.GetDisplayScaling();
         int screenWidth = User32.GetSystemMetrics(0);
         int screenHeight = User32.GetSystemMetrics(1);
         return (screenWidth, screenHeight);
+    }
+
+    public static RECT GetScreenRect()
+    {
+        var (w, h) = GetScreenSize();
+        return new RECT()
+        {
+            Left = 0,
+            Top = 0,
+            Right = w,
+            Bottom = h,
+        };
     }
 
     /// <summary>
