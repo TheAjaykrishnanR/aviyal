@@ -69,7 +69,7 @@ public class WindowEventsListener : IDisposable
 
             if (Aviyal.DEBUG)
                 Logger.Log(
-                    $"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, dt: {dt}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}"
+                    $"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, STATE: {new Window(hWnd).state}, dt: {dt}, time: {Utils.FastTime_milli()}"
                 );
 
             lock (@eventLock)
@@ -97,7 +97,6 @@ public class WindowEventsListener : IDisposable
                         WINDOW_RESTORED(new Window(hWnd));
                         break;
                     case WINEVENT.EVENT_OBJECT_LOCATIONCHANGE:
-                        //Console.WriteLine($"window restore check, dt:{dt}");
                         WINDOWPLACEMENT wndPlmnt = new();
                         User32.GetWindowPlacement(hWnd, ref wndPlmnt);
                         SHOWWINDOW state = (SHOWWINDOW)wndPlmnt.showCmd;

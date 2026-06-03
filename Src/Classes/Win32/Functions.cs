@@ -322,6 +322,13 @@ public class Kernel32
 
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool CloseHandle(nint hObject);
+
+    // clocks
+    [DllImport("kernel32.dll")]
+    public static extern int QueryPerformanceFrequency(out long freq);
+
+    [DllImport("kernel32.dll")]
+    public static extern int QueryPerformanceCounter(out long timeStamp);
 }
 
 public class Advapi32

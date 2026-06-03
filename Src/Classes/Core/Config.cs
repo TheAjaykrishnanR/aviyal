@@ -53,6 +53,16 @@ public class Config : IJson<Config>
             keys = [VK.LMENU, VK.LSHIFT, VK.H],
             command = COMMAND.SHIFT_WINDOW_PREVIOUS_WORKSPACE,
         },
+        new()
+        {
+            keys = [VK.LCONTROL, VK.LSHIFT, VK.M, VK.A],
+            command = COMMAND.MAXIMIZE_FOCUSED_WINDOW,
+        },
+        new()
+        {
+            keys = [VK.LCONTROL, VK.LSHIFT, VK.M, VK.I],
+            command = COMMAND.MINIMIZE_FOCUSED_WINDOW,
+        },
         new() { keys = [VK.LMENU, VK.LSHIFT, VK.NUM1], command = COMMAND.SHIFT_WINDOW_WORKSPACE_1 },
         new() { keys = [VK.LMENU, VK.LSHIFT, VK.NUM2], command = COMMAND.SHIFT_WINDOW_WORKSPACE_2 },
         new() { keys = [VK.LMENU, VK.LSHIFT, VK.NUM3], command = COMMAND.SHIFT_WINDOW_WORKSPACE_3 },

@@ -377,7 +377,7 @@ public partial class Utils
     /// </summary>
     public static (int, int) GetScreenSize()
     {
-        double scale = Utils.GetDisplayScaling();
+        //double scale = Utils.GetDisplayScaling();
         int screenWidth = User32.GetSystemMetrics(0);
         int screenHeight = User32.GetSystemMetrics(1);
         return (screenWidth, screenHeight);
@@ -452,7 +452,9 @@ public partial class Utils
     }
 
     /// <summary>
-    /// Measures time taken to complete a function
+    /// Measures time taken to complete a function (SIMPLE)
+    /// A better implementation for time measurement (without DateTime which uses TimeZone calls)
+    /// is in FastTime functions
     /// </summary>
     public static T? MeasureTime<T>(Func<T> func, out long dt, string? funcName = null)
     {
@@ -462,6 +464,23 @@ public partial class Utils
         Logger.Log($"{funcName}() finished in {dt} ms");
         return obj;
     }
+
+    /// <summary>
+    /// Fast time stamps using hardware clocks.
+    /// </summary>
+    private static long freq = 0;
+
+    public static double FastTime()
+    {
+        if (freq == 0)
+            Kernel32.QueryPerformanceFrequency(out freq);
+        Kernel32.QueryPerformanceCounter(out long timeStamp);
+        return (double)timeStamp / freq; // timeStamp in seconds (has full micro second resolution in the decimal)
+    }
+
+    public static long FastTime_milli() => (long)(FastTime() * 1000);
+
+    public static long FastTime_micro() => (long)(FastTime() * 1000000);
 
     /// <summary>
     /// Launch unelevated processes from an elevated process

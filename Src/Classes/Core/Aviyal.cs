@@ -90,8 +90,6 @@ public class Window : IWindow, IMoveable
     {
         get
         {
-            if (field != null)
-                return field;
             if (
                 this.className.Contains("OperationStatusWindow")
                 || // copy, paste status windows
@@ -119,7 +117,6 @@ public class Window : IWindow, IMoveable
                 return true;
             return false;
         }
-        private set;
     }
 
     public NONTILEDSTATE nonTiledState { get; set; } = NONTILEDSTATE.NONE;
@@ -209,7 +206,7 @@ public class Window : IWindow, IMoveable
     /* A useful wrapper for calling window functions multiple times until target condition is
      * achieved
      * */
-    private void DoUntil(
+    private bool DoUntil(
         Action func,
         Func<bool> targetCondition,
         int retries = 10,
@@ -225,14 +222,18 @@ public class Window : IWindow, IMoveable
             func();
             Thread.Sleep(dt);
         }
-        if (!targetCondition() && failure != null)
-            failure();
+        if (!targetCondition())
+        {
+            failure?.Invoke();
+            return false;
+        }
+        return true;
     }
 
-    public void Hide()
+    public bool Hide()
     {
         ToggleAnimation(false);
-        DoUntil(
+        bool success = DoUntil(
             () =>
             {
                 User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_HIDE);
@@ -240,12 +241,13 @@ public class Window : IWindow, IMoveable
             () => !User32.IsWindowVisible(this.hWnd)
         );
         ToggleAnimation(true);
+        return success;
     }
 
-    public void Show()
+    public bool Show()
     {
         ToggleAnimation(false);
-        DoUntil(
+        bool success = DoUntil(
             () =>
             {
                 User32.ShowWindow(this.hWnd, SHOWWINDOW.SW_SHOWNA);
@@ -253,11 +255,12 @@ public class Window : IWindow, IMoveable
             () => User32.IsWindowVisible(this.hWnd)
         );
         ToggleAnimation(true);
+        return success;
     }
 
-    public void Focus()
+    public bool Focus()
     {
-        DoUntil(
+        return DoUntil(
             () =>
             {
                 User32.keybd_event(0, 0, 0, Globals.FOREGROUND_FAKE_KEY);
@@ -274,7 +277,7 @@ public class Window : IWindow, IMoveable
         | SETWINDOWPOS.SWP_NOACTIVATE
         | SETWINDOWPOS.SWP_NOZORDER;
 
-    public void Move(RECT pos, bool redraw = true)
+    public bool Move(RECT pos, bool redraw = true)
     {
         // remove frame bounds
         RECT margin = GetFrameMargin();
@@ -293,7 +296,7 @@ public class Window : IWindow, IMoveable
         // so that we can figure out if the action had any effect at all irrespective of
         // whether the target rect dimensions were achieved
 
-        DoUntil(
+        return DoUntil(
             () =>
             {
                 User32.SetWindowPos(
@@ -306,31 +309,23 @@ public class Window : IWindow, IMoveable
                     flags
                 );
             },
-            () => RectEqual(this.rect, pos),
-            /* remember when i talked earlier about the only way to know if a window is resizeable is
-             * to test is and see if it fails ? yeah thats what we are doing here
-             * */
-            failure: () =>
-            {
-                if (RectEqual(_before, this.rect))
-                    resizeable = false;
-            }
+            () => this.rect == pos
         );
     }
 
     const SETWINDOWPOS slideFlag = defaultMoveFlags | SETWINDOWPOS.SWP_NOSIZE;
 
-    public void Move(int? x, int? y, bool redraw = true)
+    public bool Move(int? x, int? y, bool redraw = true)
     {
         if (x == null && y == null)
-            return;
+            return true;
         SETWINDOWPOS flags = redraw switch
         {
             true => slideFlag,
             false => slideFlag | SETWINDOWPOS.SWP_NOREDRAW,
         };
 
-        DoUntil(
+        return DoUntil(
             () =>
             {
                 User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, flags);
@@ -339,13 +334,19 @@ public class Window : IWindow, IMoveable
         );
     }
 
-    public void Close()
+    public bool Close()
     {
-        User32.SendMessage(this.hWnd, (uint)WINDOWMESSAGE.WM_CLOSE, 0, 0);
+        return DoUntil(
+            () =>
+            {
+                User32.SendMessage(this.hWnd, (uint)WINDOWMESSAGE.WM_CLOSE, 0, 0);
+            },
+            () => this.exe == null
+        );
     }
 
     // force the window to redraw itself
-    public void Redraw()
+    public bool Redraw()
     {
         User32.RedrawWindow(
             this.hWnd,
@@ -353,6 +354,7 @@ public class Window : IWindow, IMoveable
             0,
             REDRAWWINDOW.INVALIDATE | REDRAWWINDOW.ALLCHILDREN | REDRAWWINDOW.UPDATENOW
         );
+        return true;
     }
 
     public void SetBottom()
@@ -408,27 +410,29 @@ public class Window : IWindow, IMoveable
         RECT rect2 = Marshal.PtrToStructure<RECT>(rectPtr);
         Marshal.FreeHGlobal(rectPtr);
 
-        return new RECT()
-        {
-            Left = rect2.Left - rect.Left,
-            Top = rect2.Top - rect.Top,
-            Right = rect2.Right - rect.Right,
-            Bottom = rect2.Bottom - rect.Bottom,
-        };
+        return (RECT)(rect2 - rect);
     }
 
-    RECT ScaleRect(RECT rect, double scale)
+    public bool Maximize()
     {
-        rect.Left = (int)(rect.Left * scale);
-        rect.Top = (int)(rect.Top * scale);
-        rect.Right = (int)(rect.Right * scale);
-        rect.Bottom = (int)(rect.Bottom * scale);
-        return rect;
+        return DoUntil(
+            () =>
+            {
+                User32.ShowWindow(hWnd, SHOWWINDOW.SW_MAXIMIZE);
+            },
+            () => this.state == SHOWWINDOW.SW_MAXIMIZE
+        );
     }
 
-    bool RectEqual(RECT a, RECT b)
+    public bool Minimize()
     {
-        return a.Left == b.Left && a.Top == b.Top && a.Right == b.Right && a.Bottom == b.Bottom;
+        return DoUntil(
+            () =>
+            {
+                User32.ShowWindow(hWnd, SHOWWINDOW.SW_MINIMIZE);
+            },
+            () => this.state == SHOWWINDOW.SW_MINIMIZE
+        );
     }
 }
 
@@ -488,7 +492,7 @@ public class Workspace : IWorkspace, IMoveable
     }
 
     Config config;
-    (int, int) floatingWindowSize;
+    (int, int) floatingWindowSize; // ideal floating window dimensions
 
     public Workspace(Config config)
     {
@@ -511,8 +515,16 @@ public class Workspace : IWorkspace, IMoveable
     }
 
     // applies updated relRects (provided by the layout) to the windows in the workspace
+    // since this function has a recursive branch, adding a fail counter for safety
+    int update_failCount = 0;
+    int MAX_CALLS = 10;
+
     public void Update()
     {
+        update_failCount++;
+        if (Aviyal.DEBUG)
+            Logger.Log($"update_failCount: {update_failCount}");
+
         /* all windows in the window manager which are in
          * a workable state.
          * */
@@ -533,7 +545,18 @@ public class Workspace : IWorkspace, IMoveable
         RECT[] rects = layout.ApplyInner(layout.ApplyOuter(relRects.ToArray()));
         for (int i = 0; i < wndsToTile.Count; i++)
         {
-            wndsToTile[i]?.Move(rects[i]);
+            // if a move action fails on a window, ignore it in tiling (set it to floating or somthing)
+            // then drop everything and recompute from the beginning
+            if (!(bool)wndsToTile[i]?.Move(rects[i]))
+            {
+                // remember, that this is a window that IS resizeable. windows that end up here
+                // usually has problems resizing to the sizes specified by the layout usually because
+                // they have some minimum or maximum dimensions set
+                wndsToTile[i]?.nonTiledState = NONTILEDSTATE.FLOATING;
+                if (update_failCount < MAX_CALLS)
+                    Update();
+                return;
+            }
             wndsToTile[i]!.relRect = relRects[i];
         }
 
@@ -568,6 +591,10 @@ public class Workspace : IWorkspace, IMoveable
             wndsToStack[i]?.Move(rect);
             wndsToStack[i]!.relRect = rect;
         }
+
+        // if the function has reached here that means the update was successful, so
+        // reset the fail counter
+        update_failCount = 0;
     }
 
     public void Show()
@@ -592,14 +619,17 @@ public class Workspace : IWorkspace, IMoveable
         windows?.ForEach(wnd => wnd?.Redraw());
     }
 
-    public void Move(int? x, int? y, bool redraw = true)
+    public bool Move(int? x, int? y, bool redraw = true)
     {
+        bool success = true;
         for (int i = 0; i < windows.Count; i++)
         {
             int? absX = windows[i]!.relRect.Left + x;
             int? absY = windows[i]!.relRect.Top + y;
-            windows[i]?.Move(absX, absY, redraw);
+            if (!(bool)windows[i]?.Move(absX, absY, redraw))
+                success = false;
         }
+        return success;
     }
 
     private Window? lastFocusedWindow
@@ -640,6 +670,18 @@ public class Workspace : IWorkspace, IMoveable
         focusedWindow?.Close();
         windows.ElementAtOrDefault((int)toFocus)?.Focus();
         windows.Remove(fWnd);
+        Update();
+    }
+
+    public void MaximizeFocusedWindow()
+    {
+        focusedWindow?.Maximize();
+        Update();
+    }
+
+    public void MinimizeFocusedWindow()
+    {
+        focusedWindow?.Minimize();
         Update();
     }
 
@@ -1092,6 +1134,18 @@ public class WindowManager : IWindowManager
         WM_EVENT("FocusPreviousWorkspace");
     }
 
+    public void MaximizeFocusedWindow()
+    {
+        SuppressEvents(() => focusedWorkspace?.MaximizeFocusedWindow());
+        WM_EVENT("MaximizeFocusedWindow");
+    }
+
+    public void MinimizeFocusedWindow()
+    {
+        SuppressEvents(() => focusedWorkspace?.MinimizeFocusedWindow());
+        WM_EVENT("MinimizeFocusedWindow");
+    }
+
     public void ShiftFocusedWindowToNextWorkspace()
     {
         int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
@@ -1482,7 +1536,7 @@ public class WindowManager : IWindowManager
 
     // window unmaximized
     public bool mouseDown { get; set; } = false;
-    const int WINEVENT_RESTORE_TIMEOUT = 1000;
+    const int WINEVENT_RESTORE_TIMEOUT = 500; // milliseconds
     nint lasRestoredhWnd = 0;
     long lastRestoreTime = 0;
 
@@ -1533,28 +1587,26 @@ public class WindowManager : IWindowManager
         if (restoreStream == null || restoreStream.disposed)
         {
             restoreStream = new(WINEVENT_RESTORE_TIMEOUT);
-            restoreStream.OVER += WindowMoved;
+            restoreStream.OVER += WindowRestored;
         }
         // ignore window restore events that appear in rapid succession
         if (
-            DateTimeOffset.Now.ToUnixTimeMilliseconds() - lastRestoreTime < WINEVENT_RESTORE_TIMEOUT
+            Utils.FastTime_milli() - lastRestoreTime < WINEVENT_RESTORE_TIMEOUT
             && wnd.hWnd == lasRestoredhWnd
         )
         {
             lasRestoredhWnd = wnd.hWnd;
-            lastRestoreTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            lastRestoreTime = Utils.FastTime_milli();
             restoreStream?.Add(wnd); // [+ for firing for the last event]
             if (Aviyal.DEBUG)
                 Logger.Log($"ignore window restore, {wnd.title}, {wnd.hWnd}");
             return;
         }
         lasRestoredhWnd = wnd.hWnd;
-        lastRestoreTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        lastRestoreTime = Utils.FastTime_milli();
 
         if (wmActions.Count > 0)
             return;
-        //if (ShouldWindowBeIgnored(wnd))
-        //	return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
         if (mouseDown)

@@ -14,13 +14,16 @@ public interface IWindow
     public WINDOWSTYLE styles { get; }
     public WINDOWSTYLEEX exStyles { get; }
 
-    public void Hide();
-    public void Show();
-    public void Focus();
-    public void Move(RECT pos, bool redraw);
-    public void Move(int? x, int? y, bool redraw);
-    public void Close();
-    public void Redraw();
+    /* Window actions
+     * returns: bool (if success)
+     * */
+    public bool Hide();
+    public bool Show();
+    public bool Focus();
+    public bool Move(RECT pos, bool redraw);
+    public bool Move(int? x, int? y, bool redraw);
+    public bool Close();
+    public bool Redraw();
 }
 
 public interface IWorkspace
@@ -40,7 +43,7 @@ public interface IWorkspace
     public void SetFocusedWindow();
     public void CloseFocusedWindow();
     public void FocusAdjacentWindow(EDGE direction);
-    public void Move(int? x, int? y, bool redraw);
+    public bool Move(int? x, int? y, bool redraw);
     public void SwapWindows(Window wnd1, Window wnd2);
     public Window? GetWindowFromPoint(POINT pt);
 }
@@ -55,6 +58,8 @@ public interface IWindowManager
     public void FocusWorkspace(int index);
     public void FocusNextWorkspace() { }
     public void FocusPreviousWorkspace() { }
+
+    /* EVENTS */
 
     public void WindowShown(Window wnd);
     public void WindowHidden(Window wnd);

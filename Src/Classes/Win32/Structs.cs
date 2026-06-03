@@ -36,6 +36,87 @@ public struct RECT
     public int Top;
     public int Right;
     public int Bottom;
+
+    public RECT(int a, int b, int c, int d)
+    {
+        Left = a;
+        Top = b;
+        Right = c;
+        Bottom = d;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+            return false;
+        RECT _rect = (RECT)obj;
+        if (
+            _rect.Left == Left
+            && _rect.Top == Top
+            && _rect.Right == Right
+            && _rect.Bottom == Bottom
+        )
+            return true;
+        return false;
+    }
+
+    public static bool operator ==(RECT? left, RECT? right)
+    {
+        if (left is null)
+            return right is null;
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(RECT? left, RECT? right)
+    {
+        if (left is null)
+            return right is not null;
+        return !left.Equals(right);
+    }
+
+    public static RECT? operator +(RECT? left, RECT? right)
+    {
+        if (left is null)
+            return right;
+        if (right is null)
+            return left;
+        return new RECT()
+        {
+            Left = (int)(left?.Left + right?.Left),
+            Top = (int)(left?.Top + right?.Top),
+            Right = (int)(left?.Right + right?.Right),
+            Bottom = (int)(left?.Bottom + right?.Bottom),
+        };
+    }
+
+    public static RECT? operator -(RECT? left, RECT? right)
+    {
+        if (left is null)
+            return right;
+        if (right is null)
+            return left;
+        return new RECT()
+        {
+            Left = (int)(left?.Left - right?.Left),
+            Top = (int)(left?.Top - right?.Top),
+            Right = (int)(left?.Right - right?.Right),
+            Bottom = (int)(left?.Bottom - right?.Bottom),
+        };
+    }
+
+    public static RECT? operator *(RECT? left, int right)
+    {
+        if (left is null)
+            return null;
+
+        return new RECT()
+        {
+            Left = (int)left?.Left * right,
+            Top = (int)left?.Top * right,
+            Right = (int)left?.Right * right,
+            Bottom = (int)left?.Bottom * right,
+        };
+    }
 }
 
 [StructLayout(LayoutKind.Sequential)]

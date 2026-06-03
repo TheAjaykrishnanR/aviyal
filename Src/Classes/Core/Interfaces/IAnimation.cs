@@ -1,4 +1,4 @@
 public interface IMoveable
 {
-    public void Move(int? x, int? y, bool redraw);
+    public bool Move(int? x, int? y, bool redraw);
 }
