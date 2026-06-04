@@ -12,11 +12,13 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.2.3";
+    static string version = "0.2.4";
     static string changelog =
         @"
-- ignore application instances running as other uses
-- changed window resizeability checks
+- hotkey experience improved: delayed key timeouts
+- feat: multi letter trailing keys [ eg: ctrl+shift+m+a ]
+- feat: made wm action queue threadsafe
+- added wnd.minimize(), wnd.maximize(), wnd.unmaximize()
 - version bump
 ";
     static Aviyal? aviyal;
