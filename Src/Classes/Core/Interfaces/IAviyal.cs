@@ -19,9 +19,12 @@ public interface IWindow
      * */
     public bool Hide();
     public bool Show();
+    public bool Maximize();
+    public bool Unmaximize();
+    public bool Minimize();
     public bool Focus();
-    public bool Move(RECT pos, bool redraw);
-    public bool Move(int? x, int? y, bool redraw);
+    public bool Move(RECT pos, bool verify, bool redraw);
+    public bool Move(int? x, int? y, bool verify, bool redraw);
     public bool Close();
     public bool Redraw();
 }
@@ -42,8 +45,10 @@ public interface IWorkspace
     public void Redraw();
     public void SetFocusedWindow();
     public void CloseFocusedWindow();
+    public void ToggleFocusedWindowMaximization();
+    public void MinimizeFocusedWindow();
     public void FocusAdjacentWindow(EDGE direction);
-    public bool Move(int? x, int? y, bool redraw);
+    public bool Move(int? x, int? y, bool verify, bool redraw);
     public void SwapWindows(Window wnd1, Window wnd2);
     public Window? GetWindowFromPoint(POINT pt);
 }

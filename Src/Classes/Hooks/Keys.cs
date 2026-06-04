@@ -50,14 +50,48 @@ public class KeyEventsListener : IDisposable
 
     uint lastKeyTime = 0;
     VK? trailingKey; // the trailing key of a hotkey action -> H in Ctrl+Shift+H
+    List<VK?> trailingKeys = new(); // the trailing key of a hotkey action -> H in Ctrl+Shift+H
     bool letKeyPass = true;
     bool hotkeyPressed = false; // if hotkey keys combo are remaining pressed
     uint dt = 0;
     const int HOTKEY_COMBO_TIMEOUT = 2000;
+    const int KEY_REMOVE_DELAY = 500; // delay time in removing a key from the capture
+
+    // buffer once its KEYUP has been recieved
     KEYBOARDPROC keyBoardProcDelegate;
+
+    (bool, List<Keymap>) SearchKeymaps(List<VK> searchSeq)
+    {
+        var potentials = keymaps.Where(km => searchSeq.All(k => km.keys.Contains(k))).ToList();
+        var result = potentials.Where(km => km.keys.All(k => searchSeq.Contains(k))).ToList();
+        if (result.Count >= 1)
+            return (true, result);
+        return (false, potentials);
+    }
+
+    bool IsModifier(VK key)
+    {
+        VK[] modifiers =
+        [
+            VK.LCONTROL,
+            VK.LSHIFT,
+            VK.LMENU,
+            VK.LWIN,
+            VK.RCONTROL,
+            VK.RSHIFT,
+            VK.RMENU,
+            VK.RWIN,
+        ];
+        if (modifiers.Contains(key))
+            return true;
+        return false;
+    }
 
     int KeyboardProc(int code, nint wparam, nint lparam)
     {
+        // ------------------------------
+        long t1 = Utils.FastTime_milli();
+        // ------------------------------
         var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
         if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY)
             return CallNextHookEx(0, code, wparam, lparam);
@@ -80,12 +114,21 @@ public class KeyEventsListener : IDisposable
                     captured.Add(key);
                 if (Aviyal.DEBUG)
                     Logger.Log<VK>(captured, suffix: $"dt: {dt}");
-                foreach (Keymap keymap in keymaps)
+
+                var (found, results) = SearchKeymaps(captured);
+                Logger.Log($"found: {found}, result.Count: {results.Count}");
+                if (results.Count > 0)
                 {
-                    if (Utils.ListContentEqual<VK>(captured, keymap.keys))
+                    //trailingKey = key;
+                    if (!IsModifier(key))
                     {
-                        trailingKey = key;
+                        trailingKeys.Add(key);
                         letKeyPass = false;
+                    }
+                    if (found)
+                    {
+                        // we dont clear the entire thing here because some hotkeys can be successively
+                        // called while their modifier keys havent been lifted
                         captured.Remove(key);
 
                         // we run this in a task because otherwise the trailing
@@ -93,7 +136,7 @@ public class KeyEventsListener : IDisposable
                         // active windows will receive ^L, ^H keys
                         if (!hotkeyPressed)
                         {
-                            Task.Run(() => HOTKEY_PRESSED(keymap));
+                            Task.Run(() => HOTKEY_PRESSED(results.First()));
                             if (Aviyal.DEBUG)
                                 Logger.Log("HOTKEY PRESSED");
                         }
@@ -103,17 +146,32 @@ public class KeyEventsListener : IDisposable
                     }
                 }
                 break;
-            case WINDOWMESSAGE.WM_KEYUP or WINDOWMESSAGE.WM_SYSKEYUP:
-                if (key == trailingKey)
+
+            case WINDOWMESSAGE.WM_KEYUP
+            or WINDOWMESSAGE.WM_SYSKEYUP:
+                if ( /*key == trailingKey*/
+                    key == trailingKeys.LastOrDefault()
+                )
                 {
                     letKeyPass = false;
-                    trailingKey = null;
+                    //trailingKey = null;
+                    trailingKeys.Clear();
                     hotkeyPressed = false; // hotkey combo released
                 }
-                captured.Remove(key);
+                Task.Run(async () =>
+                {
+                    await Task.Delay(KEY_REMOVE_DELAY);
+                    captured.Remove(key);
+                });
                 break;
         }
         lastKeyTime = kbdStruct.time;
+        // -------------------------------------------------------------------------------
+        long t2 = Utils.FastTime_milli();
+        //if (Aviyal.DEBUG) Logger.Log($"TIME SPENT IN KBDHOOK: {t2 - t1} ms", file: false);
+        // -------------------------------------------------------------------------------
+        //if (key == VK.M) Console.WriteLine($"KEY M, PASSED TO OS: {letKeyPass}, trailingKey: {trailingKey}");
+        //Console.WriteLine($"KEY {key}, PASSED TO OS: {letKeyPass}");
         return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
     }
 
@@ -165,8 +223,8 @@ public class KeyEventsListener : IDisposable
         {
             while (monitorRunning)
             {
-                if (Aviyal.DEBUG)
-                    Console.WriteLine($"hookThread: {thread.ThreadState}");
+                if (Aviyal.DEBUG && config.loglevel == "high")
+                    Logger.Log($"hookThread: {thread.ThreadState}");
 
                 if (thread.ThreadState == ThreadState.WaitSleepJoin)
                 {

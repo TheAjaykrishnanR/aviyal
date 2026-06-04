@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 public class Animation<T>
@@ -28,7 +29,7 @@ public class Animation<T>
         this.animationObjectsAndBounds.Add(animationObjectAndBound);
     }
 
-    public async Task Play()
+    public void Play()
     {
         int fps = 60;
         int dt = (int)(1000 / fps); // milliseconds
@@ -48,13 +49,14 @@ public class Animation<T>
                 obj.Move(
                     GetCoord(start.X, end.X, frames, i),
                     GetCoord(start.Y, end.Y, frames, i),
+                    verify: false,
                     redraw: false
                 );
             }
 
             int wait = (int)(i * dt - sw.ElapsedMilliseconds);
             wait = wait < 0 ? 0 : wait;
-            await Task.Delay(wait);
+            Thread.Sleep(wait);
         }
         sw.Stop();
     }

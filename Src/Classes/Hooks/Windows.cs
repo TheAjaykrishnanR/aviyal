@@ -69,10 +69,10 @@ public class WindowEventsListener : IDisposable
 
             Window wnd = new(hWnd);
 
-            if (Aviyal.DEBUG)
-                Logger.Log(
-                    $"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, STATE: {wnd.state}, dt: {dt}, time: {Utils.FastTime_milli()}"
-                );
+            //if (Aviyal.DEBUG)
+            //    Logger.Log(
+            //        $"WINEVENT: [{msg}], TITLE: {Utils.GetWindowTitleFromHWND(hWnd)}, {hWnd}, CLASS: {Utils.GetClassNameFromHWND(hWnd)}, STATE: {wnd.state}, dt: {dt}, time: {Utils.FastTime_milli()}"
+            //    );
 
             lock (@eventLock)
             {

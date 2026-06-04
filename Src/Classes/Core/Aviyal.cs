@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -310,7 +311,7 @@ public class Window : IWindow, IMoveable
         | SETWINDOWPOS.SWP_NOACTIVATE
         | SETWINDOWPOS.SWP_NOZORDER;
 
-    public bool Move(RECT pos, bool redraw = true)
+    public bool Move(RECT pos, bool verify = true, bool redraw = true)
     {
         // remove frame bounds
         RECT margin = GetFrameMargin();
@@ -346,9 +347,14 @@ public class Window : IWindow, IMoveable
         );
     }
 
+    /* set verify to false when doing animations as otherwise it will result in
+     * unnecessary retrials as window state is not updated within the very short
+     * time durations available in the animation frame interval
+     * */
+
     const SETWINDOWPOS slideFlag = defaultMoveFlags | SETWINDOWPOS.SWP_NOSIZE;
 
-    public bool Move(int? x, int? y, bool redraw = true)
+    public bool Move(int? x, int? y, bool verify = true, bool redraw = true)
     {
         if (x == null && y == null)
             return true;
@@ -358,13 +364,22 @@ public class Window : IWindow, IMoveable
             false => slideFlag | SETWINDOWPOS.SWP_NOREDRAW,
         };
 
-        return DoUntil(
-            () =>
-            {
-                User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, flags);
-            },
-            () => this.rect.Left == x && this.rect.Top == y
-        );
+        if (verify)
+        {
+            return DoUntil(
+                () =>
+                {
+                    User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, flags);
+                },
+                () => this.rect.Left == x && this.rect.Top == y
+            );
+        }
+        else
+        {
+            User32.SetWindowPos(this.hWnd, 0, x ?? rect.Left, y ?? rect.Top, 0, 0, flags);
+        }
+
+        return false;
     }
 
     public bool Close()
@@ -466,6 +481,17 @@ public class Window : IWindow, IMoveable
                 User32.ShowWindow(hWnd, SHOWWINDOW.SW_MINIMIZE);
             },
             () => this._state == SHOWWINDOW.SW_MINIMIZE
+        );
+    }
+
+    public bool Unmaximize()
+    {
+        return DoUntil(
+            () =>
+            {
+                User32.ShowWindow(hWnd, SHOWWINDOW.SW_SHOWNORMAL);
+            },
+            () => this.state == WINDOWSTATE.NORMAL
         );
     }
 }
@@ -654,7 +680,7 @@ public class Workspace : IWorkspace, IMoveable
         windows?.ForEach(wnd => wnd?.Redraw());
     }
 
-    public bool Move(int? x, int? y, bool redraw = true)
+    public bool Move(int? x, int? y, bool verify = true, bool redraw = true)
     {
         bool success = true;
         for (int i = 0; i < windows.Count; i++)
@@ -708,9 +734,16 @@ public class Workspace : IWorkspace, IMoveable
         Update();
     }
 
-    public void MaximizeFocusedWindow()
+    public void ToggleFocusedWindowMaximization()
     {
-        focusedWindow?.Maximize();
+        if (focusedWindow?.state == WINDOWSTATE.FULLSCREEN)
+            return;
+
+        if (focusedWindow?.state == WINDOWSTATE.NORMAL)
+            focusedWindow?.Maximize();
+        else if (focusedWindow?.state == WINDOWSTATE.MAXIMIZED)
+            focusedWindow?.Unmaximize();
+
         Update();
     }
 
@@ -985,31 +1018,44 @@ public class WindowManager : IWindowManager
         wnd.Focus();
     }
 
-    /* all workspace/window actions must be executed inside this wrapper function
-     * This is to ensure that our own actions dont trigger the window events recursively
-     * and also to ensure that a new action isn't executed while an old one is going on.
-     *
-     * Only wrap non-atomic composite actions. All public window manager actions must be
+    /* Only wrap non-atomic composite actions. All public window manager actions must be
      * wrapped.
      * */
-    readonly Lock @addLock = new();
-    List<Task> wmActions = new();
+
+    /* wndQueue: list of windows queued for actions
+     * */
+    bool wmBusy = false;
+    ConcurrentQueue<Action> actionQueue = new();
+    readonly Lock queueLock = new();
     const int WINEVENT_DELAY = 100;
 
-    void SuppressEvents(Action func)
+    void RunQueued(Action action)
     {
-        if (wmActions.Count > 0)
+        actionQueue.Enqueue(action);
+        /* thread filter: only one thread passes through
+         * */
+        lock (queueLock)
         {
-            Logger.Log($"suppressing action because another is going on");
-            return;
+            if (wmBusy)
+                return;
+            wmBusy = true;
         }
-
-        Task _t = new(func);
-        wmActions.Add(_t);
-        _t.Start();
-        _t.Wait();
-        Thread.Sleep(WINEVENT_DELAY);
-        wmActions.Remove(_t);
+        while (true)
+        {
+            while (actionQueue.TryDequeue(out var _action))
+            {
+                _action();
+                Thread.Sleep(WINEVENT_DELAY);
+            }
+            lock (queueLock)
+            {
+                if (actionQueue.IsEmpty)
+                {
+                    wmBusy = false;
+                    break;
+                }
+            }
+        }
     }
 
     /*
@@ -1020,7 +1066,8 @@ public class WindowManager : IWindowManager
     {
         if (workspaceIndex < 0 || workspaceIndex > workspaces.Count - 1)
             return;
-        SuppressEvents(() => FocusWorkspace(workspaces[workspaceIndex]!, "WmPublic"));
+        //SuppressEvents(() => FocusWorkspace(workspaces[workspaceIndex]!, "WmPublic"));
+        RunQueued(() => FocusWorkspace(workspaces[workspaceIndex]));
 
         WM_EVENT("FocusWorkspace");
     }
@@ -1030,7 +1077,7 @@ public class WindowManager : IWindowManager
         int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
         int prev = focusedWorkspaceIndex > 0 ? focusedWorkspaceIndex - 1 : workspaces.Count - 1;
 
-        SuppressEvents(() =>
+        RunQueued(() =>
         {
             if (config.workspaceAnimations)
             {
@@ -1087,7 +1134,7 @@ public class WindowManager : IWindowManager
                     );
                 }
 
-                workspaceAnimation.Play().Wait();
+                workspaceAnimation.Play();
                 focusedWorkspace.Hide();
                 focusedWorkspace = workspaces[next]!;
                 focusedWorkspace?.Update(); // when animation finishes, margins dont match
@@ -1108,7 +1155,7 @@ public class WindowManager : IWindowManager
         int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
         int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
 
-        SuppressEvents(() =>
+        RunQueued(() =>
         {
             if (config.workspaceAnimations)
             {
@@ -1153,7 +1200,7 @@ public class WindowManager : IWindowManager
                     );
                 }
 
-                workspaceAnimation.Play().Wait();
+                workspaceAnimation.Play();
                 focusedWorkspace.Hide();
                 focusedWorkspace = workspaces[prev]!;
                 focusedWorkspace?.Update();
@@ -1169,22 +1216,10 @@ public class WindowManager : IWindowManager
         WM_EVENT("FocusPreviousWorkspace");
     }
 
-    public void MaximizeFocusedWindow()
-    {
-        SuppressEvents(() => focusedWorkspace?.MaximizeFocusedWindow());
-        WM_EVENT("MaximizeFocusedWindow");
-    }
-
-    public void MinimizeFocusedWindow()
-    {
-        SuppressEvents(() => focusedWorkspace?.MinimizeFocusedWindow());
-        WM_EVENT("MinimizeFocusedWindow");
-    }
-
     public void ShiftFocusedWindowToNextWorkspace()
     {
         int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
-        SuppressEvents(() => ShiftFocusedWindowToWorkspace(next));
+        RunQueued(() => ShiftFocusedWindowToWorkspace(next));
 
         WM_EVENT("ShiftWindowToNextWorkspace");
     }
@@ -1192,59 +1227,83 @@ public class WindowManager : IWindowManager
     public void ShiftFocusedWindowToPreviousWorkspace()
     {
         int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
-        SuppressEvents(() => ShiftFocusedWindowToWorkspace(prev));
+        RunQueued(() => ShiftFocusedWindowToWorkspace(prev));
 
         WM_EVENT("ShiftWindowToPreviousWorkspace");
     }
 
     public void ShiftFocusedWindowToNumWorkspace(int num)
     {
-        SuppressEvents(() => ShiftFocusedWindowToWorkspace(num));
+        RunQueued(() => ShiftFocusedWindowToWorkspace(num));
 
         WM_EVENT($"ShiftWindowToNumWorkspace, wksp: {num}");
     }
 
-    public void CloseFocusedWindow() =>
-        SuppressEvents(() =>
+    public void CloseFocusedWindow()
+    {
+        RunQueued(() =>
         {
             focusedWorkspace.CloseFocusedWindow();
-            WM_EVENT("CloseFocusedWindow");
         });
+        WM_EVENT("CloseFocusedWindow");
+    }
 
-    public void FocusAdjacentWindow(EDGE direction) =>
-        SuppressEvents(() =>
+    public void FocusAdjacentWindow(EDGE direction)
+    {
+        RunQueued(() =>
         {
             focusedWorkspace.FocusAdjacentWindow(direction);
-            WM_EVENT("FocusAdjacentWindow");
         });
+        WM_EVENT("FocusAdjacentWindow");
+    }
 
-    public void ToggleFloating() =>
-        SuppressEvents(() =>
+    public void ToggleFloating()
+    {
+        RunQueued(() =>
         {
             focusedWorkspace.ToggleFloating();
-            WM_EVENT("ToggleFloating");
         });
+        WM_EVENT("ToggleFloating");
+    }
 
-    public void ToggleStacked() =>
-        SuppressEvents(() =>
+    public void ToggleFocusedWindowMaximization()
+    {
+        RunQueued(() => focusedWorkspace?.ToggleFocusedWindowMaximization());
+        WM_EVENT("MaximizeFocusedWindow");
+    }
+
+    public void MinimizeFocusedWindow()
+    {
+        RunQueued(() => focusedWorkspace?.MinimizeFocusedWindow());
+        WM_EVENT("MinimizeFocusedWindow");
+    }
+
+    public void ToggleStacked()
+    {
+        RunQueued(() =>
         {
             focusedWorkspace.ToggleStacked();
-            WM_EVENT("ToggleStack");
         });
+        WM_EVENT("ToggleStack");
+    }
 
-    public void Update() =>
-        SuppressEvents(() =>
+    public void Update()
+    {
+        RunQueued(() =>
         {
             focusedWorkspace.Update();
-            WM_EVENT("Update");
         });
+        WM_EVENT("Update");
+    }
 
-    public void ShiftFocusedWindowBy(int shiftBy) =>
-        SuppressEvents(() =>
+    public void ShiftFocusedWindowBy(int shiftBy)
+    {
+        RunQueued(() =>
         {
             focusedWorkspace.ShiftFocusedWindowBy(shiftBy);
-            WM_EVENT("ShiftFocusedWindowBy");
         });
+        WM_EVENT("ShiftFocusedWindowBy");
+    }
 
     /*
      * Window events apparatus
@@ -1360,6 +1419,8 @@ public class WindowManager : IWindowManager
         return false;
     }
 
+    readonly Lock @addLock = new();
+
     public void CleanGhostWindows()
     {
         lock (@addLock)
@@ -1405,7 +1466,7 @@ public class WindowManager : IWindowManager
 
     public void WindowShown(Window wnd)
     {
-        if (wmActions.Count > 0)
+        if (wmBusy)
             return;
         if (ShouldWindowBeIgnored(wnd))
             return;
@@ -1419,7 +1480,7 @@ public class WindowManager : IWindowManager
              * EVENT_FOREGROUND_CHANGED
              * */
             if (wksp != focusedWorkspace && wksp != null)
-                SuppressEvents(() => FocusWorkspace(wksp, "WindowShown()"));
+                RunQueued(() => FocusWorkspace(wksp, "WindowShown()"));
 
             return;
         }
@@ -1437,7 +1498,7 @@ public class WindowManager : IWindowManager
                     focusedWorkspace.MakeFloating(wnd);
                     break;
             }
-            SuppressEvents(() => focusedWorkspace.Update());
+            RunQueued(() => focusedWorkspace.Update());
         }
 
         CleanGhostWindows();
@@ -1450,7 +1511,7 @@ public class WindowManager : IWindowManager
          * here because windows that get hidden or destroyed might meet the
          * ignorable criteria
          * */
-        if (wmActions.Count > 0)
+        if (wmBusy)
             return;
         if ((wnd = GetAlreadyStoredWindow(wnd)!) == null)
             return;
@@ -1458,7 +1519,7 @@ public class WindowManager : IWindowManager
         if (focusedWorkspace.windows.Contains(wnd))
         {
             focusedWorkspace.Remove(wnd);
-            SuppressEvents(() => focusedWorkspace.Update());
+            RunQueued(() => focusedWorkspace.Update());
         }
 
         CleanGhostWindows();
@@ -1467,7 +1528,7 @@ public class WindowManager : IWindowManager
 
     public void WindowDestroyed(Window wnd)
     {
-        if (wmActions.Count > 0)
+        if (wmBusy)
             return;
         if ((wnd = GetAlreadyStoredWindow(wnd)!) == null)
             return;
@@ -1475,7 +1536,7 @@ public class WindowManager : IWindowManager
         if (focusedWorkspace.windows.Contains(wnd))
         {
             focusedWorkspace.Remove(wnd);
-            SuppressEvents(() => focusedWorkspace.Update());
+            RunQueued(() => focusedWorkspace.Update());
         }
 
         CleanGhostWindows();
@@ -1511,7 +1572,7 @@ public class WindowManager : IWindowManager
     // window handlers should only check window properties of the the already stored window
     public void WindowMoved(Window wnd)
     {
-        if (wmActions.Count > 0)
+        if (wmBusy)
             return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
@@ -1526,31 +1587,31 @@ public class WindowManager : IWindowManager
             Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
             if (wndUnderCursor == null)
                 return;
-            SuppressEvents(() => focusedWorkspace.SwapWindows(wnd, wndUnderCursor));
+            RunQueued(() => focusedWorkspace.SwapWindows(wnd, wndUnderCursor));
         }
         else if (wnd.nonTiledState == NONTILEDSTATE.FLOATING)
             wnd.relRect = wnd.rect;
 
-        SuppressEvents(() => focusedWorkspace.Update());
+        RunQueued(() => focusedWorkspace.Update());
         CleanGhostWindows();
         WM_EVENT($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
     public void WindowMaximized(Window wnd)
     {
-        if (wmActions.Count > 0)
+        if (wmBusy)
             return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
-        SuppressEvents(() => focusedWorkspace.Update());
+        RunQueued(() => focusedWorkspace.Update());
         CleanGhostWindows();
         WM_EVENT($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
     public void WindowMinimized(Window wnd)
     {
-        if (wmActions.Count > 0)
+        if (wmBusy)
             return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
@@ -1558,7 +1619,7 @@ public class WindowManager : IWindowManager
         // render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
         TaskEx.WaitUntil(() => wnd.state == WINDOWSTATE.MINIMIZED).Wait();
 
-        SuppressEvents(() => focusedWorkspace.Update());
+        RunQueued(() => focusedWorkspace.Update());
         CleanGhostWindows();
         WM_EVENT($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}");
     }
@@ -1634,38 +1695,38 @@ public class WindowManager : IWindowManager
         lasRestoredhWnd = wnd.hWnd;
         lastRestoreTime = Utils.FastTime_milli();
 
-        if (wmActions.Count > 0)
+        if (wmBusy)
             return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
         if (mouseDown)
             return;
 
-        SuppressEvents(() => focusedWorkspace.Update());
+        RunQueued(() => focusedWorkspace.Update());
         CleanGhostWindows();
         WM_EVENT($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
     public void WindowFocused(Window wnd)
     {
-        if (wmActions.Count > 0)
+        if (wmBusy)
             return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
-        SuppressEvents(() => focusedWorkspace.Update());
+        RunQueued(() => focusedWorkspace.Update());
         CleanGhostWindows();
         WM_EVENT($"WindowFocused, {wnd.title}, {wnd.hWnd}");
     }
 
     public void WindowFullscreened(Window wnd)
     {
-        if (wmActions.Count > 0)
+        if (wmBusy)
             return;
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
-        SuppressEvents(() => focusedWorkspace.Update());
+        RunQueued(() => focusedWorkspace.Update());
         CleanGhostWindows();
         WM_EVENT($"WindowFullscreened, {wnd.title}, {wnd.hWnd}");
     }

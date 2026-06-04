@@ -66,7 +66,10 @@ class Aviyal : IDisposable
             { COMMAND.SHIFT_WINDOW_WORKSPACE_9, () => wm.ShiftFocusedWindowToNumWorkspace(8) },
             { COMMAND.TOGGLE_FLOATING_WINDOW, () => wm.ToggleFloating() },
             { COMMAND.TOGGLE_STACKED_WINDOW, () => wm.ToggleStacked() },
-            { COMMAND.MAXIMIZE_FOCUSED_WINDOW, () => wm.MaximizeFocusedWindow() },
+            {
+                COMMAND.TOGGLE_FOCUSED_WINDOW_MAXIMIZATION,
+                () => wm.ToggleFocusedWindowMaximization()
+            },
             { COMMAND.MINIMIZE_FOCUSED_WINDOW, () => wm.MinimizeFocusedWindow() },
             { COMMAND.FOCUS_WORKSPACE_1, () => wm.FocusWorkspace(0) },
             { COMMAND.FOCUS_WORKSPACE_2, () => wm.FocusWorkspace(1) },
@@ -494,7 +497,7 @@ public enum COMMAND
     TOGGLE_FLOATING_WINDOW,
     TOGGLE_STACKED_WINDOW,
 
-    MAXIMIZE_FOCUSED_WINDOW,
+    TOGGLE_FOCUSED_WINDOW_MAXIMIZATION,
     MINIMIZE_FOCUSED_WINDOW,
 
     FOCUS_WORKSPACE_1,

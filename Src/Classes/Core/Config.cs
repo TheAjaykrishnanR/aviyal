@@ -56,7 +56,7 @@ public class Config : IJson<Config>
         new()
         {
             keys = [VK.LCONTROL, VK.LSHIFT, VK.M, VK.A],
-            command = COMMAND.MAXIMIZE_FOCUSED_WINDOW,
+            command = COMMAND.TOGGLE_FOCUSED_WINDOW_MAXIMIZATION,
         },
         new()
         {
