@@ -120,7 +120,7 @@ public class KeyEventsListener : IDisposable
                 if (results.Count > 0)
                 {
                     //trailingKey = key;
-                    if (!IsModifier(key))
+                    if (!IsModifier(key) && captured.Any(IsModifier))
                     {
                         trailingKeys.Add(key);
                         letKeyPass = false;
@@ -171,7 +171,7 @@ public class KeyEventsListener : IDisposable
         //if (Aviyal.DEBUG) Logger.Log($"TIME SPENT IN KBDHOOK: {t2 - t1} ms", file: false);
         // -------------------------------------------------------------------------------
         //if (key == VK.M) Console.WriteLine($"KEY M, PASSED TO OS: {letKeyPass}, trailingKey: {trailingKey}");
-        //Console.WriteLine($"KEY {key}, PASSED TO OS: {letKeyPass}");
+        Console.WriteLine($"KEY {key}, PASSED TO OS: {letKeyPass}");
         return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
     }
 
