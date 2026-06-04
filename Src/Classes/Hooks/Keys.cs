@@ -35,9 +35,6 @@ public class KeyEventsListener : IDisposable
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool DispatchMessage(ref uint msg);
 
-    List<VK> captured = new();
-    List<Keymap> keymaps = new();
-
     /*
      * Windows calls our callback everytime a key is pressed or released.
      * If the key remains pressed it will continually call our callback
@@ -48,17 +45,16 @@ public class KeyEventsListener : IDisposable
      * emits the WM_KEYUP we will include it in our capture list.
      * */
 
+    List<KeyEvent> captured = new();
+    List<Keymap> keymaps = new();
+
     uint lastKeyTime = 0;
-    VK? trailingKey; // the trailing key of a hotkey action -> H in Ctrl+Shift+H
-    List<VK?> trailingKeys = new(); // the trailing key of a hotkey action -> H in Ctrl+Shift+H
+    List<KeyEvent> trailingKeys = new(); // the trailing key of a hotkey action -> H in Ctrl+Shift+H
     bool letKeyPass = true;
     bool hotkeyPressed = false; // if hotkey keys combo are remaining pressed
     uint dt = 0;
     const int HOTKEY_COMBO_TIMEOUT = 2000;
     const int KEY_REMOVE_DELAY = 500; // delay time in removing a key from the capture
-
-    // buffer once its KEYUP has been recieved
-    KEYBOARDPROC keyBoardProcDelegate;
 
     (bool, List<Keymap>) SearchKeymaps(List<VK> searchSeq)
     {
@@ -87,6 +83,11 @@ public class KeyEventsListener : IDisposable
         return false;
     }
 
+    List<VK> ToVK(List<KeyEvent> keyEvents) => keyEvents.Select(kvnt => kvnt.vk).ToList();
+
+    // buffer once its KEYUP has been recieved
+    KEYBOARDPROC keyBoardProcDelegate;
+
     int KeyboardProc(int code, nint wparam, nint lparam)
     {
         // ------------------------------
@@ -95,14 +96,14 @@ public class KeyEventsListener : IDisposable
         var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
         if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY)
             return CallNextHookEx(0, code, wparam, lparam);
-        VK key = (VK)kbdStruct.vkCode;
+        KeyEvent kvnt = new(kbdStruct);
         dt = kbdStruct.time - lastKeyTime;
         // if in the offchance that a key is added to the capture list which does
         // not remove itself because it doesnt emit the WM_KEYUP message thereby
         // essentially polluting our hotkey buffer making it impossible for any hotkey
         // to be triggered, so we clear our buffer if the last key was pressed 2 seconds
         // ago. This is a reasonable time as no hotkey combo will span a whole 2 seconds.
-        if (dt > HOTKEY_COMBO_TIMEOUT || key == VK.ESCAPE)
+        if (dt > HOTKEY_COMBO_TIMEOUT || kvnt.vk == VK.ESCAPE)
             captured.Clear();
         letKeyPass = true;
         switch ((WINDOWMESSAGE)wparam)
@@ -110,26 +111,35 @@ public class KeyEventsListener : IDisposable
             case WINDOWMESSAGE.WM_KEYDOWN
             or WINDOWMESSAGE.WM_SYSKEYDOWN /* ALT */
             :
-                if (!captured.Contains(key) && key != 0)
-                    captured.Add(key);
-                if (Aviyal.DEBUG)
-                    Logger.Log<VK>(captured, suffix: $"dt: {dt}");
+                if (kvnt.vk == 0)
+                    break;
 
-                var (found, results) = SearchKeymaps(captured);
+                var _old_kvnt = captured.FirstOrDefault(_kvnt => _kvnt.vk == kvnt.vk);
+                if (_old_kvnt != null)
+                    captured.Remove(_old_kvnt);
+                captured.Add(kvnt);
+
+                if (Aviyal.DEBUG)
+                    Logger.Log<VK>(
+                        captured.Select(_kvnt => _kvnt.vk).ToList(),
+                        suffix: $"dt: {dt}"
+                    );
+
+                var (found, results) = SearchKeymaps(ToVK(captured));
                 Logger.Log($"found: {found}, result.Count: {results.Count}");
                 if (results.Count > 0)
                 {
                     //trailingKey = key;
-                    if (!IsModifier(key) && captured.Any(IsModifier))
+                    if (!IsModifier(kvnt.vk) && ToVK(captured).Any(IsModifier))
                     {
-                        trailingKeys.Add(key);
+                        trailingKeys.Add(kvnt);
                         letKeyPass = false;
                     }
                     if (found)
                     {
                         // we dont clear the entire thing here because some hotkeys can be successively
                         // called while their modifier keys havent been lifted
-                        captured.Remove(key);
+                        captured.Remove(kvnt);
 
                         // we run this in a task because otherwise the trailing
                         // last key will fly away in the WM_KEYUP and be sent down.
@@ -150,7 +160,7 @@ public class KeyEventsListener : IDisposable
             case WINDOWMESSAGE.WM_KEYUP
             or WINDOWMESSAGE.WM_SYSKEYUP:
                 if ( /*key == trailingKey*/
-                    key == trailingKeys.LastOrDefault()
+                    kvnt.vk == trailingKeys.LastOrDefault().vk
                 )
                 {
                     letKeyPass = false;
@@ -161,7 +171,7 @@ public class KeyEventsListener : IDisposable
                 Task.Run(async () =>
                 {
                     await Task.Delay(KEY_REMOVE_DELAY);
-                    captured.Remove(key);
+                    captured.Remove(kvnt);
                 });
                 break;
         }
@@ -171,7 +181,6 @@ public class KeyEventsListener : IDisposable
         //if (Aviyal.DEBUG) Logger.Log($"TIME SPENT IN KBDHOOK: {t2 - t1} ms", file: false);
         // -------------------------------------------------------------------------------
         //if (key == VK.M) Console.WriteLine($"KEY M, PASSED TO OS: {letKeyPass}, trailingKey: {trailingKey}");
-        Console.WriteLine($"KEY {key}, PASSED TO OS: {letKeyPass}");
         return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
     }
 
@@ -274,6 +283,42 @@ public class Keymap
 
     public static bool operator !=(Keymap left, Keymap right)
     {
+        return !left.Equals(right);
+    }
+}
+
+public struct KeyEvent
+{
+    public VK vk;
+    public long time;
+
+    public KeyEvent(KBDLLHOOKSTRUCT hookStruct)
+    {
+        vk = (VK)hookStruct.vkCode;
+        time = hookStruct.time;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+            return false;
+        KeyEvent kvnt = (KeyEvent)obj;
+        if (kvnt.vk == this.vk && kvnt.time == this.time)
+            return true;
+        return false;
+    }
+
+    public static bool operator ==(KeyEvent? left, KeyEvent? right)
+    {
+        if (left is null)
+            return right is null;
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(KeyEvent? left, KeyEvent? right)
+    {
+        if (left is null)
+            return right is not null;
         return !left.Equals(right);
     }
 }
