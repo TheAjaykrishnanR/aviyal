@@ -166,7 +166,7 @@ public class Window : IWindow, IMoveable
             }
             catch (Exception ex)
             {
-                Logger.Log("Unable to get pid", ex);
+                Logger.Log("Unable to get pid", ex: ex);
                 return 0;
             }
         }
@@ -758,6 +758,7 @@ public class Workspace : IWorkspace, IMoveable
         if (focusedWindowIndex == null)
             return;
         int? index = layout.GetAdjacent((int)focusedWindowIndex, direction);
+        Logger.Log($"focusadjacentwindow, index: {index}");
         if (index != null)
             windows?[(int)index]?.Focus();
     }
@@ -1037,14 +1038,24 @@ public class WindowManager : IWindowManager
         lock (queueLock)
         {
             if (wmBusy)
+            {
+                Logger.Log($"wm is busy..., actionQueue.Count: {actionQueue.Count}");
                 return;
+            }
             wmBusy = true;
         }
         while (true)
         {
             while (actionQueue.TryDequeue(out var _action))
             {
-                _action();
+                try
+                {
+                    _action();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("wm: action() failed", ex: ex, logType: LogType.ERROR);
+                }
                 Thread.Sleep(WINEVENT_DELAY);
             }
             lock (queueLock)
@@ -1144,6 +1155,7 @@ public class WindowManager : IWindowManager
             else
             {
                 FocusWorkspace(workspaces[next]!);
+                Logger.Log("focusnextworkspace", logType: LogType.ERROR);
             }
         });
 

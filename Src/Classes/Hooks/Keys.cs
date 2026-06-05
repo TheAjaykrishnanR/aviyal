@@ -189,7 +189,7 @@ public class KeyEventsListener : IDisposable
         //if (Aviyal.DEBUG) Logger.Log($"TIME SPENT IN KBDHOOK: {t2 - t1} ms", file: false);
         // -------------------------------------------------------------------------------
         //if (key == VK.M) Console.WriteLine($"KEY M, PASSED TO OS: {letKeyPass}, trailingKey: {trailingKey}");
-        Console.WriteLine($"KEY {kvnt.vk}, PASSED TO OS: {letKeyPass}");
+        Logger.Log($"key {kvnt.vk}, passed to os: {letKeyPass}");
         return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
     }
 

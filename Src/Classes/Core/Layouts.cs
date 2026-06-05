@@ -315,6 +315,9 @@ public class Master : ILayout
 
     public int? GetAdjacent(int index, EDGE direction)
     {
+        if (fillRects.Length == 0 || fillRects.Length == 1)
+            return null;
+
         if (index == 0)
         {
             if (direction == EDGE.RIGHT)

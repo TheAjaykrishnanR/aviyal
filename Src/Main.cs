@@ -98,10 +98,10 @@ class Aviyal : IDisposable
                     i++;
                 })
             );
-            Logger.Log($"Crash: Restored {i} windows...");
+            Logger.Log($"Restored {i} windows...", LogType.INFO);
 
             Exception ex = (Exception)e.ExceptionObject;
-            Logger.Log("AppDomain: Unhandled exception", ex: ex);
+            Logger.Log("AppDomain: Unhandled exception", ex: ex, logType: LogType.ERROR);
             errored = true;
         };
     }
@@ -157,7 +157,8 @@ class Aviyal : IDisposable
     {
         if (DEBUG)
             Logger.Log(
-                $"Hotekey Pressed: {keymap.command}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}"
+                $"Hotekey Pressed: {keymap.command}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}",
+                logType: LogType.EVENT
             );
         if (keymap.command == COMMAND.EXEC)
             Exec(keymap.arguments);
@@ -219,8 +220,6 @@ class Aviyal : IDisposable
         return state;
     }
 
-    int stateCounter = 0;
-
     public void SaveState(string? lastAction = null)
     {
         var state = GetState();
@@ -231,11 +230,12 @@ class Aviyal : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log("Error writing to state file", ex: ex);
+            Logger.Log("Can't writing to state file", ex: ex, logType: LogType.ERROR);
         }
         Logger.Log(
-            $"{stateCounter++}. lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}, focusedWorkspace: {state.focusedWorkspaceIndex}",
-            file: false
+            $"lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}, focusedWorkspace: {state.focusedWorkspaceIndex}",
+            file: false,
+            logType: LogType.EVENT
         );
         if (DEBUG)
             Logger.Log(state.ToJson());
@@ -260,7 +260,7 @@ class Aviyal : IDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log("Unable to execute command", ex: ex);
+                Logger.Log("Unable to execute command", ex: ex, logType: LogType.ERROR);
             }
         }
         else if (elevated)
@@ -272,7 +272,7 @@ class Aviyal : IDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log("Unable to execute command", ex: ex);
+                Logger.Log("Unable to execute command", ex: ex, logType: LogType.ERROR);
             }
         }
         else
@@ -327,7 +327,7 @@ class Aviyal : IDisposable
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Unable to parse json config file");
+                Logger.Log("Unable to parse json config file", ex: ex);
                 config = new();
             }
         }
@@ -380,7 +380,7 @@ class Aviyal : IDisposable
             restoreFile = Paths.stateFile;
         if (!File.Exists(restoreFile))
         {
-            Logger.Log($"State file: {restoreFile} not found!");
+            Logger.Log($"State file: {restoreFile} not found!", logType: LogType.ERROR);
             return;
         }
         ProgramState state = ProgramState.FromJson(File.ReadAllText(restoreFile));
