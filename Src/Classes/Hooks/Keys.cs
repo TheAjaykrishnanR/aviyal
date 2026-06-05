@@ -171,7 +171,13 @@ public class KeyEventsListener : IDisposable
                 Task.Run(async () =>
                 {
                     await Task.Delay(KEY_REMOVE_DELAY);
-                    captured.Remove(kvnt);
+                    // we must only delete the corresponding keyup pair of this keydown event
+                    // how do we get that ?
+                    var keyUpPair = captured.FirstOrDefault(_kvnt =>
+                        _kvnt.vk == kvnt.vk && _kvnt.time < kvnt.time
+                    );
+                    if (keyUpPair != null)
+                        captured.Remove(keyUpPair);
                 });
                 break;
         }
@@ -181,6 +187,7 @@ public class KeyEventsListener : IDisposable
         //if (Aviyal.DEBUG) Logger.Log($"TIME SPENT IN KBDHOOK: {t2 - t1} ms", file: false);
         // -------------------------------------------------------------------------------
         //if (key == VK.M) Console.WriteLine($"KEY M, PASSED TO OS: {letKeyPass}, trailingKey: {trailingKey}");
+        Console.WriteLine($"KEY {kvnt.vk}, PASSED TO OS: {letKeyPass}");
         return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
     }
 
