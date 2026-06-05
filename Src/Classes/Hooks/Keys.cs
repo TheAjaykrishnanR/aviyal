@@ -126,34 +126,36 @@ public class KeyEventsListener : IDisposable
                     );
 
                 var (found, results) = SearchKeymaps(ToVK(captured));
-                Logger.Log($"found: {found}, result.Count: {results.Count}");
-                if (results.Count > 0)
+                //Logger.Log($"found: {found}, result.Count: {results.Count}");
+
+                // temporarily reverting back to non chorded hotkeys
+                //if (results.Count > 0)
+                //{
+                //    //trailingKey = key;
+                //    if (!IsModifier(kvnt.vk) && ToVK(captured).Any(IsModifier))
+                //    {
+                //    }
+                //}
+                if (found)
                 {
-                    //trailingKey = key;
-                    if (!IsModifier(kvnt.vk) && ToVK(captured).Any(IsModifier))
-                    {
-                        trailingKeys.Add(kvnt);
-                        letKeyPass = false;
-                    }
-                    if (found)
-                    {
-                        // we dont clear the entire thing here because some hotkeys can be successively
-                        // called while their modifier keys havent been lifted
-                        captured.Remove(kvnt);
+                    trailingKeys.Add(kvnt);
+                    letKeyPass = false;
+                    // we dont clear the entire thing here because some hotkeys can be successively
+                    // called while their modifier keys havent been lifted
+                    captured.Remove(kvnt);
 
-                        // we run this in a task because otherwise the trailing
-                        // last key will fly away in the WM_KEYUP and be sent down.
-                        // active windows will receive ^L, ^H keys
-                        if (!hotkeyPressed)
-                        {
-                            Task.Run(() => HOTKEY_PRESSED(results.First()));
-                            if (Aviyal.DEBUG)
-                                Logger.Log("HOTKEY PRESSED");
-                        }
-                        hotkeyPressed = true;
-
-                        break;
+                    // we run this in a task because otherwise the trailing
+                    // last key will fly away in the WM_KEYUP and be sent down.
+                    // active windows will receive ^L, ^H keys
+                    if (!hotkeyPressed)
+                    {
+                        Task.Run(() => HOTKEY_PRESSED(results.First()));
+                        if (Aviyal.DEBUG)
+                            Logger.Log("HOTKEY PRESSED");
                     }
+                    hotkeyPressed = true;
+
+                    break;
                 }
                 break;
 

@@ -55,12 +55,12 @@ public class Config : IJson<Config>
         },
         new()
         {
-            keys = [VK.LCONTROL, VK.LSHIFT, VK.M, VK.A],
+            keys = [VK.LCONTROL, VK.LSHIFT, VK.M],
             command = COMMAND.TOGGLE_FOCUSED_WINDOW_MAXIMIZATION,
         },
         new()
         {
-            keys = [VK.LCONTROL, VK.LSHIFT, VK.M, VK.I],
+            keys = [VK.LCONTROL, VK.LSHIFT, VK.NUM0],
             command = COMMAND.MINIMIZE_FOCUSED_WINDOW,
         },
         new() { keys = [VK.LMENU, VK.LSHIFT, VK.NUM1], command = COMMAND.SHIFT_WINDOW_WORKSPACE_1 },
