@@ -12,13 +12,11 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.2.4";
+    static string version = "0.2.5";
     static string changelog =
         @"
-- hotkey experience improved: delayed key timeouts
-- feat: multi letter trailing keys [ eg: ctrl+shift+m+a ]
-- feat: made wm action queue threadsafe
-- added wnd.minimize(), wnd.maximize(), wnd.unmaximize()
+- hotkeys improvement: accidental keypresses still manage to trigger hotkeys
+- logging made async
 - version bump
 ";
     static Aviyal? aviyal;
@@ -288,6 +286,8 @@ class Aviyal : IDisposable
 
     static void Run()
     {
+        Logger.Init();
+
         if (reloadCount == 0)
         {
             File.Delete(Paths.logFile);
@@ -422,7 +422,7 @@ as an administrator or from an elevated prompt.
             case "--debug":
                 DEBUG = true;
                 WindowManager.DEBUG_WND_NAME = args.ToList().ElementAtOrDefault(1);
-                WithConsole(() => Loop());
+                WithConsole(Loop);
                 break;
             case "--version":
                 WithConsole(() => Console.WriteLine($"Aviyal version: {version}"));
@@ -515,4 +515,5 @@ public enum COMMAND
     EXEC,
     RESTART,
     UPDATE,
+    DEBUG_CONSOLE_CLEAR,
 }

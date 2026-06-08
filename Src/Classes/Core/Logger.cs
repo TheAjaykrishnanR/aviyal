@@ -5,10 +5,39 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 using System.Windows;
 
 public class Logger
 {
+    static Dictionary<string, (Task?, Channel<string?>, Action<string?>)> channels = new()
+    {
+        ["console"] = (null, Channel.CreateUnbounded<string?>(), Console.WriteLine),
+        ["debug"] = (null, Channel.CreateUnbounded<string?>(), t => Debug.WriteLine(t)),
+        ["file"] = (null, Channel.CreateUnbounded<string?>(), LogToFile),
+    };
+
+    public static void Init()
+    {
+        foreach (var key in channels.Keys)
+        {
+            var (task, _channel, action) = channels[key];
+            if (task == null)
+            {
+                task = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        string? result = await _channel.Reader.ReadAsync();
+                        action(result);
+                    }
+                });
+                channels[key] = (task, _channel, action);
+            }
+        }
+    }
+
     public static string normal = "\x1b[39m";
     public static Func<int, int, int, string> f_col = (r, g, b) => $"\x1b[38;2;{r};{b};{g}m";
     public static Func<int, int, int, string> b_col = (r, g, b) => $"\x1b[48;2;{r};{b};{g}m";
@@ -52,9 +81,9 @@ public class Logger
                 $"\n{ColorText(ex.Message, 255, 0, 0)}\n{ColorText(ex.StackTrace, 255, 50, 50)}";
         }
         if (debug)
-            Debug.WriteLine(consoleText);
+            channels["debug"].Item2.Writer.TryWrite(consoleText);
         if (console)
-            Console.WriteLine(consoleText);
+            channels["console"].Item2.Writer.TryWrite(consoleText);
         if (file)
         {
             if (logFileInfo == null)
@@ -65,7 +94,7 @@ public class Logger
             }
             if (logFileInfo?.Length > 1024 * 1024)
                 File.WriteAllText(Paths.logFile, null);
-            LogToFile(text);
+            channels["file"].Item2.Writer.TryWrite(text);
         }
     }
 

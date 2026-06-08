@@ -56,13 +56,25 @@ public class KeyEventsListener : IDisposable
     const int HOTKEY_COMBO_TIMEOUT = 2000;
     const int KEY_REMOVE_DELAY = 500; // delay time in removing a key from the capture
 
-    (bool, List<Keymap>) SearchKeymaps(List<VK> searchSeq)
+    /* returns the keymap whose keys are the strict subset of the search(capture) sequence
+     * we use a strict subset instead of an exact equality because otherwise [D,CTRL,SHIFT,L]
+     * wont trigger a keymap for [CTRL,SHIFT,L]. A small different key will pollute all
+     *
+     * but if there are multiple matches, it returns the one with highest key count so that
+     * [CTRL,SHIFT,L] doesnt trigger [CTRL,L]
+     * */
+    Keymap? FindKeymap(List<VK> searchSeq)
     {
-        var potentials = keymaps.Where(km => searchSeq.All(k => km.keys.Contains(k))).ToList();
-        var result = potentials.Where(km => km.keys.All(k => searchSeq.Contains(k))).ToList();
-        if (result.Count >= 1)
-            return (true, result);
-        return (false, potentials);
+        return keymaps
+            .Where(_km => _km.keys.Count <= searchSeq.Count)
+            .Where(_km =>
+                _km.keys.Where(IsModifier).All(_modifier => searchSeq.Contains(_modifier))
+            )
+            .Where(_km =>
+                searchSeq.Where(IsModifier).All(_modifier => _km.keys.Contains(_modifier))
+            )
+            .Where(_km => _km.keys.Where(_k => !IsModifier(_k)).All(_k => searchSeq.Contains(_k)))
+            .MaxBy(_km => _km.keys.Count);
     }
 
     bool IsModifier(VK key)
@@ -125,7 +137,7 @@ public class KeyEventsListener : IDisposable
                         suffix: $"dt: {dt}"
                     );
 
-                var (found, results) = SearchKeymaps(ToVK(captured));
+                Keymap? keymap = FindKeymap(ToVK(captured));
                 //Logger.Log($"found: {found}, result.Count: {results.Count}");
 
                 // temporarily reverting back to non chorded hotkeys
@@ -136,7 +148,7 @@ public class KeyEventsListener : IDisposable
                 //    {
                 //    }
                 //}
-                if (found)
+                if (keymap != null)
                 {
                     trailingKeys.Add(kvnt);
                     letKeyPass = false;
@@ -149,7 +161,7 @@ public class KeyEventsListener : IDisposable
                     // active windows will receive ^L, ^H keys
                     if (!hotkeyPressed)
                     {
-                        Task.Run(() => HOTKEY_PRESSED(results.First()));
+                        Task.Run(() => HOTKEY_PRESSED(keymap));
                         if (Aviyal.DEBUG)
                             Logger.Log("HOTKEY PRESSED");
                     }
@@ -186,7 +198,7 @@ public class KeyEventsListener : IDisposable
         lastKeyTime = kbdStruct.time;
         // -------------------------------------------------------------------------------
         long t2 = Utils.FastTime_milli();
-        //if (Aviyal.DEBUG) Logger.Log($"TIME SPENT IN KBDHOOK: {t2 - t1} ms", file: false);
+        //if (_.DEBUG) Logger.Log($"TIME SPENT IN KBDHOOK: {t2 - t1} ms", file: false);
         // -------------------------------------------------------------------------------
         //if (key == VK.M) Console.WriteLine($"KEY M, PASSED TO OS: {letKeyPass}, trailingKey: {trailingKey}");
         Logger.Log($"key {kvnt.vk}, passed to os: {letKeyPass}");
@@ -280,18 +292,24 @@ public class Keymap
 
     public override bool Equals(object? obj)
     {
+        if (obj is null)
+            return false;
         if (((Keymap)obj).id == this.id)
             return true;
         return false;
     }
 
-    public static bool operator ==(Keymap left, Keymap right)
+    public static bool operator ==(Keymap? left, Keymap? right)
     {
+        if (left is null)
+            return right is null;
         return left.Equals(right);
     }
 
-    public static bool operator !=(Keymap left, Keymap right)
+    public static bool operator !=(Keymap? left, Keymap? right)
     {
+        if (left is null)
+            return right is not null;
         return !left.Equals(right);
     }
 }

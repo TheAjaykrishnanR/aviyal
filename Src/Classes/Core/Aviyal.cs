@@ -758,7 +758,6 @@ public class Workspace : IWorkspace, IMoveable
         if (focusedWindowIndex == null)
             return;
         int? index = layout.GetAdjacent((int)focusedWindowIndex, direction);
-        Logger.Log($"focusadjacentwindow, index: {index}");
         if (index != null)
             windows?[(int)index]?.Focus();
     }
@@ -1051,12 +1050,12 @@ public class WindowManager : IWindowManager
                 try
                 {
                     _action();
+                    Thread.Sleep(WINEVENT_DELAY);
                 }
                 catch (Exception ex)
                 {
                     Logger.Log("wm: action() failed", ex: ex, logType: LogType.ERROR);
                 }
-                Thread.Sleep(WINEVENT_DELAY);
             }
             lock (queueLock)
             {
@@ -1155,7 +1154,6 @@ public class WindowManager : IWindowManager
             else
             {
                 FocusWorkspace(workspaces[next]!);
-                Logger.Log("focusnextworkspace", logType: LogType.ERROR);
             }
         });
 
