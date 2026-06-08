@@ -244,7 +244,7 @@ public class Window : IWindow, IMoveable
         Action func,
         Func<bool> targetCondition,
         int retries = 10,
-        int dt = 10,
+        int dt = 100,
         Action? failure = null
     )
     {
