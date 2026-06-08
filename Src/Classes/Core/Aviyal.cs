@@ -243,8 +243,8 @@ public class Window : IWindow, IMoveable
     private bool DoUntil(
         Action func,
         Func<bool> targetCondition,
-        int retries = 10,
-        int dt = 100,
+        int retries = 100,
+        int dt = 10,
         Action? failure = null
     )
     {
