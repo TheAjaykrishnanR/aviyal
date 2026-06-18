@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 public class Server : IDisposable
@@ -14,6 +15,7 @@ public class Server : IDisposable
     public event RequestEventHandler REQUEST_RECEIVED = (request) => "";
 
     List<Socket> clients = new();
+    private readonly Lock _listLock = new();
 
     public Server(Config config)
     {
@@ -26,7 +28,8 @@ public class Server : IDisposable
             while (true)
             {
                 Socket client = socket.Accept();
-                clients.Add(client);
+                lock (_listLock)
+                    clients.Add(client);
                 Logger.Log("server: socket connected");
                 Task.Run(() =>
                 {
@@ -51,8 +54,11 @@ public class Server : IDisposable
                             Logger.Log("Error recieving/responding to client", ex: ex);
                         }
                     }
-                    client.Close();
-                    clients.Remove(client);
+                    lock (_listLock)
+                    {
+                        client.Close();
+                        clients.Remove(client);
+                    }
                     Logger.Log("server: connection closed");
                 });
             }
@@ -80,12 +86,15 @@ public class Server : IDisposable
     // necessary for hot reloading (restarting)
     public void Dispose()
     {
-        clients?.ForEach(client =>
+        lock (_listLock)
         {
-            client?.Close();
-            client?.Dispose();
-        });
-        socket?.Close();
-        socket?.Dispose();
+            clients?.ForEach(client =>
+            {
+                client?.Close();
+                client?.Dispose();
+            });
+            socket?.Close();
+            socket?.Dispose();
+        }
     }
 }
