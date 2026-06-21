@@ -1029,7 +1029,7 @@ public class WindowManager : IWindowManager
     readonly Lock queueLock = new();
     const int WINEVENT_DELAY = 100;
 
-    void RunQueued(Action action)
+    void RunQueued(Action action, string? actionName = null)
     {
         actionQueue.Enqueue(action);
         /* thread filter: only one thread passes through
@@ -1049,7 +1049,8 @@ public class WindowManager : IWindowManager
             {
                 try
                 {
-                    _action();
+                    long _t = Utils.Measure_milli(_action);
+                    WM_EVENT($"ran wm action {actionName} in {_t} ms");
                     Thread.Sleep(WINEVENT_DELAY);
                 }
                 catch (Exception ex)
@@ -1077,9 +1078,9 @@ public class WindowManager : IWindowManager
         if (workspaceIndex < 0 || workspaceIndex > workspaces.Count - 1)
             return;
         //SuppressEvents(() => FocusWorkspace(workspaces[workspaceIndex]!, "WmPublic"));
-        RunQueued(() => FocusWorkspace(workspaces[workspaceIndex]));
+        RunQueued(() => FocusWorkspace(workspaces[workspaceIndex]), "FocusWorkspace");
 
-        WM_EVENT("FocusWorkspace");
+        //WM_EVENT("FocusWorkspace");
     }
 
     public void FocusNextWorkspace()
@@ -1087,77 +1088,80 @@ public class WindowManager : IWindowManager
         int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
         int prev = focusedWorkspaceIndex > 0 ? focusedWorkspaceIndex - 1 : workspaces.Count - 1;
 
-        RunQueued(() =>
-        {
-            if (config.workspaceAnimations)
+        RunQueued(
+            () =>
             {
-                // slide windows left -> if horizontal
-                // slide windows up -> if vertical
-                (int w, int h) = Utils.GetScreenSize();
-                if (config.workspaceAnimationsDirection == "horizontal")
-                    workspaces[next]?.Move(w, null);
-                else if (config.workspaceAnimationsDirection == "vertical")
+                if (config.workspaceAnimations)
                 {
-                    Logger.Log($"next workspace set down at h: {h}");
-                    workspaces[next]?.Move(null, h);
+                    // slide windows left -> if horizontal
+                    // slide windows up -> if vertical
+                    (int w, int h) = Utils.GetScreenSize();
+                    if (config.workspaceAnimationsDirection == "horizontal")
+                        workspaces[next]?.Move(w, null);
+                    else if (config.workspaceAnimationsDirection == "vertical")
+                    {
+                        Logger.Log($"next workspace set down at h: {h}");
+                        workspaces[next]?.Move(null, h);
+                    }
+
+                    /* we call Show() here instead of Focus() because Focus() has a call to Update()
+                     * if we Update() our Workspace then all the windows will be set to their
+                     * appropriate relRect effectively reversing Move(w, null). Hence as a result
+                     * you will see a flash of the next/prev workspace before it appears sliding.
+                     * So whats exactly going on ? Move(w, null) moves your workspace out of screen,
+                     * Focus() brings it back using Update() and Shows it until WorkspaceAnimate()
+                     * takes it out of screen as part of the animation start position which is also
+                     * beyond the screen.
+                     * */
+                    workspaces[next]?.Show();
+
+                    Animation<Workspace> workspaceAnimation = new(
+                        config.workspaceAnimationsDuration,
+                        "easeOutQuint"
+                    );
+                    if (config.workspaceAnimationsDirection == "horizontal")
+                    {
+                        workspaceAnimation.Add(
+                            focusedWorkspace,
+                            new POINT2() { X = 0, Y = null },
+                            new POINT2() { X = -w, Y = null }
+                        );
+                        workspaceAnimation.Add(
+                            workspaces[next],
+                            new POINT2() { X = w, Y = null },
+                            new POINT2() { X = 0, Y = null }
+                        );
+                    }
+                    else if (config.workspaceAnimationsDirection == "vertical")
+                    {
+                        workspaceAnimation.Add(
+                            focusedWorkspace,
+                            new POINT2() { X = null, Y = 0 },
+                            new POINT2() { X = null, Y = -h }
+                        );
+                        workspaceAnimation.Add(
+                            workspaces[next],
+                            new POINT2() { X = null, Y = h },
+                            new POINT2() { X = null, Y = 0 }
+                        );
+                    }
+
+                    workspaceAnimation.Play();
+                    focusedWorkspace.Hide();
+                    focusedWorkspace = workspaces[next]!;
+                    focusedWorkspace?.Update(); // when animation finishes, margins dont match
+                    focusedWorkspace?.Redraw(); // manually redraw
+                    focusedWorkspace?.SetFocusedWindow();
                 }
-
-                /* we call Show() here instead of Focus() because Focus() has a call to Update()
-                 * if we Update() our Workspace then all the windows will be set to their
-                 * appropriate relRect effectively reversing Move(w, null). Hence as a result
-                 * you will see a flash of the next/prev workspace before it appears sliding.
-                 * So whats exactly going on ? Move(w, null) moves your workspace out of screen,
-                 * Focus() brings it back using Update() and Shows it until WorkspaceAnimate()
-                 * takes it out of screen as part of the animation start position which is also
-                 * beyond the screen.
-                 * */
-                workspaces[next]?.Show();
-
-                Animation<Workspace> workspaceAnimation = new(
-                    config.workspaceAnimationsDuration,
-                    "easeOutQuint"
-                );
-                if (config.workspaceAnimationsDirection == "horizontal")
+                else
                 {
-                    workspaceAnimation.Add(
-                        focusedWorkspace,
-                        new POINT2() { X = 0, Y = null },
-                        new POINT2() { X = -w, Y = null }
-                    );
-                    workspaceAnimation.Add(
-                        workspaces[next],
-                        new POINT2() { X = w, Y = null },
-                        new POINT2() { X = 0, Y = null }
-                    );
+                    FocusWorkspace(workspaces[next]!);
                 }
-                else if (config.workspaceAnimationsDirection == "vertical")
-                {
-                    workspaceAnimation.Add(
-                        focusedWorkspace,
-                        new POINT2() { X = null, Y = 0 },
-                        new POINT2() { X = null, Y = -h }
-                    );
-                    workspaceAnimation.Add(
-                        workspaces[next],
-                        new POINT2() { X = null, Y = h },
-                        new POINT2() { X = null, Y = 0 }
-                    );
-                }
+            },
+            "FocusNextWorkspace"
+        );
 
-                workspaceAnimation.Play();
-                focusedWorkspace.Hide();
-                focusedWorkspace = workspaces[next]!;
-                focusedWorkspace?.Update(); // when animation finishes, margins dont match
-                focusedWorkspace?.Redraw(); // manually redraw
-                focusedWorkspace?.SetFocusedWindow();
-            }
-            else
-            {
-                FocusWorkspace(workspaces[next]!);
-            }
-        });
-
-        WM_EVENT("FocusNextWorkspace");
+        //WM_EVENT("FocusNextWorkspace");
     }
 
     public void FocusPreviousWorkspace()
@@ -1165,154 +1169,181 @@ public class WindowManager : IWindowManager
         int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
         int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
 
-        RunQueued(() =>
-        {
-            if (config.workspaceAnimations)
+        RunQueued(
+            () =>
             {
-                // move right
-                // move down
-                (int w, int h) = Utils.GetScreenSize();
-                if (config.workspaceAnimationsDirection == "horizontal")
-                    workspaces[prev]?.Move(-w, null);
-                else if (config.workspaceAnimationsDirection == "vertical")
-                    workspaces[prev]?.Move(null, -h);
-
-                workspaces[prev]?.Show();
-
-                Animation<Workspace> workspaceAnimation = new(
-                    config.workspaceAnimationsDuration,
-                    "easeOutQuint"
-                );
-                if (config.workspaceAnimationsDirection == "horizontal")
+                if (config.workspaceAnimations)
                 {
-                    workspaceAnimation.Add(
-                        focusedWorkspace,
-                        new POINT2() { X = 0, Y = null },
-                        new POINT2() { X = w, Y = null }
+                    // move right
+                    // move down
+                    (int w, int h) = Utils.GetScreenSize();
+                    if (config.workspaceAnimationsDirection == "horizontal")
+                        workspaces[prev]?.Move(-w, null);
+                    else if (config.workspaceAnimationsDirection == "vertical")
+                        workspaces[prev]?.Move(null, -h);
+
+                    workspaces[prev]?.Show();
+
+                    Animation<Workspace> workspaceAnimation = new(
+                        config.workspaceAnimationsDuration,
+                        "easeOutQuint"
                     );
-                    workspaceAnimation.Add(
-                        workspaces[prev],
-                        new POINT2() { X = -w, Y = null },
-                        new POINT2() { X = 0, Y = null }
-                    );
+                    if (config.workspaceAnimationsDirection == "horizontal")
+                    {
+                        workspaceAnimation.Add(
+                            focusedWorkspace,
+                            new POINT2() { X = 0, Y = null },
+                            new POINT2() { X = w, Y = null }
+                        );
+                        workspaceAnimation.Add(
+                            workspaces[prev],
+                            new POINT2() { X = -w, Y = null },
+                            new POINT2() { X = 0, Y = null }
+                        );
+                    }
+                    else if (config.workspaceAnimationsDirection == "vertical")
+                    {
+                        workspaceAnimation.Add(
+                            focusedWorkspace,
+                            new POINT2() { X = null, Y = 0 },
+                            new POINT2() { X = null, Y = h }
+                        );
+                        workspaceAnimation.Add(
+                            workspaces[prev],
+                            new POINT2() { X = null, Y = -h },
+                            new POINT2() { X = null, Y = 0 }
+                        );
+                    }
+
+                    workspaceAnimation.Play();
+                    focusedWorkspace.Hide();
+                    focusedWorkspace = workspaces[prev]!;
+                    focusedWorkspace?.Update();
+                    focusedWorkspace?.Redraw();
+                    focusedWorkspace?.SetFocusedWindow();
                 }
-                else if (config.workspaceAnimationsDirection == "vertical")
+                else
                 {
-                    workspaceAnimation.Add(
-                        focusedWorkspace,
-                        new POINT2() { X = null, Y = 0 },
-                        new POINT2() { X = null, Y = h }
-                    );
-                    workspaceAnimation.Add(
-                        workspaces[prev],
-                        new POINT2() { X = null, Y = -h },
-                        new POINT2() { X = null, Y = 0 }
-                    );
+                    FocusWorkspace(workspaces[prev]!);
                 }
+            },
+            "FocusPreviousWorkspace"
+        );
 
-                workspaceAnimation.Play();
-                focusedWorkspace.Hide();
-                focusedWorkspace = workspaces[prev]!;
-                focusedWorkspace?.Update();
-                focusedWorkspace?.Redraw();
-                focusedWorkspace?.SetFocusedWindow();
-            }
-            else
-            {
-                FocusWorkspace(workspaces[prev]!);
-            }
-        });
-
-        WM_EVENT("FocusPreviousWorkspace");
+        //WM_EVENT("FocusPreviousWorkspace");
     }
 
     public void ShiftFocusedWindowToNextWorkspace()
     {
         int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
-        RunQueued(() => ShiftFocusedWindowToWorkspace(next));
+        RunQueued(() => ShiftFocusedWindowToWorkspace(next), "ShiftWindowToNextWorkspace");
 
-        WM_EVENT("ShiftWindowToNextWorkspace");
+        //WM_EVENT("ShiftWindowToNextWorkspace");
     }
 
     public void ShiftFocusedWindowToPreviousWorkspace()
     {
         int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
-        RunQueued(() => ShiftFocusedWindowToWorkspace(prev));
+        RunQueued(() => ShiftFocusedWindowToWorkspace(prev), "ShiftWindowToPreviousWorkspace");
 
-        WM_EVENT("ShiftWindowToPreviousWorkspace");
+        //WM_EVENT("ShiftWindowToPreviousWorkspace");
     }
 
     public void ShiftFocusedWindowToNumWorkspace(int num)
     {
-        RunQueued(() => ShiftFocusedWindowToWorkspace(num));
+        RunQueued(
+            () => ShiftFocusedWindowToWorkspace(num),
+            $"ShiftWindowToNumWorkspace, wksp: {num}"
+        );
 
-        WM_EVENT($"ShiftWindowToNumWorkspace, wksp: {num}");
+        //WM_EVENT($"ShiftWindowToNumWorkspace, wksp: {num}");
     }
 
     public void CloseFocusedWindow()
     {
-        RunQueued(() =>
-        {
-            focusedWorkspace.CloseFocusedWindow();
-        });
-        WM_EVENT("CloseFocusedWindow");
+        RunQueued(
+            () =>
+            {
+                focusedWorkspace.CloseFocusedWindow();
+            },
+            "CloseFocusedWindow"
+        );
+        //WM_EVENT("CloseFocusedWindow");
     }
 
     public void FocusAdjacentWindow(EDGE direction)
     {
-        RunQueued(() =>
-        {
-            focusedWorkspace.FocusAdjacentWindow(direction);
-        });
-        WM_EVENT("FocusAdjacentWindow");
+        RunQueued(
+            () =>
+            {
+                focusedWorkspace.FocusAdjacentWindow(direction);
+            },
+            "FocusAdjacentWindow"
+        );
+        //WM_EVENT("FocusAdjacentWindow");
     }
 
     public void ToggleFloating()
     {
-        RunQueued(() =>
-        {
-            focusedWorkspace.ToggleFloating();
-        });
-        WM_EVENT("ToggleFloating");
+        RunQueued(
+            () =>
+            {
+                focusedWorkspace.ToggleFloating();
+            },
+            "ToggleFloating"
+        );
+        //WM_EVENT("ToggleFloating");
     }
 
     public void ToggleFocusedWindowMaximization()
     {
-        RunQueued(() => focusedWorkspace?.ToggleFocusedWindowMaximization());
-        WM_EVENT("MaximizeFocusedWindow");
+        RunQueued(
+            () => focusedWorkspace?.ToggleFocusedWindowMaximization(),
+            "MaximizeFocusedWindow"
+        );
+        //WM_EVENT("MaximizeFocusedWindow");
     }
 
     public void MinimizeFocusedWindow()
     {
-        RunQueued(() => focusedWorkspace?.MinimizeFocusedWindow());
-        WM_EVENT("MinimizeFocusedWindow");
+        RunQueued(() => focusedWorkspace?.MinimizeFocusedWindow(), "MinimizeFocusedWindow");
+        //WM_EVENT("MinimizeFocusedWindow");
     }
 
     public void ToggleStacked()
     {
-        RunQueued(() =>
-        {
-            focusedWorkspace.ToggleStacked();
-        });
-        WM_EVENT("ToggleStack");
+        RunQueued(
+            () =>
+            {
+                focusedWorkspace.ToggleStacked();
+            },
+            "ToggleStack"
+        );
+        //WM_EVENT("ToggleStack");
     }
 
     public void Update()
     {
-        RunQueued(() =>
-        {
-            focusedWorkspace.Update();
-        });
-        WM_EVENT("Update");
+        RunQueued(
+            () =>
+            {
+                focusedWorkspace.Update();
+            },
+            "Update"
+        );
+        //WM_EVENT("Update");
     }
 
     public void ShiftFocusedWindowBy(int shiftBy)
     {
-        RunQueued(() =>
-        {
-            focusedWorkspace.ShiftFocusedWindowBy(shiftBy);
-        });
-        WM_EVENT("ShiftFocusedWindowBy");
+        RunQueued(
+            () =>
+            {
+                focusedWorkspace.ShiftFocusedWindowBy(shiftBy);
+            },
+            "ShiftFocusedWindowBy"
+        );
+        //WM_EVENT("ShiftFocusedWindowBy");
     }
 
     /*
@@ -1490,7 +1521,7 @@ public class WindowManager : IWindowManager
              * EVENT_FOREGROUND_CHANGED
              * */
             if (wksp != focusedWorkspace && wksp != null)
-                RunQueued(() => FocusWorkspace(wksp, "WindowShown()"));
+                RunQueued(() => FocusWorkspace(wksp, "WindowShown()"), "FocusWorkspace");
 
             return;
         }
@@ -1508,11 +1539,14 @@ public class WindowManager : IWindowManager
                     focusedWorkspace.MakeFloating(wnd);
                     break;
             }
-            RunQueued(() => focusedWorkspace.Update());
+            RunQueued(
+                () => focusedWorkspace.Update(),
+                $"WindowShown, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+            );
         }
 
         CleanGhostWindows();
-        WM_EVENT($"WindowShown, wnd: {wnd.title}, hWnd: {wnd.hWnd}, exe: {wnd.exe}");
+        //WM_EVENT($"WindowShown, wnd: {wnd.title}, hWnd: {wnd.hWnd}, exe: {wnd.exe}");
     }
 
     public void WindowHidden(Window wnd)
@@ -1529,11 +1563,14 @@ public class WindowManager : IWindowManager
         if (focusedWorkspace.windows.Contains(wnd))
         {
             focusedWorkspace.Remove(wnd);
-            RunQueued(() => focusedWorkspace.Update());
+            RunQueued(
+                () => focusedWorkspace.Update(),
+                $"WindowHidden, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+            );
         }
 
         CleanGhostWindows();
-        WM_EVENT($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}, exe: {wnd.exe}");
+        //WM_EVENT($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}, exe: {wnd.exe}");
     }
 
     public void WindowDestroyed(Window wnd)
@@ -1546,11 +1583,14 @@ public class WindowManager : IWindowManager
         if (focusedWorkspace.windows.Contains(wnd))
         {
             focusedWorkspace.Remove(wnd);
-            RunQueued(() => focusedWorkspace.Update());
+            RunQueued(
+                () => focusedWorkspace.Update(),
+                $"WindowRemoved, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+            );
         }
 
         CleanGhostWindows();
-        WM_EVENT($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
+        //WM_EVENT($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
     /* This is the best way to capture windows that have been missed by WindowShown(),
@@ -1597,14 +1637,17 @@ public class WindowManager : IWindowManager
             Window? wndUnderCursor = focusedWorkspace.GetWindowFromPoint(pt);
             if (wndUnderCursor == null)
                 return;
-            RunQueued(() => focusedWorkspace.SwapWindows(wnd, wndUnderCursor));
+            RunQueued(() => focusedWorkspace.SwapWindows(wnd, wndUnderCursor), "SwapWindow");
         }
         else if (wnd.nonTiledState == NONTILEDSTATE.FLOATING)
             wnd.relRect = wnd.rect;
 
-        RunQueued(() => focusedWorkspace.Update());
+        RunQueued(
+            () => focusedWorkspace.Update(),
+            $"WindowMoved, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+        );
         CleanGhostWindows();
-        WM_EVENT($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
+        //WM_EVENT($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
     public void WindowMaximized(Window wnd)
@@ -1614,9 +1657,12 @@ public class WindowManager : IWindowManager
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
-        RunQueued(() => focusedWorkspace.Update());
+        RunQueued(
+            () => focusedWorkspace.Update(),
+            $"WindowMaximized, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+        );
         CleanGhostWindows();
-        WM_EVENT($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}");
+        //WM_EVENT($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
     public void WindowMinimized(Window wnd)
@@ -1629,9 +1675,12 @@ public class WindowManager : IWindowManager
         // render only after state has updated (winevent and GetWindowPlacement() is not synchronous)
         TaskEx.WaitUntil(() => wnd.state == WINDOWSTATE.MINIMIZED).Wait();
 
-        RunQueued(() => focusedWorkspace.Update());
+        RunQueued(
+            () => focusedWorkspace.Update(),
+            $"WindowMaximized, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+        );
         CleanGhostWindows();
-        WM_EVENT($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}");
+        //WM_EVENT($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
     // window unmaximized
@@ -1712,9 +1761,12 @@ public class WindowManager : IWindowManager
         if (mouseDown)
             return;
 
-        RunQueued(() => focusedWorkspace.Update());
+        RunQueued(
+            () => focusedWorkspace.Update(),
+            $"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+        );
         CleanGhostWindows();
-        WM_EVENT($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
+        //WM_EVENT($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
     public void WindowFocused(Window wnd)
@@ -1724,9 +1776,12 @@ public class WindowManager : IWindowManager
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
-        RunQueued(() => focusedWorkspace.Update());
+        RunQueued(
+            () => focusedWorkspace.Update(),
+            $"WindowFocused, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+        );
         CleanGhostWindows();
-        WM_EVENT($"WindowFocused, {wnd.title}, {wnd.hWnd}");
+        //WM_EVENT($"WindowFocused, {wnd.title}, {wnd.hWnd}");
     }
 
     public void WindowFullscreened(Window wnd)
@@ -1736,9 +1791,12 @@ public class WindowManager : IWindowManager
         if ((wnd = AddToStoreIfMissed(wnd)!) == null)
             return;
 
-        RunQueued(() => focusedWorkspace.Update());
+        RunQueued(
+            () => focusedWorkspace.Update(),
+            $"WindowFullscreened, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+        );
         CleanGhostWindows();
-        WM_EVENT($"WindowFullscreened, {wnd.title}, {wnd.hWnd}");
+        //WM_EVENT($"WindowFullscreened, {wnd.title}, {wnd.hWnd}");
     }
 }
 

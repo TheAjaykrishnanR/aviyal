@@ -493,6 +493,14 @@ public partial class Utils
 
     public static long FastTime_micro() => (long)(FastTime() * 1000000);
 
+    public static long Measure_milli(Action a)
+    {
+        long t1 = FastTime_milli();
+        a();
+        long t2 = FastTime_milli();
+        return t2 - t1;
+    }
+
     /// <summary>
     /// Launch unelevated processes from an elevated process
     /// https://devblogs.microsoft.com/oldnewthing/20190425-00/?p=102443

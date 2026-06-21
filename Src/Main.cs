@@ -218,7 +218,7 @@ class Aviyal : IDisposable
         return state;
     }
 
-    public void SaveState(string? lastAction = null)
+    public void SaveState(string? message = null)
     {
         var state = GetState();
         server.Broadcast(state.ToJson());
@@ -230,11 +230,7 @@ class Aviyal : IDisposable
         {
             Logger.Log("Can't writing to state file", ex: ex, logType: LogType.ERROR);
         }
-        Logger.Log(
-            $"lastAction: {lastAction}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}, focusedWorkspace: {state.focusedWorkspaceIndex}",
-            file: false,
-            logType: LogType.EVENT
-        );
+        Logger.Log($"message: {message}", file: false, logType: LogType.EVENT);
         if (DEBUG)
             Logger.Log(state.ToJson());
     }
