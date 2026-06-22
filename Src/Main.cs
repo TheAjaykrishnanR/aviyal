@@ -155,7 +155,7 @@ class Aviyal : IDisposable
     {
         if (DEBUG)
             Logger.Log(
-                $"Hotekey Pressed: {keymap.command}, time: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}",
+                $"Hotekey Pressed: {keymap.command}, time: {Utils.FastTime_milli()}",
                 logType: LogType.EVENT
             );
         if (keymap.command == COMMAND.EXEC)
@@ -287,7 +287,7 @@ class Aviyal : IDisposable
         if (reloadCount == 0)
         {
             File.Delete(Paths.logFile);
-            Logger.Log($"Starting aviyal, time: {DateTimeOffset.Now.ToUnixTimeSeconds()}");
+            Logger.Log($"Starting aviyal, time: {Utils.FastTime_milli()}");
         }
 
         var psWithSameName = Process

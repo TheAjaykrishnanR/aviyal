@@ -707,7 +707,7 @@ public class Workspace : IWorkspace, IMoveable
         {
             int? absX = windows[i]!.relRect.Left + x;
             int? absY = windows[i]!.relRect.Top + y;
-            if (!(bool)windows[i]?.Move(absX, absY, redraw))
+            if (!(bool)windows[i]?.Move(absX, absY, verify, redraw))
                 success = false;
         }
         return success;
@@ -1125,11 +1125,11 @@ public class WindowManager : IWindowManager
                     // slide windows up -> if vertical
                     (int w, int h) = Utils.GetScreenSize();
                     if (config.workspaceAnimationsDirection == "horizontal")
-                        workspaces[next]?.Move(w, null);
+                        workspaces[next]?.Move(w, null, verify: false);
                     else if (config.workspaceAnimationsDirection == "vertical")
                     {
                         Logger.Log($"next workspace set down at h: {h}");
-                        workspaces[next]?.Move(null, h);
+                        workspaces[next]?.Move(null, h, verify: false);
                     }
 
                     /* we call Show() here instead of Focus() because Focus() has a call to Update()
@@ -1206,9 +1206,9 @@ public class WindowManager : IWindowManager
                     // move down
                     (int w, int h) = Utils.GetScreenSize();
                     if (config.workspaceAnimationsDirection == "horizontal")
-                        workspaces[prev]?.Move(-w, null);
+                        workspaces[prev]?.Move(-w, null, verify: false);
                     else if (config.workspaceAnimationsDirection == "vertical")
-                        workspaces[prev]?.Move(null, -h);
+                        workspaces[prev]?.Move(null, -h, verify: false);
 
                     workspaces[prev]?.Show();
 

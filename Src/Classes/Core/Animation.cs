@@ -46,12 +46,16 @@ public class Animation<T>
                 POINT2 start = animationObjectsAndBounds[j].Item2.Item1;
                 POINT2 end = animationObjectsAndBounds[j].Item2.Item2;
 
-                obj.Move(
-                    GetCoord(start.X, end.X, frames, i),
-                    GetCoord(start.Y, end.Y, frames, i),
-                    verify: false,
-                    redraw: false
-                );
+                int? x = GetCoord(start.X, end.X, frames, i);
+                int? y = GetCoord(start.Y, end.Y, frames, i);
+
+                if (Aviyal.DEBUG)
+                    Logger.Log(
+                        $"moving object, x: {x}, y: {y}, time: {Utils.FastTime_milli()}",
+                        file: false
+                    );
+
+                obj.Move(x, y, verify: false, redraw: false);
             }
 
             int wait = (int)(i * dt - sw.ElapsedMilliseconds);
