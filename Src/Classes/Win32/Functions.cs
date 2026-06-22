@@ -202,6 +202,9 @@ public class User32
     public static extern nint GetLastActivePopup(nint hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool IsWindow(nint hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
     public static extern bool IsWindowVisible(nint hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]

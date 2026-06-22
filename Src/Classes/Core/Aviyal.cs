@@ -389,7 +389,15 @@ public class Window : IWindow, IMoveable
             {
                 User32.SendMessage(this.hWnd, (uint)WINDOWMESSAGE.WM_CLOSE, 0, 0);
             },
-            () => this.exe == null
+            // fix: CloseFocusedWindow() takes too long if we check if window exists any other way
+            // earlier i used to check this using a valid exe path, but since it would be null
+            // (as expected) a redundant exe check would be done there involving an enumeration of
+            // all window processes. This took approx 1.6 seconds and the workspace would only update
+            // after that. checking using IsWindow() allows us to avoid that alltogether and bring it
+            // down to ~90 ms
+            () => !User32.IsWindow(this.hWnd),
+            dt: 1,
+            retries: 10
         );
     }
 
@@ -578,12 +586,17 @@ public class Workspace : IWorkspace, IMoveable
     // since this function has a recursive branch, adding a fail counter for safety
     int update_failCount = 0;
     int MAX_CALLS = 10;
+    List<long> update_times = new();
 
-    public void Update()
+    // returns the time taken to finish update()
+    public long Update()
     {
         update_failCount++;
         if (Aviyal.DEBUG)
+        {
+            update_times.Add(Utils.FastTime_milli());
             Logger.Log($"update_failCount: {update_failCount}");
+        }
 
         /* all windows in the window manager which are in
          * a workable state.
@@ -616,7 +629,7 @@ public class Workspace : IWorkspace, IMoveable
                 wndsToTile[i]?.nonTiledState = NONTILEDSTATE.FLOATING;
                 if (update_failCount < MAX_CALLS)
                     Update();
-                return;
+                return -1;
             }
             wndsToTile[i]!.relRect = relRects[i];
         }
@@ -656,6 +669,13 @@ public class Workspace : IWorkspace, IMoveable
         // if the function has reached here that means the update was successful, so
         // reset the fail counter
         update_failCount = 0;
+        if (Aviyal.DEBUG)
+        {
+            long _t = update_times.Last() - update_times.First();
+            update_times.Clear();
+            return _t;
+        }
+        return 0;
     }
 
     public void Show()
@@ -1049,8 +1069,16 @@ public class WindowManager : IWindowManager
             {
                 try
                 {
-                    long _t = Utils.Measure_milli(_action);
-                    WM_EVENT($"ran wm action {actionName} in {_t} ms");
+                    if (Aviyal.DEBUG)
+                    {
+                        long _t = Utils.Measure_milli(_action);
+                        WM_EVENT($"ran wm action {actionName} in {_t} ms");
+                    }
+                    else
+                    {
+                        _action();
+                        WM_EVENT($"ran wm action {actionName}");
+                    }
                     Thread.Sleep(WINEVENT_DELAY);
                 }
                 catch (Exception ex)
@@ -1261,13 +1289,7 @@ public class WindowManager : IWindowManager
 
     public void CloseFocusedWindow()
     {
-        RunQueued(
-            () =>
-            {
-                focusedWorkspace.CloseFocusedWindow();
-            },
-            "CloseFocusedWindow"
-        );
+        RunQueued(focusedWorkspace.CloseFocusedWindow, "CloseFocusedWindow");
         //WM_EVENT("CloseFocusedWindow");
     }
 
