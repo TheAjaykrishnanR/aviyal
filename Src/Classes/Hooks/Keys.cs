@@ -115,7 +115,12 @@ public class KeyEventsListener : IDisposable
         // essentially polluting our hotkey buffer making it impossible for any hotkey
         // to be triggered, so we clear our buffer if the last key was pressed 2 seconds
         // ago. This is a reasonable time as no hotkey combo will span a whole 2 seconds.
-        if (dt > HOTKEY_COMBO_TIMEOUT || kvnt.vk == VK.ESCAPE)
+        // it is also cleared if escape is pressed, also probably is best to clear when
+        // enter key is pressed because lately after doing :w on nvim which retains VK.OEM_1
+        // causes it to trigger the the CTRL + ; hotekey which i had set up for launching the
+        // terminal, so suddenly trying to immediately change the workspace after saving in nvim
+        // was opening up a new terminal window lol
+        if (dt > HOTKEY_COMBO_TIMEOUT || kvnt.vk == VK.ESCAPE || kvnt.vk == VK.RETURN)
             captured.Clear();
         letKeyPass = true;
         switch ((WINDOWMESSAGE)wparam)
