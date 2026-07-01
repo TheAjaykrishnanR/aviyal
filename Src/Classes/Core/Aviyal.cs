@@ -14,6 +14,10 @@ public class Window : IWindow, IMoveable
 {
     public int workspace;
     public nint hWnd { get; }
+    public bool exists
+    {
+        get { return User32.IsWindow(this.hWnd); }
+    }
     public string title
     {
         get { return Utils.GetWindowTitleFromHWND(this.hWnd); }
@@ -395,7 +399,7 @@ public class Window : IWindow, IMoveable
             // all window processes. This took approx 1.6 seconds and the workspace would only update
             // after that. checking using IsWindow() allows us to avoid that alltogether and bring it
             // down to ~90 ms
-            () => !User32.IsWindow(this.hWnd),
+            () => !this.exists,
             dt: 1,
             retries: 10
         );
@@ -1107,6 +1111,7 @@ public class WindowManager : IWindowManager
             return;
         //SuppressEvents(() => FocusWorkspace(workspaces[workspaceIndex]!, "WmPublic"));
         RunQueued(() => FocusWorkspace(workspaces[workspaceIndex]), "FocusWorkspace");
+        RunQueued(CleanGhostWindows);
 
         //WM_EVENT("FocusWorkspace");
     }
@@ -1188,7 +1193,7 @@ public class WindowManager : IWindowManager
             },
             "FocusNextWorkspace"
         );
-
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("FocusNextWorkspace");
     }
 
@@ -1258,6 +1263,7 @@ public class WindowManager : IWindowManager
             "FocusPreviousWorkspace"
         );
 
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("FocusPreviousWorkspace");
     }
 
@@ -1265,6 +1271,7 @@ public class WindowManager : IWindowManager
     {
         int next = focusedWorkspaceIndex >= workspaces.Count - 1 ? 0 : focusedWorkspaceIndex + 1;
         RunQueued(() => ShiftFocusedWindowToWorkspace(next), "ShiftWindowToNextWorkspace");
+        RunQueued(CleanGhostWindows);
 
         //WM_EVENT("ShiftWindowToNextWorkspace");
     }
@@ -1273,6 +1280,7 @@ public class WindowManager : IWindowManager
     {
         int prev = focusedWorkspaceIndex <= 0 ? workspaces.Count - 1 : focusedWorkspaceIndex - 1;
         RunQueued(() => ShiftFocusedWindowToWorkspace(prev), "ShiftWindowToPreviousWorkspace");
+        RunQueued(CleanGhostWindows);
 
         //WM_EVENT("ShiftWindowToPreviousWorkspace");
     }
@@ -1283,6 +1291,7 @@ public class WindowManager : IWindowManager
             () => ShiftFocusedWindowToWorkspace(num),
             $"ShiftWindowToNumWorkspace, wksp: {num}"
         );
+        RunQueued(CleanGhostWindows);
 
         //WM_EVENT($"ShiftWindowToNumWorkspace, wksp: {num}");
     }
@@ -1290,6 +1299,7 @@ public class WindowManager : IWindowManager
     public void CloseFocusedWindow()
     {
         RunQueued(focusedWorkspace.CloseFocusedWindow, "CloseFocusedWindow");
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("CloseFocusedWindow");
     }
 
@@ -1302,6 +1312,7 @@ public class WindowManager : IWindowManager
             },
             "FocusAdjacentWindow"
         );
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("FocusAdjacentWindow");
     }
 
@@ -1314,6 +1325,7 @@ public class WindowManager : IWindowManager
             },
             "ToggleFloating"
         );
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("ToggleFloating");
     }
 
@@ -1323,12 +1335,14 @@ public class WindowManager : IWindowManager
             () => focusedWorkspace?.ToggleFocusedWindowMaximization(),
             "MaximizeFocusedWindow"
         );
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("MaximizeFocusedWindow");
     }
 
     public void MinimizeFocusedWindow()
     {
         RunQueued(() => focusedWorkspace?.MinimizeFocusedWindow(), "MinimizeFocusedWindow");
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("MinimizeFocusedWindow");
     }
 
@@ -1341,6 +1355,7 @@ public class WindowManager : IWindowManager
             },
             "ToggleStack"
         );
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("ToggleStack");
     }
 
@@ -1353,6 +1368,7 @@ public class WindowManager : IWindowManager
             },
             "Update"
         );
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("Update");
     }
 
@@ -1365,6 +1381,7 @@ public class WindowManager : IWindowManager
             },
             "ShiftFocusedWindowBy"
         );
+        RunQueued(CleanGhostWindows);
         //WM_EVENT("ShiftFocusedWindowBy");
     }
 
@@ -1401,6 +1418,8 @@ public class WindowManager : IWindowManager
     /* filter out windows that should never be interacted with.
      * This is our guardian, the first line of defence keeping unwanted and evil
      * windows from entering into our manager.
+     *
+     * are windows inherently evil ? or is it a mere stateful attribute ?
      * */
     bool ShouldWindowBeIgnored(Window wnd)
     {
@@ -1482,35 +1501,43 @@ public class WindowManager : IWindowManager
         return false;
     }
 
-    readonly Lock @addLock = new();
-
     public void CleanGhostWindows()
     {
-        lock (@addLock)
+        var visibleWindows = GetVisibleWindows();
+
+        /* visible windows will give all alt-tab programs, even tool windows
+         * which we dont need and for whom winevents would typically not fire.
+         * That is why whe have an '>' instead of an '!='
+         * The reason we are doing all this is that for some windows such as
+         * the file explorer, win events wont fire an OBJECT_SHOW when closing
+         * */
+        if (focusedWorkspace.windows.Count > visibleWindows.Count)
         {
-            var visibleWindows = GetVisibleWindows();
-
-            /* visible windows will give all alt-tab programs, even tool windows
-             * which we dont need and for whom winevents would typically not fire.
-             * That is why whe have an '>' instead of an '!='
-             * The reason we are doing all this is that for some windows such as
-             * the file explorer, win events wont fire an OBJECT_SHOW when closing
-             * */
-            if (focusedWorkspace.windows.Count > visibleWindows.Count)
-            {
-                var ghostWindows = focusedWorkspace
-                    .windows.Where(wnd => !visibleWindows.Contains(wnd))
-                    .ToList();
-                ghostWindows.ForEach(wnd => focusedWorkspace.Remove(wnd!));
-                focusedWorkspace.Update();
-            }
-
-            // windows that have been added but has gone bad and should be removed
-            var rottenWindows = focusedWorkspace
-                .windows.Where(wnd => ShouldWindowBeIgnored(wnd!))
+            var ghostWindows = focusedWorkspace
+                .windows.Where(wnd => !visibleWindows.Contains(wnd))
                 .ToList();
-            rottenWindows.ForEach(wnd => focusedWorkspace.Remove(wnd!));
+            ghostWindows.ForEach(wnd => focusedWorkspace.Remove(wnd!));
+            focusedWorkspace.Update();
         }
+
+        // Remove "rotten" windows
+        // windows that have been added but has gone bad and should be removed
+        // we wont be checking all workspaces for rotten windows only the focused
+        // one because otherwise we would be inviting additional complexity by checking
+        // for ghosts amongst windows in other workspaces that are in a transitory state
+        // after a wm action. In such state ShouldWindowBeIgnored() can return true for
+        // actually valid windows. Therefore we check only on the focused workspace as we
+        // know that they will be in a valid state already and ShouldWindowBeIgnored() can be
+        // fully trusted.
+        var rottenWindows = focusedWorkspace
+            .windows.Where(wnd => ShouldWindowBeIgnored(wnd!) || !wnd!.exists)
+            .ToList();
+        Logger.Log($"rottenWindowsCount: {rottenWindows.Count}");
+        rottenWindows.ForEach(wnd =>
+        {
+            Logger.Log($"rotten window {wnd?.hWnd} removed", logType: LogType.EVENT);
+            focusedWorkspace.Remove(wnd!);
+        });
     }
 
     void ApplyConfigsToWindow(Window wnd)
@@ -1549,25 +1576,24 @@ public class WindowManager : IWindowManager
         }
 
         // Add() and CleanGhostWindows() can cause windows to be re added if they
-        // occur while the other hasnt completed, so lock them
-        lock (@addLock)
-        {
-            ApplyConfigsToWindow(wnd);
-            wnd.workspace = focusedWorkspaceIndex;
-            focusedWorkspace.Add(wnd);
-            switch (wnd.nonTiledState)
+        RunQueued(
+            () =>
             {
-                case NONTILEDSTATE.FLOATING:
-                    focusedWorkspace.MakeFloating(wnd);
-                    break;
-            }
-            RunQueued(
-                () => focusedWorkspace.Update(),
-                $"WindowShown, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
-            );
-        }
+                ApplyConfigsToWindow(wnd);
+                wnd.workspace = focusedWorkspaceIndex;
+                focusedWorkspace.Add(wnd);
+                switch (wnd.nonTiledState)
+                {
+                    case NONTILEDSTATE.FLOATING:
+                        focusedWorkspace.MakeFloating(wnd);
+                        break;
+                }
+                focusedWorkspace.Update();
+            },
+            $"WindowShown, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
+        );
 
-        CleanGhostWindows();
+        RunQueued(CleanGhostWindows);
         //WM_EVENT($"WindowShown, wnd: {wnd.title}, hWnd: {wnd.hWnd}, exe: {wnd.exe}");
     }
 
@@ -1591,7 +1617,7 @@ public class WindowManager : IWindowManager
             );
         }
 
-        CleanGhostWindows();
+        RunQueued(CleanGhostWindows);
         //WM_EVENT($"WindowHidden, {wnd.title}, hWnd: {wnd.hWnd}, exe: {wnd.exe}");
     }
 
@@ -1611,7 +1637,7 @@ public class WindowManager : IWindowManager
             );
         }
 
-        CleanGhostWindows();
+        RunQueued(CleanGhostWindows);
         //WM_EVENT($"WindowRemoved, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
@@ -1668,7 +1694,7 @@ public class WindowManager : IWindowManager
             () => focusedWorkspace.Update(),
             $"WindowMoved, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
         );
-        CleanGhostWindows();
+        RunQueued(CleanGhostWindows);
         //WM_EVENT($"WindowMoved, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
@@ -1683,7 +1709,7 @@ public class WindowManager : IWindowManager
             () => focusedWorkspace.Update(),
             $"WindowMaximized, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
         );
-        CleanGhostWindows();
+        RunQueued(CleanGhostWindows);
         //WM_EVENT($"WindowMaximized, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
@@ -1701,7 +1727,7 @@ public class WindowManager : IWindowManager
             () => focusedWorkspace.Update(),
             $"WindowMaximized, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
         );
-        CleanGhostWindows();
+        RunQueued(CleanGhostWindows);
         //WM_EVENT($"WindowMinimized, {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
@@ -1787,7 +1813,7 @@ public class WindowManager : IWindowManager
             () => focusedWorkspace.Update(),
             $"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
         );
-        CleanGhostWindows();
+        RunQueued(CleanGhostWindows);
         //WM_EVENT($"WindowRestored, wnd: {wnd.title}, hWnd: {wnd.hWnd}");
     }
 
@@ -1802,7 +1828,7 @@ public class WindowManager : IWindowManager
             () => focusedWorkspace.Update(),
             $"WindowFocused, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
         );
-        CleanGhostWindows();
+        RunQueued(CleanGhostWindows);
         //WM_EVENT($"WindowFocused, {wnd.title}, {wnd.hWnd}");
     }
 
@@ -1817,7 +1843,7 @@ public class WindowManager : IWindowManager
             () => focusedWorkspace.Update(),
             $"WindowFullscreened, wnd: {wnd.title}, hWnd: {wnd.hWnd}"
         );
-        CleanGhostWindows();
+        RunQueued(CleanGhostWindows);
         //WM_EVENT($"WindowFullscreened, {wnd.title}, {wnd.hWnd}");
     }
 }

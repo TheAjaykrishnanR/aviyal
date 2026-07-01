@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public interface IWindow
 {
     public nint hWnd { get; }
+    public bool exists { get; }
     public string title { get; }
     public string className { get; }
     public string? exe { get; }
