@@ -604,8 +604,8 @@ public partial class Utils
     // retreives the topmost parent
     public static nint GetParentRoot(nint hWnd)
     {
-        const uint GA_ROOTOWNER = 3;
-        return User32.GetAncestor(hWnd, GA_ROOTOWNER);
+        const uint GA_ROOT = 2;
+        return User32.GetAncestor(hWnd, GA_ROOT);
     }
 }
 
