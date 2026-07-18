@@ -25,6 +25,7 @@ public class Config : IJson<Config>
     public List<WindowRule> rules = new();
     public List<Keymap> keymaps = new()
     {
+        new() { keys = [VK.LCONTROL, VK.SPACE], command = COMMAND.HOOK_WINDOW_TO_MOUSE },
         // focus workspaces
         new() { keys = [VK.LCONTROL, VK.LSHIFT, VK.L], command = COMMAND.FOCUS_NEXT_WORKSPACE },
         new() { keys = [VK.LCONTROL, VK.LSHIFT, VK.H], command = COMMAND.FOCUS_PREVIOUS_WORKSPACE },

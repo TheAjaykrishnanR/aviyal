@@ -19,7 +19,9 @@ class Aviyal : IDisposable
 - logging made async
 - version bump
 ";
-    static Aviyal? aviyal;
+
+    // the entire application instance
+    public static Aviyal? instance { get; private set; }
 
     public static bool DEBUG = false;
 
@@ -82,6 +84,7 @@ class Aviyal : IDisposable
             { COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(8) },
             { COMMAND.UPDATE, () => wm.Update() },
             { COMMAND.RESTART, () => Restart() },
+            { COMMAND.HOOK_WINDOW_TO_MOUSE, () => wm.HookWindowToMouse() },
         };
 
         // just make all windows reappear if crashes
@@ -122,6 +125,7 @@ class Aviyal : IDisposable
 
         mouseListener.MOUSE_DOWN += MouseDown;
         mouseListener.MOUSE_UP += MouseUp;
+        mouseListener.MOUSE_MOVED_WINDOW += wm.MoveWindowWithMouse;
     }
 
     public void Dispose()
@@ -142,6 +146,7 @@ class Aviyal : IDisposable
         kbdListener.HOTKEY_PRESSED -= HotkeyPressed;
         mouseListener.MOUSE_DOWN -= MouseDown;
         mouseListener.MOUSE_UP -= MouseUp;
+        mouseListener.MOUSE_MOVED_WINDOW -= wm.MoveWindowWithMouse;
 
         server.Dispose(); // release the previous socket
         wndListener.Dispose();
@@ -153,7 +158,7 @@ class Aviyal : IDisposable
 
     public void HotkeyPressed(Keymap keymap)
     {
-        if (DEBUG)
+        if (DEBUG && keymap.command != COMMAND.HOOK_WINDOW_TO_MOUSE)
             Logger.Log(
                 $"Hotekey Pressed: {keymap.command}, time: {Utils.FastTime_milli()}",
                 logType: LogType.EVENT
@@ -337,14 +342,14 @@ class Aviyal : IDisposable
         Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
 
         // collect windows to restore when reloaded (when reloaded all windows will be put to workspace 0)
-        var windows = aviyal?.wm.windows;
-        aviyal?.Dispose();
-        aviyal = new(config);
-        aviyal.wm.initWindows = windows!;
-        aviyal.wm.Start();
+        var windows = instance?.wm.windows;
+        instance?.Dispose();
+        instance = new(config);
+        instance.wm.initWindows = windows!;
+        instance.wm.Start();
         // do NOT attach the event handlers before wm has started. Window events before initialization
         // can case race conditions and collection modifications in wm.Start()
-        aviyal.AttachEventHandlers();
+        instance.AttachEventHandlers();
     }
 
     static bool errored = false;
@@ -494,6 +499,8 @@ public enum COMMAND
 
     TOGGLE_FLOATING_WINDOW,
     TOGGLE_STACKED_WINDOW,
+
+    HOOK_WINDOW_TO_MOUSE,
 
     TOGGLE_FOCUSED_WINDOW_MAXIMIZATION,
     MINIMIZE_FOCUSED_WINDOW,

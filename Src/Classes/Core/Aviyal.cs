@@ -733,6 +733,13 @@ public class Workspace : IWorkspace, IMoveable
         set;
     }
 
+    public void FocusWindow(Window wnd)
+    {
+        if (!windows.Contains(wnd) || focusedWindow == wnd)
+            return;
+        wnd.Focus();
+    }
+
     public void SetFocusedWindow()
     {
         if (lastFocusedWindow != null)
@@ -801,11 +808,15 @@ public class Workspace : IWorkspace, IMoveable
         Update();
     }
 
-    public void MakeFloating(Window wnd)
+    // what needs to be done just to the window to make it float
+    public void MakeFloating(Window wnd, RECT? rect = null)
     {
         if (!(bool)wnd.resizeable || wnd.state == WINDOWSTATE.MAXIMIZED)
             return;
-        wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
+        if (rect == null)
+            wnd.Move(GetCenterRect(floatingWindowSize.Item1, floatingWindowSize.Item2));
+        else
+            wnd.Move((RECT)rect);
     }
 
     public void ToggleFloating(Window? wnd = null)
@@ -1046,9 +1057,12 @@ public class WindowManager : IWindowManager
      * wrapped.
      * */
 
-    /* wndQueue: list of windows queued for actions
-     * */
+    // the window manager's action protector.
+    // try to avoid setting it anywhere else other than in RunQeued()
+    // if you do set it back to false without fail.
     bool wmBusy = false;
+
+    // wndQueue: list of windows queued for actions
     ConcurrentQueue<Action> actionQueue = new();
     readonly Lock queueLock = new();
     const int WINEVENT_DELAY = 100;
@@ -1383,6 +1397,54 @@ public class WindowManager : IWindowManager
         );
         RunQueued(CleanGhostWindows);
         //WM_EVENT("ShiftFocusedWindowBy");
+    }
+
+    public bool windowMoveMode { get; private set; } = false;
+    EventStream<object> windowMoveStream;
+
+    public void HookWindowToMouse()
+    {
+        // keeping the initializing close
+        if (windowMoveStream == null || windowMoveStream.disposed)
+        {
+            windowMoveStream = new(interval: 100);
+            windowMoveStream.OVER += _ =>
+            {
+                windowMoveMode = false;
+                Logger.Log(
+                    $"windowMoveMode: {windowMoveMode}, wmBusy: {wmBusy}",
+                    logType: LogType.EVENT
+                );
+            };
+        }
+        windowMoveMode = true;
+        windowMoveStream.Add(new());
+        //Logger.Log($"windowMoveMode: {windowMoveMode}, wmBusy: {wmBusy}", logType: LogType.EVENT);
+    }
+
+    // TODO: make the window actually follow the mouse
+    public void MoveWindowWithMouse()
+    {
+        // window to be moved (always retrieve the actual stored window)
+        Window? wnd = GetAlreadyStoredWindow(new(Utils.GetWindowUnderCursor()));
+        if (wnd == null)
+            return;
+        RunQueued(() =>
+        {
+            focusedWorkspace.MakeFloating(wnd);
+            wnd.nonTiledState = NONTILEDSTATE.FLOATING;
+            focusedWorkspace.Update();
+            User32.GetCursorPos(out POINT pt);
+            while (windowMoveMode)
+            {
+                User32.GetCursorPos(out POINT _pt);
+                POINT _drag = new() { X = _pt.X - pt.X, Y = _pt.Y - pt.Y };
+                RECT _rect = wnd.rect; // current window coords
+                wnd.Move(x: _rect.Left + _drag.X, y: _rect.Top + _drag.Y, verify: false);
+                pt = _pt;
+                Thread.Sleep(10);
+            }
+        });
     }
 
     /*

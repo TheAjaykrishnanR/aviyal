@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 public class MouseEventsListener : IDisposable
 {
@@ -32,27 +33,30 @@ public class MouseEventsListener : IDisposable
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool DispatchMessage(ref uint msg);
 
-    readonly Lock @eventLock = new();
-
     MOUSEPROC mouseProcDelegate;
+
+    bool letEventPass;
 
     int MouseProc(int code, nint wparam, nint lparam)
     {
-        lock (@eventLock)
+        letEventPass = true;
+        var mouseStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lparam);
+        switch ((WINDOWMESSAGE)wparam)
         {
-            var mouseStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lparam);
-            switch ((WINDOWMESSAGE)wparam)
-            {
-                case WINDOWMESSAGE.WM_LBUTTONDOWN:
-                    MOUSE_DOWN();
-                    break;
-                case WINDOWMESSAGE.WM_LBUTTONUP:
-                    MOUSE_UP();
-                    break;
-            }
-            ////Console.WriteLine($"mouseEvent: {(WINDOWMESSAGE)wparam}");
-            return CallNextHookEx(0, code, wparam, lparam);
+            case WINDOWMESSAGE.WM_LBUTTONDOWN:
+                Task.Run(() => MOUSE_DOWN());
+                if (Aviyal.instance!.wm.windowMoveMode)
+                {
+                    letEventPass = false;
+                    Task.Run(() => MOUSE_MOVED_WINDOW());
+                }
+                break;
+            case WINDOWMESSAGE.WM_LBUTTONUP:
+                Task.Run(() => MOUSE_UP());
+                break;
         }
+        ////Console.WriteLine($"mouseEvent: {(WINDOWMESSAGE)wparam}");
+        return letEventPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
     }
 
     nint hhook;
@@ -81,6 +85,7 @@ public class MouseEventsListener : IDisposable
     public delegate void MouseEventHandler();
     public event MouseEventHandler MOUSE_DOWN = () => { };
     public event MouseEventHandler MOUSE_UP = () => { };
+    public event MouseEventHandler MOUSE_MOVED_WINDOW = () => { };
 
     public Thread thread;
 

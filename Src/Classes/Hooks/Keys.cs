@@ -165,12 +165,12 @@ public class KeyEventsListener : IDisposable
                     // last key will fly away in the WM_KEYUP and be sent down.
                     // active windows will receive ^L, ^H keys
                     if (!hotkeyPressed)
-                    {
                         Task.Run(() => HOTKEY_PRESSED(keymap));
-                        if (Aviyal.DEBUG)
-                            Logger.Log("HOTKEY PRESSED");
-                    }
-                    hotkeyPressed = true;
+                    hotkeyPressed = true; // we only generally want to fire a hotkey only once even if
+                    // the keys are still being pressed unless the keymap is for something like
+                    // HOOK_WINDOW_TO_MOUSE
+                    if (keymap.command == COMMAND.HOOK_WINDOW_TO_MOUSE)
+                        Task.Run(() => HOTKEY_PRESSED(keymap));
 
                     break;
                 }
