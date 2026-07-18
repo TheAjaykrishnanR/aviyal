@@ -76,6 +76,9 @@ public class User32
     public static extern bool GetWindowRect(nint hWnd, out RECT windowRect);
 
     [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint GetParent(nint hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
     public static extern bool GetClientRect(nint hWnd, out RECT clientRect);
 
     [DllImport("user32.dll", SetLastError = true)]

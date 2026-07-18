@@ -1421,15 +1421,16 @@ public class WindowManager : IWindowManager
             };
         }
         windowMoveStream?.Add(new());
-        Logger.Log($"windowMoveMode: {windowMoveMode}, wmBusy: {wmBusy}", logType: LogType.EVENT);
+        //Logger.Log($"windowMoveMode: {windowMoveMode}, wmBusy: {wmBusy}", logType: LogType.EVENT);
     }
 
     // TODO: make the window actually follow the mouse
     public void MoveWindowWithMouse()
     {
-        Logger.Log("MoveWindowWithMouse", logType: LogType.EVENT);
         // window to be moved (always retrieve the actual stored window)
-        Window? wnd = GetAlreadyStoredWindow(new(Utils.GetWindowUnderCursor()));
+        Window? wnd = GetAlreadyStoredWindow(
+            new(Utils.GetParentRoot(Utils.GetWindowUnderCursor()))
+        );
         if (wnd == null)
             return;
         RunQueued(() =>

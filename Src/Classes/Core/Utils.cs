@@ -600,6 +600,13 @@ public partial class Utils
             $"{funcName}(): {returnValue}, LastWin32Error: {Marshal.GetLastWin32Error()}"
         );
     }
+
+    // retreives the topmost parent
+    public static nint GetParentRoot(nint hWnd)
+    {
+        const uint GA_ROOTOWNER = 3;
+        return User32.GetAncestor(hWnd, GA_ROOTOWNER);
+    }
 }
 
 public class _Window
