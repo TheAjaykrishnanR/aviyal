@@ -1435,6 +1435,7 @@ public class WindowManager : IWindowManager
             return;
         RunQueued(() =>
         {
+            focusedWorkspace.FocusWindow(wnd);
             if (wnd.nonTiledState != NONTILEDSTATE.FLOATING)
             {
                 focusedWorkspace.MakeFloating(wnd);
