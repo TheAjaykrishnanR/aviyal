@@ -125,7 +125,6 @@ class Aviyal : IDisposable
 
         mouseListener.MOUSE_DOWN += MouseDown;
         mouseListener.MOUSE_UP += MouseUp;
-        mouseListener.MOUSE_MOVED_WINDOW += wm.MoveWindowWithMouse;
     }
 
     public void Dispose()
@@ -146,7 +145,6 @@ class Aviyal : IDisposable
         kbdListener.HOTKEY_PRESSED -= HotkeyPressed;
         mouseListener.MOUSE_DOWN -= MouseDown;
         mouseListener.MOUSE_UP -= MouseUp;
-        mouseListener.MOUSE_MOVED_WINDOW -= wm.MoveWindowWithMouse;
 
         server.Dispose(); // release the previous socket
         wndListener.Dispose();
@@ -169,7 +167,12 @@ class Aviyal : IDisposable
             actions[keymap.command]?.Invoke();
     }
 
-    public void MouseDown() => wm.mouseDown = true;
+    public void MouseDown()
+    {
+        wm.mouseDown = true;
+        if (wm.windowMoveMode)
+            wm.MoveWindowWithMouse();
+    }
 
     public void MouseUp() => wm.mouseDown = false;
 

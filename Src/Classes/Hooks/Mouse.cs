@@ -46,10 +46,7 @@ public class MouseEventsListener : IDisposable
             case WINDOWMESSAGE.WM_LBUTTONDOWN:
                 Task.Run(() => MOUSE_DOWN());
                 if (Aviyal.instance!.wm.windowMoveMode)
-                {
                     letEventPass = false;
-                    Task.Run(() => MOUSE_MOVED_WINDOW());
-                }
                 break;
             case WINDOWMESSAGE.WM_LBUTTONUP:
                 Task.Run(() => MOUSE_UP());
@@ -85,7 +82,6 @@ public class MouseEventsListener : IDisposable
     public delegate void MouseEventHandler();
     public event MouseEventHandler MOUSE_DOWN = () => { };
     public event MouseEventHandler MOUSE_UP = () => { };
-    public event MouseEventHandler MOUSE_MOVED_WINDOW = () => { };
 
     public Thread thread;
 

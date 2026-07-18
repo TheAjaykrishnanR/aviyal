@@ -1404,10 +1404,13 @@ public class WindowManager : IWindowManager
 
     public void HookWindowToMouse()
     {
-        // keeping the initializing close
+        windowMoveMode = true;
         if (windowMoveStream == null || windowMoveStream.disposed)
         {
-            windowMoveStream = new(interval: 100);
+            // keep the interval above 100ms, previous interval of 100ms was too short
+            // and MOUSE_MOVED_WINDOW() wouldn't fire because windowMoveMode would be set
+            // to false somewhere inbetween
+            windowMoveStream = new(interval: 500);
             windowMoveStream.OVER += _ =>
             {
                 windowMoveMode = false;
@@ -1417,25 +1420,28 @@ public class WindowManager : IWindowManager
                 );
             };
         }
-        windowMoveMode = true;
-        windowMoveStream.Add(new());
-        //Logger.Log($"windowMoveMode: {windowMoveMode}, wmBusy: {wmBusy}", logType: LogType.EVENT);
+        windowMoveStream?.Add(new());
+        Logger.Log($"windowMoveMode: {windowMoveMode}, wmBusy: {wmBusy}", logType: LogType.EVENT);
     }
 
     // TODO: make the window actually follow the mouse
     public void MoveWindowWithMouse()
     {
+        Logger.Log("MoveWindowWithMouse", logType: LogType.EVENT);
         // window to be moved (always retrieve the actual stored window)
         Window? wnd = GetAlreadyStoredWindow(new(Utils.GetWindowUnderCursor()));
         if (wnd == null)
             return;
         RunQueued(() =>
         {
-            focusedWorkspace.MakeFloating(wnd);
-            wnd.nonTiledState = NONTILEDSTATE.FLOATING;
-            focusedWorkspace.Update();
+            if (wnd.nonTiledState != NONTILEDSTATE.FLOATING)
+            {
+                focusedWorkspace.MakeFloating(wnd);
+                wnd.nonTiledState = NONTILEDSTATE.FLOATING;
+                focusedWorkspace.Update();
+            }
             User32.GetCursorPos(out POINT pt);
-            while (windowMoveMode)
+            while (windowMoveMode && mouseDown)
             {
                 User32.GetCursorPos(out POINT _pt);
                 POINT _drag = new() { X = _pt.X - pt.X, Y = _pt.Y - pt.Y };
