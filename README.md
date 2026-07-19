@@ -20,6 +20,7 @@ This project was **NOT** vibecoded.
 8. Hot reloading
 9. Qerry state using websocket and execute commands
 10. Launch apps using hotkeys
+11. Move windows without the titlebar
 
 ## Usage
 
@@ -48,6 +49,7 @@ A quick summary of the values available for each key in the config is [here](htt
 - `TOGGLE WINDOW STACKED`: `LCONTROL, LSHIFT, S`
 - `SWAP WINDOW RIGHT`: `LMENU (ALT), L`
 - `SWAP WINDOW LEFT`: `LMENU (ALT), H`
+- `DRAG WINDOW WITH MOUSE`: `LCONTROL, SPACE`
 - `RESTART APPLICATION`: `LCONTROL, LSHIFT, R` (hot reload for config)
 - `REFRESH TILING`: `LCONTROL, LSHIFT, U`
 

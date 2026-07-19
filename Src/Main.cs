@@ -84,7 +84,7 @@ class Aviyal : IDisposable
             { COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(8) },
             { COMMAND.UPDATE, () => wm.Update() },
             { COMMAND.RESTART, () => Restart() },
-            { COMMAND.HOOK_WINDOW_TO_MOUSE, () => wm.HookWindowToMouse() },
+            { COMMAND.WINDOW_MOVE_MODE_ON, () => wm.WindowMoveModeOn() },
         };
 
         // just make all windows reappear if crashes
@@ -156,7 +156,7 @@ class Aviyal : IDisposable
 
     public void HotkeyPressed(Keymap keymap)
     {
-        if (DEBUG && keymap.command != COMMAND.HOOK_WINDOW_TO_MOUSE)
+        if (DEBUG && keymap.command != COMMAND.WINDOW_MOVE_MODE_ON)
             Logger.Log(
                 $"Hotekey Pressed: {keymap.command}, time: {Utils.FastTime_milli()}",
                 logType: LogType.EVENT
@@ -172,6 +172,8 @@ class Aviyal : IDisposable
         wm.mouseDown = true;
         if (wm.windowMoveMode)
             wm.MoveWindowWithMouse();
+        if (wm.windowResizeMode)
+            wm.ResizeWindowWithMouse();
     }
 
     public void MouseUp() => wm.mouseDown = false;
@@ -503,7 +505,8 @@ public enum COMMAND
     TOGGLE_FLOATING_WINDOW,
     TOGGLE_STACKED_WINDOW,
 
-    HOOK_WINDOW_TO_MOUSE,
+    WINDOW_MOVE_MODE_ON,
+    WINDOW_RESIZE_MODE_ON,
 
     TOGGLE_FOCUSED_WINDOW_MAXIMIZATION,
     MINIMIZE_FOCUSED_WINDOW,

@@ -25,7 +25,6 @@ public class Config : IJson<Config>
     public List<WindowRule> rules = new();
     public List<Keymap> keymaps = new()
     {
-        new() { keys = [VK.LCONTROL, VK.SPACE], command = COMMAND.HOOK_WINDOW_TO_MOUSE },
         // focus workspaces
         new() { keys = [VK.LCONTROL, VK.LSHIFT, VK.L], command = COMMAND.FOCUS_NEXT_WORKSPACE },
         new() { keys = [VK.LCONTROL, VK.LSHIFT, VK.H], command = COMMAND.FOCUS_PREVIOUS_WORKSPACE },
@@ -83,6 +82,10 @@ public class Config : IJson<Config>
         new() { keys = [VK.LMENU, VK.NUM7], command = COMMAND.FOCUS_WORKSPACE_7 },
         new() { keys = [VK.LMENU, VK.NUM8], command = COMMAND.FOCUS_WORKSPACE_8 },
         new() { keys = [VK.LMENU, VK.NUM9], command = COMMAND.FOCUS_WORKSPACE_9 },
+        // move/resize windows using mouse without titlebars
+        new() { keys = [VK.LCONTROL, VK.SPACE], command = COMMAND.WINDOW_MOVE_MODE_ON },
+        new() { keys = [VK.LMENU, VK.SPACE], command = COMMAND.WINDOW_RESIZE_MODE_ON },
+        // system
         new() { keys = [VK.LCONTROL, VK.LSHIFT, VK.R], command = COMMAND.RESTART },
         new() { keys = [VK.LCONTROL, VK.LSHIFT, VK.U], command = COMMAND.UPDATE },
     };

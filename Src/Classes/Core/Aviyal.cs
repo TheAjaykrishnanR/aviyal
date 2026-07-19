@@ -1402,7 +1402,7 @@ public class WindowManager : IWindowManager
     public bool windowMoveMode { get; private set; } = false;
     EventStream<object> windowMoveStream;
 
-    public void HookWindowToMouse()
+    public void WindowMoveModeOn()
     {
         windowMoveMode = true;
         if (windowMoveStream == null || windowMoveStream.disposed)
@@ -1424,7 +1424,6 @@ public class WindowManager : IWindowManager
         //Logger.Log($"windowMoveMode: {windowMoveMode}, wmBusy: {wmBusy}", logType: LogType.EVENT);
     }
 
-    // TODO: make the window actually follow the mouse
     public void MoveWindowWithMouse()
     {
         // window to be moved (always retrieve the actual stored window)
@@ -1453,6 +1452,38 @@ public class WindowManager : IWindowManager
                 Thread.Sleep(10);
             }
         });
+    }
+
+    public bool windowResizeMode { get; private set; } = false;
+    EventStream<object> windowResizeStream;
+
+    public void WindowResizeModeOn()
+    {
+        windowResizeMode = true;
+        if (windowResizeStream == null || windowResizeStream.disposed)
+        {
+            windowResizeStream = new(interval: 500);
+            windowResizeStream.OVER += _ =>
+            {
+                windowResizeMode = false;
+                Logger.Log(
+                    $"windowResizeMode: {windowResizeMode}, wmBusy: {wmBusy}",
+                    logType: LogType.EVENT
+                );
+            };
+        }
+        windowResizeStream?.Add(new());
+    }
+
+    public void ResizeWindowWithMouse()
+    {
+        Window? wnd = GetAlreadyStoredWindow(
+            new(Utils.GetParentRoot(Utils.GetWindowUnderCursor()))
+        );
+        if (wnd == null)
+            return;
+
+        RunQueued(() => { });
     }
 
     /*

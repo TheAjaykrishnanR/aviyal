@@ -45,7 +45,7 @@ public class MouseEventsListener : IDisposable
         {
             case WINDOWMESSAGE.WM_LBUTTONDOWN:
                 Task.Run(() => MOUSE_DOWN());
-                if (Aviyal.instance!.wm.windowMoveMode)
+                if (Aviyal.instance!.wm.windowMoveMode || Aviyal.instance.wm.windowResizeMode)
                     letEventPass = false;
                 break;
             case WINDOWMESSAGE.WM_LBUTTONUP:

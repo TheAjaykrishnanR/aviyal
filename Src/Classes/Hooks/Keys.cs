@@ -168,8 +168,11 @@ public class KeyEventsListener : IDisposable
                         Task.Run(() => HOTKEY_PRESSED(keymap));
                     hotkeyPressed = true; // we only generally want to fire a hotkey only once even if
                     // the keys are still being pressed unless the keymap is for something like
-                    // HOOK_WINDOW_TO_MOUSE
-                    if (keymap.command == COMMAND.HOOK_WINDOW_TO_MOUSE)
+                    // WINDOW_MOVE_MODE_ON or WINDOW_RESIZE_MODE_ON
+                    if (
+                        keymap.command == COMMAND.WINDOW_MOVE_MODE_ON
+                        || keymap.command == COMMAND.WINDOW_RESIZE_MODE_ON
+                    )
                         Task.Run(() => HOTKEY_PRESSED(keymap));
 
                     break;
