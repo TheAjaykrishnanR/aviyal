@@ -564,7 +564,7 @@ public class Workspace : IWorkspace, IMoveable
     }
 
     Config config;
-    (int, int) floatingWindowSize; // ideal floating window dimensions
+    public (int, int) floatingWindowSize; // ideal floating window dimensions
 
     public Workspace(Config config)
     {
@@ -1435,13 +1435,21 @@ public class WindowManager : IWindowManager
         RunQueued(() =>
         {
             focusedWorkspace.FocusWindow(wnd);
+            User32.GetCursorPos(out POINT pt);
             if (wnd.nonTiledState != NONTILEDSTATE.FLOATING)
             {
-                focusedWorkspace.MakeFloating(wnd);
+                RECT floatingRect = RECT.FromCenter(
+                    pt,
+                    new()
+                    {
+                        X = focusedWorkspace.floatingWindowSize.Item1,
+                        Y = focusedWorkspace.floatingWindowSize.Item2,
+                    }
+                );
+                focusedWorkspace.MakeFloating(wnd, floatingRect);
                 wnd.nonTiledState = NONTILEDSTATE.FLOATING;
                 focusedWorkspace.Update();
             }
-            User32.GetCursorPos(out POINT pt);
             while (windowMoveMode && mouseDown)
             {
                 User32.GetCursorPos(out POINT _pt);
@@ -1483,6 +1491,7 @@ public class WindowManager : IWindowManager
         if (wnd == null)
             return;
 
+        // TODO: Implement actual resizing
         RunQueued(() => { });
     }
 
@@ -1835,7 +1844,7 @@ public class WindowManager : IWindowManager
     // window unmaximized
     public bool mouseDown { get; set; } = false;
     const int WINEVENT_RESTORE_TIMEOUT = 500; // milliseconds
-    nint lasRestoredhWnd = 0;
+    nint lastRestoredhWnd = 0;
     long lastRestoreTime = 0;
 
     /* a simple class that emits an event with the last member of a rapidly firing event stream
@@ -1890,17 +1899,17 @@ public class WindowManager : IWindowManager
         // ignore window restore events that appear in rapid succession
         if (
             Utils.FastTime_milli() - lastRestoreTime < WINEVENT_RESTORE_TIMEOUT
-            && wnd.hWnd == lasRestoredhWnd
+            && wnd.hWnd == lastRestoredhWnd
         )
         {
-            lasRestoredhWnd = wnd.hWnd;
+            lastRestoredhWnd = wnd.hWnd;
             lastRestoreTime = Utils.FastTime_milli();
             restoreStream?.Add(wnd); // [+ for firing for the last event]
             if (Aviyal.DEBUG)
                 Logger.Log($"ignore window restore, {wnd.title}, {wnd.hWnd}");
             return;
         }
-        lasRestoredhWnd = wnd.hWnd;
+        lastRestoredhWnd = wnd.hWnd;
         lastRestoreTime = Utils.FastTime_milli();
 
         if (wmBusy)

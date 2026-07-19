@@ -125,6 +125,17 @@ public struct RECT
             Bottom = (int)left?.Bottom * right,
         };
     }
+
+    public static RECT FromCenter(POINT center, POINT size)
+    {
+        return new RECT()
+        {
+            Left = center.X - (size.X / 2),
+            Top = center.Y - (size.Y / 2),
+            Right = center.X + (size.X / 2),
+            Bottom = center.Y + (size.Y / 2),
+        };
+    }
 }
 
 [StructLayout(LayoutKind.Sequential)]
