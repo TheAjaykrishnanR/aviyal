@@ -141,73 +141,106 @@ public class Config : IJson<Config>
         JsonNode node = JsonNode.Parse(json);
 
         Config config = new();
-        config.loglevel = node["loglevel"].ToString();
-        config.layout = node["layout"].ToString();
-        config.inner = Convert.ToInt32(node["inner"].ToString());
-        config.left = Convert.ToInt32(node["left"].ToString());
-        config.top = Convert.ToInt32(node["top"].ToString());
-        config.right = Convert.ToInt32(node["right"].ToString());
-        config.bottom = Convert.ToInt32(node["bottom"].ToString());
-        config.workspaces = Convert.ToInt32(node["workspaces"].ToString());
-        config.workspaceAnimations = node["workspaceAnimations"].ToString() switch
+        config.loglevel = node?[nameof(loglevel)]?.ToString() ?? config.loglevel;
+        config.layout = node?[nameof(layout)]?.ToString() ?? config.layout;
+        config.inner = Convert.ToInt32(node?[nameof(inner)]?.ToString() ?? $"{config.inner}");
+        config.left = Convert.ToInt32(node?[nameof(left)]?.ToString() ?? $"{config.left}");
+        config.top = Convert.ToInt32(node?[nameof(top)]?.ToString() ?? $"{config.top}");
+        config.right = Convert.ToInt32(node?[nameof(right)]?.ToString() ?? $"{config.right}");
+        config.bottom = Convert.ToInt32(node?[nameof(bottom)]?.ToString() ?? $"{config.bottom}");
+        config.workspaces = Convert.ToInt32(
+            node?[nameof(workspaces)]?.ToString() ?? $"{config.workspaces}"
+        );
+        config.workspaceAnimations = node?[nameof(workspaceAnimations)]?.ToString() switch
         {
             "true" => true,
             "false" => false,
+            _ => false,
         };
         config.workspaceAnimationsDuration = Convert.ToInt32(
-            node["workspaceAnimationsDuration"].ToString()
+            node?[nameof(config.workspaceAnimationsDuration)]?.ToString()
+                ?? $"{config.workspaceAnimationsDuration}"
         );
-        config.workspaceAnimationsDirection = node["workspaceAnimationsDirection"].ToString();
-        config.floatingWindowSize = node["floatingWindowSize"].ToString();
-        config.serverPort = Convert.ToInt32(node["serverPort"].ToString());
+        config.workspaceAnimationsDirection =
+            node?[nameof(workspaceAnimationsDirection)]?.ToString()
+            ?? config.workspaceAnimationsDirection;
+        config.floatingWindowSize =
+            node?[nameof(floatingWindowSize)]?.ToString() ?? config.floatingWindowSize;
+        config.serverPort = Convert.ToInt32(
+            node?[nameof(serverPort)]?.ToString() ?? $"{config.serverPort}"
+        );
 
         config.rules = new();
-        JsonArray _rules = node["rules"].AsArray();
+        JsonArray? _rules = node?[nameof(config.rules)]?.AsArray();
         _rules
-            .ToList()
+            ?.ToList()
             .ForEach(_rule =>
             {
                 WindowRule rule = new();
 
-                rule.type = _rule["type"].ToString();
-                rule.method = _rule["method"].ToString();
-                rule.identifierType = _rule["identifierType"].ToString();
-                rule.identifier = _rule["identifier"].ToString();
+                rule.type = _rule?[nameof(rule.type)]?.ToString() ?? rule.type;
+                rule.method = _rule?[nameof(rule.method)]?.ToString() ?? rule.method;
+                rule.identifierType =
+                    _rule?[nameof(rule.identifierType)]?.ToString() ?? rule.identifierType;
+                rule.identifier = _rule?[nameof(rule.identifier)]?.ToString() ?? rule.identifier;
 
                 config.rules.Add(rule);
             });
 
-        config.keymaps = new();
-        JsonArray _keymaps = node["keymaps"].AsArray();
-        _keymaps
-            .ToList()
-            .ForEach(_keymap =>
+        //config.keymaps = new();
+        JsonArray _keymaps = node?[nameof(config.keymaps)]?.AsArray() ?? [];
+        foreach (var _keymap in _keymaps)
+        {
+            Keymap keymap = new();
+
+            // keys
+            JsonArray _keys = _keymap?[nameof(keymap.keys)]?.AsArray() ?? [];
+            bool parsed = false;
+            foreach (var _key in _keys)
             {
-                Keymap keymap = new();
+                parsed = Enum.TryParse<VK>(_key?.ToString(), true, out VK vkKey);
+                if (!parsed)
+                    break;
+                keymap.keys.Add(vkKey);
+            }
+            if (!parsed)
+                continue; // the previous break and this continue ensures that if there is even
+            // one incorrect VK key added it will omit the entire keymap. We do the same if an incorrect
+            // COMMAND is provided too (below).
 
-                // keys
-                JsonArray _keys = _keymap["keys"].AsArray();
-                _keys
-                    .ToList()
-                    .ForEach(_key =>
-                    {
-                        Enum.TryParse<VK>(_key.ToString(), true, out VK vkKey);
-                        keymap.keys.Add(vkKey);
-                    });
-                // command
-                string _command = _keymap["command"].ToString();
-                Enum.TryParse<COMMAND>(_command, true, out keymap.command);
-                // arguments
-                JsonArray _arguments = _keymap["arguments"].AsArray();
-                _arguments
-                    .ToList()
-                    .ForEach(_arg =>
-                    {
-                        keymap.arguments.Add(_arg.ToString());
-                    });
+            // command
+            string? _command = _keymap?[nameof(keymap.command)]?.ToString();
+            if (!Enum.TryParse<COMMAND>(_command, true, out keymap.command))
+                continue;
 
-                config.keymaps.Add(keymap);
-            });
+            // arguments
+            JsonArray? _arguments = _keymap?[nameof(keymap.arguments)]?.AsArray() ?? [];
+            foreach (var _arg in _arguments)
+            {
+                keymap.arguments.Add(_arg?.ToString() ?? "");
+            }
+
+            // add to keymaps only if there already isn't one in the the default with the same keys
+            // if there is replace it, only add after removing the duplicates
+            var _listEqual = (List<VK> a, List<VK> b) =>
+            {
+                if (a.Count != b.Count)
+                    return false;
+                for (int i = 0; i < a.Count; i++)
+                {
+                    if (a[i] != b[i])
+                        return false;
+                }
+                return true;
+            };
+            var _matches = config
+                .keymaps.Where(_keymap => _listEqual(_keymap.keys, keymap.keys))
+                .ToList();
+            if (_matches.Count != 0)
+                foreach (var _match in _matches)
+                    config.keymaps.Remove(_match);
+            config.keymaps.Add(keymap);
+        }
 
         return config;
     }
@@ -215,8 +248,8 @@ public class Config : IJson<Config>
 
 public class WindowRule
 {
-    public string type; // ignore, floating
-    public string method; // equals, contains
-    public string identifierType; // windowProcess, windowTitle, windowClass
-    public string identifier; // search string
+    public string type = ""; // ignore, floating
+    public string method = ""; // equals, contains
+    public string identifierType = ""; // windowProcess, windowTitle, windowClass
+    public string identifier = ""; // search string
 }

@@ -326,9 +326,10 @@ class Aviyal : IDisposable
         if (File.Exists(Paths.configFile))
         {
             string jsonString = File.ReadAllText(Paths.configFile);
-            Logger.Log(jsonString, file: false);
             try
             {
+                // ideally we want the config file to NOT be exhaustive and
+                // only override the defaults
                 config = Config.FromJson(jsonString);
             }
             catch (Exception ex)
@@ -336,6 +337,7 @@ class Aviyal : IDisposable
                 Logger.Log("Unable to parse json config file", ex: ex);
                 config = new();
             }
+            Logger.Log($"config being loaded:\n{config.ToJson()}", file: false);
         }
         else
         {
