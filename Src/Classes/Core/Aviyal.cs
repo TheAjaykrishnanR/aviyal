@@ -1402,15 +1402,17 @@ public class WindowManager : IWindowManager
     public bool windowMoveMode { get; private set; } = false;
     EventStream<object> windowMoveStream;
 
+    // keep the interval above 100ms, previous interval of 100ms was too short
+    // and MOUSE_MOVED_WINDOW() wouldn't fire because windowMoveMode would be set
+    // to false somewhere inbetween
+    const int MOVE_EVENT_STREAM_INTERVAL = 500;
+
     public void WindowMoveModeOn()
     {
         windowMoveMode = true;
         if (windowMoveStream == null || windowMoveStream.disposed)
         {
-            // keep the interval above 100ms, previous interval of 100ms was too short
-            // and MOUSE_MOVED_WINDOW() wouldn't fire because windowMoveMode would be set
-            // to false somewhere inbetween
-            windowMoveStream = new(interval: 500);
+            windowMoveStream = new(interval: MOVE_EVENT_STREAM_INTERVAL);
             windowMoveStream.OVER += _ =>
             {
                 windowMoveMode = false;
@@ -1423,6 +1425,8 @@ public class WindowManager : IWindowManager
         windowMoveStream?.Add(new());
         //Logger.Log($"windowMoveMode: {windowMoveMode}, wmBusy: {wmBusy}", logType: LogType.EVENT);
     }
+
+    const int MOUSE_DRAG_UPDATE_INTERVAL = 10; // ms
 
     public void MoveWindowWithMouse()
     {
@@ -1455,9 +1459,17 @@ public class WindowManager : IWindowManager
                 User32.GetCursorPos(out POINT _pt);
                 POINT _drag = new() { X = _pt.X - pt.X, Y = _pt.Y - pt.Y };
                 RECT _rect = wnd.rect; // current window coords
-                wnd.Move(x: _rect.Left + _drag.X, y: _rect.Top + _drag.Y, verify: false);
+                // [redraw: false] helps massively especially with explorer windows that has lots of content
+                // i dont know exactly why but when explorer is open inside a folder with lots of files
+                // and folders there is noticeable stuttering when moving window using mouse drag
+                wnd.Move(
+                    x: _rect.Left + _drag.X,
+                    y: _rect.Top + _drag.Y,
+                    verify: false,
+                    redraw: false
+                );
                 pt = _pt;
-                Thread.Sleep(10);
+                Thread.Sleep(MOUSE_DRAG_UPDATE_INTERVAL);
             }
         });
     }
@@ -1470,7 +1482,7 @@ public class WindowManager : IWindowManager
         windowResizeMode = true;
         if (windowResizeStream == null || windowResizeStream.disposed)
         {
-            windowResizeStream = new(interval: 500);
+            windowResizeStream = new(interval: MOVE_EVENT_STREAM_INTERVAL);
             windowResizeStream.OVER += _ =>
             {
                 windowResizeMode = false;
