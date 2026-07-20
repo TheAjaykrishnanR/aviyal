@@ -12,11 +12,11 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.2.5";
+    static string version = "0.2.6";
     static string changelog =
         @"
-- hotkeys improvement: accidental keypresses still manage to trigger hotkeys
-- logging made async
+- feat: window movement without titlebar by dragging a window anywhere inside it
+- improvement: config made much for sensible by changing behavior to merely override the defaults
 - version bump
 ";
 

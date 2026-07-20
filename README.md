@@ -22,6 +22,12 @@ This project was **NOT** vibecoded.
 10. Launch apps using hotkeys
 11. Move windows without the titlebar
 
+## TODO
+- [ ] Protect windows from screencapture
+- [ ] scrolling workspaces
+- [ ] custom window sizes in layouts
+
+
 ## Usage
 
 Download the latest release from [releases](https://github.com/TheAjaykrishnanR/aviyal/releases) and run it. 
