@@ -23,6 +23,7 @@ This project was **NOT** vibecoded.
 11. Move windows without the titlebar
 
 ## TODO
+- [ ] resizing windows using mouse
 - [ ] Protect windows from screencapture
 - [ ] scrolling workspaces
 - [ ] custom window sizes in layouts
