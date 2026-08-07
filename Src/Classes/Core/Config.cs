@@ -36,9 +36,10 @@ public class Config : IJson<Config>
         new() { keys = [VK.LCONTROL, VK.LSHIFT, VK.S], command = COMMAND.TOGGLE_STACKED_WINDOW },
         // focus window
         new() { keys = [VK.LCONTROL, VK.H], command = COMMAND.FOCUS_LEFT_WINDOW },
-        new() { keys = [VK.LCONTROL, VK.K], command = COMMAND.FOCUS_TOP_WINDOW },
         new() { keys = [VK.LCONTROL, VK.L], command = COMMAND.FOCUS_RIGHT_WINDOW },
-        new() { keys = [VK.LCONTROL, VK.J], command = COMMAND.FOCUS_BOTTOM_WINDOW },
+        // removing [CTRL,J], [CTRL,K] defaults
+        // new() { keys = [VK.LCONTROL, VK.K], command = COMMAND.FOCUS_TOP_WINDOW },
+        // new() { keys = [VK.LCONTROL, VK.J], command = COMMAND.FOCUS_BOTTOM_WINDOW },
         // shift focused window (left/right)
         new() { keys = [VK.LMENU, VK.L], command = COMMAND.SHIFT_FOCUSED_WINDOW_RIGHT },
         new() { keys = [VK.LMENU, VK.H], command = COMMAND.SHIFT_FOCUSED_WINDOW_LEFT },

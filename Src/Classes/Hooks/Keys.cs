@@ -41,16 +41,17 @@ public class KeyEventsListener : IDisposable
      * */
     Keymap? FindKeymap(List<VK> searchSeq)
     {
-        // [SPACE,CTRL] should not trigger [CTRL,SPACE]
-        // [fix]: [CTRL,V] was sometimes not pasting when executed quickly after a space
-        // i found out that when ctrl is pressed right after space it was triggering WINDOW_MOVE_MODE_ON
-        // which is set to [CTRL,SPACE]. As an elegant hack (actually because i dont want to meddle with
-        // the linq insanity below) we will remove all keys before the modifier as all legible keymap
-        // chords have the order of modifier first and then the subsequent keys.
+        /* [SPACE,CTRL] should not trigger [CTRL,SPACE]
+         * [fix]: [CTRL,V] was sometimes not pasting when executed quickly after a space
+         * i found out that when ctrl is pressed right after space it was triggering WINDOW_MOVE_MODE_ON
+         * which is set to [CTRL,SPACE]. As an elegant hack (actually because i dont want to meddle with
+         * the linq insanity below) we will remove all keys before the modifier as all legible keymap
+         * chords have the order of modifier first and then the subsequent keys.
+         * */
         int _fmi = searchSeq.FindIndex(0, searchSeq.Count, IsModifier); // first modifier index
         searchSeq.RemoveRange(0, _fmi >= 0 ? _fmi : 0);
 
-        return keymaps
+        var _found = keymaps
             .Where(_km => _km.keys.Count <= searchSeq.Count)
             .Where(_km =>
                 _km.keys.Where(IsModifier).All(_modifier => searchSeq.Contains(_modifier))
@@ -60,6 +61,20 @@ public class KeyEventsListener : IDisposable
             )
             .Where(_km => _km.keys.Where(_k => !IsModifier(_k)).All(_k => searchSeq.Contains(_k)))
             .MaxBy(_km => _km.keys.Count);
+
+        /* Do fire [CTRL,H] when [CTRL,H,W] but not when [CTRL,W,H], we check if our keymap keys have
+         * anything inbetween them (W in this case)
+         * */
+        if (searchSeq.Count > _found?.keys.Count)
+        {
+            int _n = searchSeq.FindIndex(0, searchSeq.Count, key => key == _found?.keys.First());
+            int _m = searchSeq.FindIndex(0, searchSeq.Count, key => key == _found?.keys.Last());
+            Logger.Log($"_m: {_m}, _n: {_n}, _m - _n: {_m - _n}");
+            if (_m - _n >= _found?.keys.Count)
+                _found = null;
+        }
+
+        return _found;
     }
 
     VK[] modifiers =
