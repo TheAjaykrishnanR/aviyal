@@ -8,34 +8,9 @@ using System.Threading.Tasks;
 
 public class MouseEventsListener : IDisposable
 {
-    delegate int MOUSEPROC(int code, nint wparam, nint lparam);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern nint SetWindowsHookExA(int idHook, MOUSEPROC lpfn, nint hmod, uint dwThreadId);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern int UnhookWindowsHookEx(nint hhook);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern int CallNextHookEx(nint hhk, int nCode, nint wparam, nint lparam);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern int GetMessage(
-        out uint msg,
-        nint hWnd,
-        uint wMsgFilterMin,
-        uint wMsgFilterMax
-    );
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool TranslateMessage(ref uint msg);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool DispatchMessage(ref uint msg);
-
     MOUSEPROC mouseProcDelegate;
 
-    bool letEventPass;
+    bool letEventPass = true;
 
     int MouseProc(int code, nint wparam, nint lparam)
     {
@@ -53,7 +28,7 @@ public class MouseEventsListener : IDisposable
                 break;
         }
         ////Console.WriteLine($"mouseEvent: {(WINDOWMESSAGE)wparam}");
-        return letEventPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
+        return letEventPass ? User32.CallNextHookEx(0, code, wparam, lparam) : 1;
     }
 
     nint hhook;
@@ -64,7 +39,7 @@ public class MouseEventsListener : IDisposable
         const int WH_MOUSE_LL = 14;
         // hmod = 0, hook function is in code
         // dwThreadId = 0, hook all threads
-        hhook = SetWindowsHookExA(
+        hhook = User32.SetWindowsHookExA(
             WH_MOUSE_LL,
             mouseProcDelegate,
             Process.GetCurrentProcess().MainModule.BaseAddress,
@@ -73,9 +48,9 @@ public class MouseEventsListener : IDisposable
         // always use a message pump, instead of: while(Console.ReadLine() != ":q") { }
         while (running)
         {
-            int _ = GetMessage(out uint msg, 0, 0, 0);
-            TranslateMessage(ref msg);
-            DispatchMessage(ref msg);
+            int _ = User32.GetMessage(out uint msg, 0, 0, 0);
+            User32.TranslateMessage(ref msg);
+            User32.DispatchMessage(ref msg);
         }
     }
 
@@ -94,7 +69,7 @@ public class MouseEventsListener : IDisposable
 
     public void Dispose()
     {
-        UnhookWindowsHookEx(hhook);
+        User32.UnhookWindowsHookEx(hhook);
         running = false;
     }
 }

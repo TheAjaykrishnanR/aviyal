@@ -6,32 +6,8 @@ using System.Threading;
 
 public class WindowEventsListener : IDisposable
 {
-    delegate void WINEVENTPROC(
-        nint hWinEventHook,
-        WINEVENT msg,
-        nint hWnd,
-        int idObject,
-        int idChild,
-        uint idEventThread,
-        uint dwmsEventTime
-    );
-
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern nint SetWinEventHook(
-        uint eventMin,
-        uint eventMax,
-        nint hMod,
-        WINEVENTPROC proc,
-        uint idProcess,
-        uint idThread,
-        uint dwFlags
-    );
-
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern int UnhookWinEvent(nint hhook);
-
-    int OBJID_WINDOW = 0;
-    int CHILDID_SELF = 0;
+    const int OBJID_WINDOW = 0;
+    const int CHILDID_SELF = 0;
 
     public delegate void WindowEventHandler(Window wnd);
 
@@ -137,8 +113,7 @@ public class WindowEventsListener : IDisposable
     public void Loop()
     {
         uint WINEVENT_OUTOFCONTEXT = 0;
-        //Console.WriteLine("SetWinEventHook...");
-        hhook = SetWinEventHook(
+        hhook = User32.SetWinEventHook(
             0x00000001,
             0x7FFFFFFF,
             0,
@@ -147,7 +122,6 @@ public class WindowEventsListener : IDisposable
             0,
             WINEVENT_OUTOFCONTEXT | 0x0001 | 0x0002
         );
-        //Console.WriteLine($"hook: {hhook}");
         // message loop
         while (running)
         {
@@ -166,13 +140,13 @@ public class WindowEventsListener : IDisposable
 
     public void Dispose()
     {
-        UnhookWinEvent(hhook);
+        User32.UnhookWinEvent(hhook);
         running = false;
     }
 }
 
 // https://learn.microsoft.com/en-us/windows/win32/winauto/event-constants
-enum WINEVENT : uint
+public enum WINEVENT : uint
 {
     OBJECT_CREATE = 0x8000,
     OBJECT_DESTROY = 0x8001,

@@ -235,6 +235,56 @@ public class User32
 
     [DllImport("user32.dll")]
     public static extern bool IsIconic(nint hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint SetWindowsHookExA(
+        int idHook,
+        KEYBOARDPROC lpfn,
+        nint hmod,
+        uint dwThreadId
+    );
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint SetWindowsHookExA(
+        int idHook,
+        MOUSEPROC lpfn,
+        nint hmod,
+        uint dwThreadId
+    );
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int UnhookWindowsHookEx(nint hhook);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int CallNextHookEx(nint hhk, int nCode, nint wparam, nint lparam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int GetMessage(
+        out uint msg,
+        nint hWnd,
+        uint wMsgFilterMin,
+        uint wMsgFilterMax
+    );
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool TranslateMessage(ref uint msg);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool DispatchMessage(ref uint msg);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint SetWinEventHook(
+        uint eventMin,
+        uint eventMax,
+        nint hMod,
+        WINEVENTPROC proc,
+        uint idProcess,
+        uint idThread,
+        uint dwFlags
+    );
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int UnhookWinEvent(nint hhook);
 }
 
 public class Shell32

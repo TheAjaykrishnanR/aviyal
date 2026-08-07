@@ -80,6 +80,10 @@ public class Logger
             consoleText +=
                 $"\n{ColorText(ex.Message, 255, 0, 0)}\n{ColorText(ex.StackTrace, 255, 50, 50)}";
         }
+
+        // add some padding at the beginning (left)
+        consoleText = $" {consoleText}";
+
         if (debug)
             channels["debug"].Item2.Writer.TryWrite(consoleText);
         if (console)
@@ -118,11 +122,17 @@ public class Logger
         Log(text);
     }
 
-    public static void Error(Exception ex, string? customMessage = null)
+    public static void LogVK(List<KeyEvent> kvnts)
     {
-        string text = $"\n{ex.Message}\n{ex.StackTrace}";
-        Console.WriteLine($"{customMessage}: {text}");
-        User32.MessageBox(0, text, customMessage ?? "Error", 0);
+        List<string> keyStrings = kvnts
+            .Select(kvnt =>
+                kvnt.pass
+                    ? ColorText(kvnt.vk.ToString(), 20, 10, 150)
+                    : ColorText(kvnt.vk.ToString(), 255, 0, 0)
+            )
+            .ToList();
+
+        Log(keyStrings, prefix: "capture:");
     }
 }
 

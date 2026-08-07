@@ -10,31 +10,6 @@ using ThreadState = System.Threading.ThreadState;
 
 public class KeyEventsListener : IDisposable
 {
-    delegate int KEYBOARDPROC(int code, nint wparam, nint lparam);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern nint SetWindowsHookExA(int idHook, KEYBOARDPROC lpfn, nint hmod, uint dwThreadId);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern int UnhookWindowsHookEx(nint hhook);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    static extern int CallNextHookEx(nint hhk, int nCode, nint wparam, nint lparam);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern int GetMessage(
-        out uint msg,
-        nint hWnd,
-        uint wMsgFilterMin,
-        uint wMsgFilterMax
-    );
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool TranslateMessage(ref uint msg);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool DispatchMessage(ref uint msg);
-
     /*
      * Windows calls our callback everytime a key is pressed or released.
      * If the key remains pressed it will continually call our callback
@@ -50,7 +25,8 @@ public class KeyEventsListener : IDisposable
 
     uint lastKeyTime = 0;
     List<KeyEvent> trailingKeys = new(); // the trailing key of a hotkey action -> H in Ctrl+Shift+H
-    bool letKeyPass = true;
+
+    //bool letKeyPass = true;
     bool hotkeyPressed = false; // if hotkey keys combo are remaining pressed
     uint dt = 0;
     const int HOTKEY_COMBO_TIMEOUT = 500;
@@ -65,6 +41,15 @@ public class KeyEventsListener : IDisposable
      * */
     Keymap? FindKeymap(List<VK> searchSeq)
     {
+        // [SPACE,CTRL] should not trigger [CTRL,SPACE]
+        // [fix]: [CTRL,V] was sometimes not pasting when executed quickly after a space
+        // i found out that when ctrl is pressed right after space it was triggering WINDOW_MOVE_MODE_ON
+        // which is set to [CTRL,SPACE]. As an elegant hack (actually because i dont want to meddle with
+        // the linq insanity below) we will remove all keys before the modifier as all legible keymap
+        // chords have the order of modifier first and then the subsequent keys.
+        int _fmi = searchSeq.FindIndex(0, searchSeq.Count, IsModifier); // first modifier index
+        searchSeq.RemoveRange(0, _fmi >= 0 ? _fmi : 0);
+
         return keymaps
             .Where(_km => _km.keys.Count <= searchSeq.Count)
             .Where(_km =>
@@ -96,14 +81,17 @@ public class KeyEventsListener : IDisposable
     // buffer once its KEYUP has been recieved
     KEYBOARDPROC keyBoardProcDelegate;
 
+    (long, long) _t;
+
     int KeyboardProc(int code, nint wparam, nint lparam)
     {
         // ------------------------------
-        long t1 = Utils.FastTime_milli();
+        if (Aviyal.DEBUG)
+            _t.Item1 = Utils.FastTime_milli();
         // ------------------------------
         var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lparam);
         if (kbdStruct.dwExtraInfo == Globals.FOREGROUND_FAKE_KEY)
-            return CallNextHookEx(0, code, wparam, lparam);
+            return User32.CallNextHookEx(0, code, wparam, lparam);
         KeyEvent kvnt = new(kbdStruct);
         dt = kbdStruct.time - lastKeyTime;
         // if in the offchance that a key is added to the capture list which does
@@ -118,7 +106,8 @@ public class KeyEventsListener : IDisposable
         // saving in nvim was opening up a new terminal window lol
         if (dt > HOTKEY_COMBO_TIMEOUT || kvnt.vk == VK.ESCAPE || kvnt.vk == VK.RETURN)
             captured.Clear();
-        letKeyPass = true;
+        //letKeyPass = true;
+        kvnt.pass = true;
         switch ((WINDOWMESSAGE)wparam)
         {
             case WINDOWMESSAGE.WM_KEYDOWN
@@ -133,26 +122,16 @@ public class KeyEventsListener : IDisposable
                 captured.Add(kvnt);
 
                 if (Aviyal.DEBUG)
-                    Logger.Log<VK>(
-                        captured.Select(_kvnt => _kvnt.vk).ToList(),
-                        suffix: $"dt: {dt}"
-                    );
+                    Logger.LogVK(captured);
 
                 Keymap? keymap = FindKeymap(ToVK(captured));
-                //Logger.Log($"found: {found}, result.Count: {results.Count}");
-
-                // temporarily reverting back to non chorded hotkeys
-                //if (results.Count > 0)
-                //{
-                //    //trailingKey = key;
-                //    if (!IsModifier(kvnt.vk) && ToVK(captured).Any(IsModifier))
-                //    {
-                //    }
-                //}
                 if (keymap != null)
                 {
+                    if (Aviyal.DEBUG)
+                        Logger.Log($"keymap found: {keymap.command}");
+
+                    kvnt.pass = false;
                     trailingKeys.Add(kvnt);
-                    letKeyPass = false;
                     // we dont clear the entire thing here because some hotkeys can be successively
                     // called while their modifier keys havent been lifted
                     captured.Remove(kvnt);
@@ -181,8 +160,8 @@ public class KeyEventsListener : IDisposable
                     kvnt.vk == trailingKeys.LastOrDefault().vk
                 )
                 {
-                    letKeyPass = false;
-                    //trailingKey = null;
+                    //letKeyPass = false;
+                    kvnt.pass = false;
                     trailingKeys.Clear();
                     hotkeyPressed = false; // hotkey combo released
                 }
@@ -201,12 +180,14 @@ public class KeyEventsListener : IDisposable
         }
         lastKeyTime = kbdStruct.time;
         // -------------------------------------------------------------------------------
-        long t2 = Utils.FastTime_milli();
-        //if (_.DEBUG) Logger.Log($"TIME SPENT IN KBDHOOK: {t2 - t1} ms", file: false);
+        if (Aviyal.DEBUG)
+        {
+            _t.Item2 = Utils.FastTime_milli();
+            //Logger.Log($"TIME SPENT IN KBDHOOK: {_t.Item2 - _t.Item1} ms", file: false);
+            Logger.Log($"key {kvnt.vk}, passed to os: {kvnt.pass}");
+        }
         // -------------------------------------------------------------------------------
-        //if (key == VK.M) Console.WriteLine($"KEY M, PASSED TO OS: {letKeyPass}, trailingKey: {trailingKey}");
-        Logger.Log($"key {kvnt.vk}, passed to os: {letKeyPass}");
-        return letKeyPass ? CallNextHookEx(0, code, wparam, lparam) : 1;
+        return kvnt.pass ? User32.CallNextHookEx(0, code, wparam, lparam) : 1;
     }
 
     nint hhook;
@@ -221,7 +202,7 @@ public class KeyEventsListener : IDisposable
         const int WH_KEYBOARD_LL = 13;
         // hmod = 0, hook function is in code
         // dwThreadId = 0, hook all threads
-        hhook = SetWindowsHookExA(
+        hhook = User32.SetWindowsHookExA(
             WH_KEYBOARD_LL,
             keyBoardProcDelegate,
             Process.GetCurrentProcess().MainModule!.BaseAddress,
@@ -230,9 +211,9 @@ public class KeyEventsListener : IDisposable
         // always use a message pump, instead of: while(Console.ReadLine() != ":q") { }
         while (running)
         {
-            int _ = GetMessage(out uint msg, 0, 0, 0);
-            TranslateMessage(ref msg);
-            DispatchMessage(ref msg);
+            int _ = User32.GetMessage(out uint msg, 0, 0, 0);
+            User32.TranslateMessage(ref msg);
+            User32.DispatchMessage(ref msg);
         }
     }
 
@@ -281,7 +262,7 @@ public class KeyEventsListener : IDisposable
 
     public void Dispose()
     {
-        UnhookWindowsHookEx(hhook);
+        User32.UnhookWindowsHookEx(hhook);
         running = false;
         monitorRunning = false;
     }
@@ -322,6 +303,7 @@ public struct KeyEvent
 {
     public VK vk;
     public long time;
+    public bool pass;
 
     public KeyEvent(KBDLLHOOKSTRUCT hookStruct)
     {

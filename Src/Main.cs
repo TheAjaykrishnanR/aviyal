@@ -12,11 +12,11 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.2.6";
+    static string version = "0.2.7";
     static string changelog =
         @"
-- feat: window movement without titlebar by dragging a window anywhere inside it
-- improvement: config made much for sensible by changing behavior to merely override the defaults
+- fix: hotkeys improved
+- prettier keymaps logging in debug mode
 - version bump
 ";
 
@@ -411,6 +411,39 @@ class Aviyal : IDisposable
         Kernel32.FreeConsole();
     }
 
+    static void PrintHelp()
+    {
+        Console.WriteLine(
+            @$"
+,_______________________________,
+|  Aviyal Dynamic Tiling  |__|__|
+|______Window Manager_____|__|__|
+|Author:  Ajaykrishnan.R  |\/ \/|
+|/\/\/\/\/\/\/\/\/\/\/\/\/|/\_/\|
+|________C# .NET 10_______|++++++
+|////////////////////////////////
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+Aviyal is a window manager that dynamically tiles your windows, organizes them inside workspaces, allows navigation through keybindings, and more :)
+
+ver: {version}
+
+aviyal: https://github.com/TheAjaykrishnanR/aviyal
+dflat: https://github.com/TheAjaykrishnanR/dflat
+
+USAGE: aviyal <options> <arguments>
+
+available options:
+
+--help:     	prints this help text.
+--debug:    	flag for running the program in debug mode. Only special windows are tiled.
+--version:  	prints the version.
+--changelog:	prints the changes in the current version.
+--restore:  	restores windows from a previous state. Useful when crashed and windows are hidden.
+"
+        );
+    }
+
     static void Main(string[] args)
     {
         switch (args.ToList().ElementAtOrDefault(0))
@@ -439,41 +472,17 @@ as an administrator or from an elevated prompt.
                 WithConsole(() => Console.WriteLine($"CHANGELOG [{version}]:\n {changelog}"));
                 break;
             case "--help":
-                WithConsole(() =>
-                {
-                    Console.WriteLine(
-                        @$"
-,_______________________________,
-|  Aviyal Dynamic Tiling  |__|__|
-|______Window Manager_____|__|__|
-|Author:  Ajaykrishnan.R  |\/ \/|
-|/\/\/\/\/\/\/\/\/\/\/\/\/|/\_/\|
-|________C# .NET 10_______|++++++
-|////////////////////////////////
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-Aviyal is a window manager that dynamically tiles your windows, organizes them inside workspaces, allows navigation through keybindings, and more :)
-
-ver: {version}
-
-aviyal: https://github.com/TheAjaykrishnanR/aviyal
-dflat: https://github.com/TheAjaykrishnanR/dflat
-
-USAGE: aviyal <options> <arguments>
-
-available options:
-
---help:     	prints this help text.
---debug:    	flag for running the program in debug mode. Only special windows are tiled.
---version:  	prints the version.
---changelog:	prints the changes in the current version.
---restore:  	restores windows from a previous state. Useful when crashed and windows are hidden.
-"
-                    );
-                });
+                WithConsole(PrintHelp);
                 break;
             case "--restore":
                 WithConsole(() => Restore(args.ToList().ElementAtOrDefault(1)));
+                break;
+            default:
+                WithConsole(() =>
+                {
+                    Console.WriteLine($"Unrecognized command: {args[0]}");
+                    PrintHelp();
+                });
                 break;
         }
     }
