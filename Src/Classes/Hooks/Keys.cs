@@ -53,8 +53,8 @@ public class KeyEventsListener : IDisposable
     bool letKeyPass = true;
     bool hotkeyPressed = false; // if hotkey keys combo are remaining pressed
     uint dt = 0;
-    const int HOTKEY_COMBO_TIMEOUT = 2000;
-    const int KEY_REMOVE_DELAY = 500; // delay time in removing a key from the capture
+    const int HOTKEY_COMBO_TIMEOUT = 500;
+    const int KEY_REMOVE_DELAY = 200; // delay time in removing a key from the capture
 
     /* returns the keymap whose keys are the strict subset of the search(capture) sequence
      * we use a strict subset instead of an exact equality because otherwise [D,CTRL,SHIFT,L]
@@ -77,23 +77,19 @@ public class KeyEventsListener : IDisposable
             .MaxBy(_km => _km.keys.Count);
     }
 
-    bool IsModifier(VK key)
-    {
-        VK[] modifiers =
-        [
-            VK.LCONTROL,
-            VK.LSHIFT,
-            VK.LMENU,
-            VK.LWIN,
-            VK.RCONTROL,
-            VK.RSHIFT,
-            VK.RMENU,
-            VK.RWIN,
-        ];
-        if (modifiers.Contains(key))
-            return true;
-        return false;
-    }
+    VK[] modifiers =
+    [
+        VK.LCONTROL,
+        VK.LSHIFT,
+        VK.LMENU,
+        VK.LWIN,
+        VK.RCONTROL,
+        VK.RSHIFT,
+        VK.RMENU,
+        VK.RWIN,
+    ];
+
+    bool IsModifier(VK key) => modifiers.Contains(key);
 
     List<VK> ToVK(List<KeyEvent> keyEvents) => keyEvents.Select(kvnt => kvnt.vk).ToList();
 
@@ -113,13 +109,13 @@ public class KeyEventsListener : IDisposable
         // if in the offchance that a key is added to the capture list which does
         // not remove itself because it doesnt emit the WM_KEYUP message thereby
         // essentially polluting our hotkey buffer making it impossible for any hotkey
-        // to be triggered, so we clear our buffer if the last key was pressed 2 seconds
-        // ago. This is a reasonable time as no hotkey combo will span a whole 2 seconds.
-        // it is also cleared if escape is pressed, also probably is best to clear when
-        // enter key is pressed because lately after doing :w on nvim which retains VK.OEM_1
-        // causes it to trigger the the CTRL + ; hotekey which i had set up for launching the
-        // terminal, so suddenly trying to immediately change the workspace after saving in nvim
-        // was opening up a new terminal window lol
+        // to be triggered, so we clear our buffer if the last key was pressed HOTKEY_COMBO_TIMEOUT
+        // seconds ago. This is a reasonable time as no hotkey combo will span a whole
+        // HOTKEY_COMBO_TIMEOUT seconds. it is also cleared if escape is pressed, also probably
+        // is best to clear when enter key is pressed because lately after doing :w on nvim
+        // which retains VK.OEM_1 causes it to trigger the the CTRL + ; hotekey which i had set up for
+        // launching the terminal, so suddenly trying to immediately change the workspace after
+        // saving in nvim was opening up a new terminal window lol
         if (dt > HOTKEY_COMBO_TIMEOUT || kvnt.vk == VK.ESCAPE || kvnt.vk == VK.RETURN)
             captured.Clear();
         letKeyPass = true;
