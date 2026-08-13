@@ -30,6 +30,4 @@ dflat Main.cs `
 	  Classes\Win32\Functions.cs `
 	  Classes\Win32\Structs.cs `
 	  /target:$target `
-	  /out aviyal.exe `
-
-mv aviyal.exe bin\aviyal.exe
+	  /out:bin\aviyal.exe `

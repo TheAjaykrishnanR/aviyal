@@ -15,7 +15,7 @@ class Aviyal : IDisposable
     static string version = "0.2.7";
     static string changelog =
         @"
-- fix: hotkeys improved
+- fix: hotkeys improved [a lot!]
 - prettier keymaps logging in debug mode
 - version bump
 ";
