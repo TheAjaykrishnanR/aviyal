@@ -5,22 +5,31 @@ using System.Text.Json.Nodes;
 
 public class Config : IJson<Config>
 {
+    /* DEFAULT CONSTS */
+    public const int MARGIN = 5,
+        GAP = 5;
+    public const int WORKSPACES = 9;
+    public const string FLOAT_DIMS = "800x400";
+    public const int SERVER_PORT = 6969;
+
+    /* DEFAULT CONSTS */
+
     public string loglevel { get; set; } = "low";
     public string layout { get; set; } = "dwindle";
 
     // margins
-    public int left { get; set; } = 5;
-    public int top { get; set; } = 5;
-    public int right { get; set; } = 5;
-    public int bottom { get; set; } = 5;
+    public int left { get; set; } = MARGIN;
+    public int top { get; set; } = MARGIN;
+    public int right { get; set; } = MARGIN;
+    public int bottom { get; set; } = MARGIN;
 
-    public int inner { get; set; } = 5;
-    public int workspaces { get; set; } = 9;
-    public string floatingWindowSize { get; set; } = "800x400";
+    public int inner { get; set; } = GAP;
+    public int workspaces { get; set; } = WORKSPACES;
+    public string floatingWindowSize { get; set; } = FLOAT_DIMS;
     public bool workspaceAnimations = false;
     public int workspaceAnimationsDuration = 500; // milliseconds
     public string workspaceAnimationsDirection = "horizontal";
-    public int serverPort = 6969;
+    public int serverPort = SERVER_PORT;
 
     public List<WindowRule> rules = new();
     public List<Keymap> keymaps = new()

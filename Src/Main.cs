@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -12,11 +14,11 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.2.7";
+    static string version = "0.2.8";
     static string changelog =
         @"
-- fix: hotkeys improved [a lot!]
-- prettier keymaps logging in debug mode
+- feature: aviyal query using client: aviyal --client 'get state'
+- fix: socket server leak
 - version bump
 ";
 
@@ -290,6 +292,8 @@ class Aviyal : IDisposable
      * Creates an instance of the program
      * */
 
+    static Config? config = null;
+
     static void Run()
     {
         Logger.Init();
@@ -322,7 +326,6 @@ class Aviyal : IDisposable
 
         Paths.CreateIfAbsent();
 
-        Config? config = null;
         if (File.Exists(Paths.configFile))
         {
             string jsonString = File.ReadAllText(Paths.configFile);
@@ -401,6 +404,23 @@ class Aviyal : IDisposable
         });
     }
 
+    // Query the state of a running instance by being a client
+    static string? Query(string? query)
+    {
+        if (query == null || query == "")
+            return null;
+
+        using Socket _socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        _socket.Connect(new IPEndPoint(IPAddress.Loopback, Config.SERVER_PORT));
+        _socket.Send(Encoding.UTF8.GetBytes(query));
+        byte[] buffer = new byte[Server.RECV_BUFFER_SIZE];
+        _socket.Receive(buffer);
+        string response = Encoding.UTF8.GetString(buffer);
+        _socket.Shutdown(how: SocketShutdown.Both);
+        _socket.Close();
+        return response;
+    }
+
     static void WithConsole(Action func)
     {
         Kernel32.AttachConsole(-1);
@@ -476,6 +496,12 @@ as an administrator or from an elevated prompt.
                 break;
             case "--restore":
                 WithConsole(() => Restore(args.ToList().ElementAtOrDefault(1)));
+                break;
+            case "--query":
+                WithConsole(() =>
+                {
+                    Console.WriteLine(Query(args.ToList().ElementAtOrDefault(1)));
+                });
                 break;
             default:
                 WithConsole(() =>

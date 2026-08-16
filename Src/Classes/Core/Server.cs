@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 public class Server : IDisposable
 {
+    public const int RECV_BUFFER_SIZE = 4096;
+    const int MAX_CLIENTS = 128;
+
     Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
     int port;
     public delegate string RequestEventHandler(string request);
@@ -21,8 +24,8 @@ public class Server : IDisposable
     {
         port = config.serverPort;
         socket.Bind(new IPEndPoint(IPAddress.Any, port));
-        socket.Listen(128);
-        Logger.Log($"server: listening on {IPAddress.Any}:{port}");
+        socket.Listen(MAX_CLIENTS);
+        Logger.Log($"Server: listening on {IPAddress.Any}:{port}");
         Task.Run(() =>
         {
             while (true)
@@ -30,15 +33,17 @@ public class Server : IDisposable
                 Socket client = socket.Accept();
                 lock (_listLock)
                     clients.Add(client);
-                Logger.Log("server: socket connected");
+                Logger.Log("Server: socket connected");
                 Task.Run(() =>
                 {
-                    while (client.Connected)
+                    byte[] buffer = new byte[RECV_BUFFER_SIZE];
+                    int bytesRead = 0;
+                    /* change: client.Connected does not really reflect the current state
+                     * */
+                    while ((bytesRead = client.Receive(buffer)) > 0)
                     {
                         try
                         {
-                            byte[] buffer = new byte[1024];
-                            int bytesRead = client.Receive(buffer);
                             string request = Encoding.UTF8.GetString(
                                 buffer.Take(bytesRead).ToArray()
                             );
@@ -46,8 +51,9 @@ public class Server : IDisposable
                             byte[] bytes = Encoding.UTF8.GetBytes(response);
                             client.Send(bytes);
                             Logger.Log(
-                                $"server: request recieved: {request}, response: {response}"
+                                $"Server: request recieved: {request}, response: {response}"
                             );
+                            Array.Clear(buffer);
                         }
                         catch (Exception ex)
                         {
@@ -59,7 +65,7 @@ public class Server : IDisposable
                         client.Close();
                         clients.Remove(client);
                     }
-                    Logger.Log("server: connection closed");
+                    Logger.Log("Server: connection closed");
                 });
             }
         });
@@ -67,7 +73,7 @@ public class Server : IDisposable
 
     public void Broadcast(string message)
     {
-        //Logger.Log($"[[[BROADCASTING TO {clients.Count}]]]");
+        Logger.Log($"Broadcasting to [{clients.Count}] clients...");
         clients?.ForEach(client =>
         {
             try
