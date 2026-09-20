@@ -23,7 +23,7 @@ This project was **NOT** vibecoded.
 11. Move windows without the titlebar
 12. Protect windows from screencapture *(optional)*
 
-> Protecting windows from screencapture is a feature that allows you to hide windows from any screen recording software such as obs, the builtinsnipping tool, etc. However to achieve this it requires us to call a win32 function `SetWindowDisplayAffinity()` from the context of the remote process of the target window to hide. This requires us to inject a dll into the window's host process, call our special function and then unload. So if you need this functionality please ensure you have the accompanying `swda.dll` alongside aviyal.
+> Protecting windows from screencapture is a feature that allows you to hide windows from any screen recording software such as obs, the builtin snipping tool, etc. However to achieve this it requires us to call a win32 function `SetWindowDisplayAffinity()` from the context of the remote process of the target window to hide. This requires us to inject a dll into the window's host process, call our special function and then unload. So if you need this functionality please ensure you have the accompanying `swda.dll` alongside aviyal.
 
 ## TODO
 - [ ] scrolling workspaces
@@ -87,6 +87,15 @@ dotnet build
 ```
 
 You can find the executable at `bin\Debug\net*\win-x64`
+
+### swda.dll
+
+To build `swda.d` you need [dmd](https://dlang.org/download.html), which is the compiled for the D programming language.
+
+The build script has it included but if you need to do it manually, you could do:
+```
+dmd -shared swda.d
+```
 
 ## Contributing
 
