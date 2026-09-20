@@ -115,6 +115,7 @@ The build script has it included but if you need to do it manually, you could do
 ```
 dmd -shared swda.d
 ```
+> The reason for using dlang was twofold: 1) D is **awesome** and is almost like the little (*or big ?*) brother of C# and 2) C# doesn't support native dll [unloading](https://github.com/dotnet/corert/pull/7011). As a result the injected dll will just sit there in the remote process's memory with its relatively bulkier runtime for no real reasons.
 
 ## Contributing
 
