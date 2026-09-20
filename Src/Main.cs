@@ -231,7 +231,7 @@ class Aviyal : IDisposable
     public string ReadableTime(long ms)
     {
         var ts = TimeSpan.FromMilliseconds(ms);
-        return $"{ts.Days} days, {ts.Hours}, {ts.Minutes}";
+        return $"{ts.Days} days, {ts.Hours} hours, {ts.Minutes} minutes";
     }
 
     public ProgramState GetState()
