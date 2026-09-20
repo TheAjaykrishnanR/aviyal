@@ -109,7 +109,7 @@ You can find the executable at `bin\Debug\net*\win-x64`
 
 ### swda.dll
 
-To build `swda.d` you need [dmd](https://dlang.org/download.html), which is the compiled for the D programming language.
+To build `swda.d` you need [dmd](https://dlang.org/download.html), which is the compiler for the D programming language.
 
 The build script has it included but if you need to do it manually, you could do:
 ```
