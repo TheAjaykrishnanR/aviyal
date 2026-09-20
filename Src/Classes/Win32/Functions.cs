@@ -1,6 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
+#nullable enable
+
 public class User32
 {
     [DllImport("user32.dll", SetLastError = true)]

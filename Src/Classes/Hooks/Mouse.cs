@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 public class MouseEventsListener : IDisposable
 {
     MOUSEPROC mouseProcDelegate;

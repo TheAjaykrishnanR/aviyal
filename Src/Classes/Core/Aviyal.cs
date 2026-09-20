@@ -1522,32 +1522,35 @@ public class WindowManager : IWindowManager
     // hides (toggles) a window from screen recorders
     public void ToggleWindowProtection()
     {
-        Window? wnd = GetAlreadyStoredWindow(
-            new(Utils.GetParentRoot(Utils.GetWindowUnderCursor()))
-        );
-        Logger.Log($"ToggleWindowProtection(), hWnd={wnd.hWnd}, pid={wnd.pid}");
-        if (!File.Exists(Paths.swdaDll))
+        RunQueued(() =>
         {
-            Logger.Log(
-                $"ToggleWindowProtection(): {Paths.swdaDll} does not exist !",
-                logType: LogType.ERROR
-            );
-            return;
-        }
-        using Injector injector = Injector.New(Paths.swdaDll, wnd.pid);
-        if (!injector?.Inject() ?? false)
-        {
-            Logger.Log("ToggleWindowProtection() failed", logType: LogType.ERROR);
-            return;
-        }
+            Window? wnd = focusedWorkspace.focusedWindow;
+            if (wnd == null)
+                return;
+            Logger.Log($"ToggleWindowProtection(), hWnd={wnd.hWnd}, pid={wnd.pid}");
+            if (!File.Exists(Paths.swdaDll))
+            {
+                Logger.Log(
+                    $"ToggleWindowProtection(): {Paths.swdaDll} does not exist !",
+                    logType: LogType.ERROR
+                );
+                return;
+            }
+            using Injector? injector = Injector.New(Paths.swdaDll, wnd.pid);
+            if (!injector?.Inject() ?? false)
+            {
+                Logger.Log("ToggleWindowProtection() failed", logType: LogType.ERROR);
+                return;
+            }
 
-        injector?.CallInit();
-        injector?.CallSetArg(wnd.hWnd); // first argument is hWnd
-        WDA flag = wnd.affinity == WDA.NONE ? WDA.EXCLUDEFROMCAPTURE : WDA.NONE;
-        injector?.CallSetArg((nint)flag); // second argument is dwAffinity
-        injector?.CallMain();
+            injector?.CallInit();
+            injector?.CallSetArg(wnd.hWnd); // first argument is hWnd
+            WDA flag = wnd?.affinity == WDA.NONE ? WDA.EXCLUDEFROMCAPTURE : WDA.NONE;
+            injector?.CallSetArg((nint)flag); // second argument is dwAffinity
+            injector?.CallMain();
 
-        injector.Unload();
+            injector?.Unload();
+        });
     }
 
     /*

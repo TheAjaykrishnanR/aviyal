@@ -1,3 +1,5 @@
+#nullable enable
+
 interface IInjector
 {
     public bool Inject();

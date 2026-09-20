@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using ThreadState = System.Threading.ThreadState;
 
+#nullable enable
+
 public class KeyEventsListener : IDisposable
 {
     /*

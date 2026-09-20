@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+#nullable enable
+
 public interface IWindow
 {
     public nint hWnd { get; }

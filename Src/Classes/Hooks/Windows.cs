@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+#nullable enable
+
 public class WindowEventsListener : IDisposable
 {
     const int OBJID_WINDOW = 0;

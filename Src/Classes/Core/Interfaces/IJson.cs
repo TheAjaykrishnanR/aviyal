@@ -1,5 +1,7 @@
 using System;
 
+#nullable enable
+
 public interface IJson<T>
 {
     public string ToJson();

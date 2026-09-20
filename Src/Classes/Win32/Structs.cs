@@ -2,6 +2,8 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 
+#nullable enable
+
 /// <summary>
 /// DWORD := uint
 /// HWND  := nint

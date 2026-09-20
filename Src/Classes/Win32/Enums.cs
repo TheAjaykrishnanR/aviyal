@@ -2,6 +2,8 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 
+#nullable enable
+
 public enum WINDOWSTYLE : uint
 {
     WS_OVERLAPPED = 0x00000000,
