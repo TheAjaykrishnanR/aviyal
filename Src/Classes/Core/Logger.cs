@@ -9,6 +9,8 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows;
 
+#nullable enable
+
 public class Logger
 {
     static Dictionary<string, (Task?, Channel<string?>, Action<string?>)> channels = new()

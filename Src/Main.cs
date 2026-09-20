@@ -12,12 +12,18 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 class Aviyal : IDisposable
 {
     static string version = "0.2.8";
     static string changelog =
         @"
-- feature: aviyal query using client: aviyal --client 'get state'
+- feature: aviyal query using client: aviyal --query 'get state',
+  aviyal -q to enter query shell mode
+- feature: protect windows from screen recorders
+- feature: cmd line shortcuts
+- feature: get uptime
 - fix: socket server leak
 - version bump
 ";
@@ -74,6 +80,7 @@ class Aviyal : IDisposable
                 COMMAND.TOGGLE_FOCUSED_WINDOW_MAXIMIZATION,
                 () => wm.ToggleFocusedWindowMaximization()
             },
+            { COMMAND.TOGGLE_FOCUSED_WINDOW_PROTECTION, () => wm.ToggleWindowProtection() },
             { COMMAND.MINIMIZE_FOCUSED_WINDOW, () => wm.MinimizeFocusedWindow() },
             { COMMAND.FOCUS_WORKSPACE_1, () => wm.FocusWorkspace(0) },
             { COMMAND.FOCUS_WORKSPACE_2, () => wm.FocusWorkspace(1) },
@@ -85,7 +92,7 @@ class Aviyal : IDisposable
             { COMMAND.FOCUS_WORKSPACE_8, () => wm.FocusWorkspace(7) },
             { COMMAND.FOCUS_WORKSPACE_9, () => wm.FocusWorkspace(8) },
             { COMMAND.UPDATE, () => wm.Update() },
-            { COMMAND.RESTART, () => Restart() },
+            { COMMAND.RESTART, Restart },
             { COMMAND.WINDOW_MOVE_MODE_ON, () => wm.WindowMoveModeOn() },
         };
 
@@ -184,7 +191,7 @@ class Aviyal : IDisposable
     public string RequestReceived(string request)
     {
         string[] args = request.Split(" ");
-        args[args.Length - 1] = args.Last().Replace("\n", "");
+        args[^1] = args.Last().Replace("\n", "");
         string? verb = args.FirstOrDefault();
         string response = "";
         switch (verb)
@@ -198,6 +205,9 @@ class Aviyal : IDisposable
                         break;
                     case "state":
                         response = GetState().ToJson();
+                        break;
+                    case "uptime":
+                        response = ReadableTime(Utils.FastTime_milli() - startTime);
                         break;
                 }
                 break;
@@ -218,6 +228,12 @@ class Aviyal : IDisposable
         return response;
     }
 
+    public string ReadableTime(long ms)
+    {
+        var ts = TimeSpan.FromMilliseconds(ms);
+        return $"{ts.Days} days, {ts.Hours}, {ts.Minutes}";
+    }
+
     public ProgramState GetState()
     {
         ProgramState state = new();
@@ -227,6 +243,7 @@ class Aviyal : IDisposable
         state.keysHookThreadState = kbdListener.thread.ThreadState.ToString();
         state.mouseHookThreadState = mouseListener.thread.ThreadState.ToString();
         state.wndHookThreadState = wndListener.thread.ThreadState.ToString();
+        state.uptime = Utils.FastTime_milli() - startTime;
         return state;
     }
 
@@ -291,17 +308,19 @@ class Aviyal : IDisposable
     /*
      * Creates an instance of the program
      * */
-
+    static long startTime = 0;
     static Config? config = null;
 
     static void Run()
     {
+        startTime = Utils.FastTime_milli();
+
         Logger.Init();
 
         if (reloadCount == 0)
         {
             File.Delete(Paths.logFile);
-            Logger.Log($"Starting aviyal, time: {Utils.FastTime_milli()}");
+            Logger.Log($"Starting aviyal, time: {startTime}");
         }
 
         var psWithSameName = Process
@@ -404,21 +423,44 @@ class Aviyal : IDisposable
         });
     }
 
-    // Query the state of a running instance by being a client
-    static string? Query(string? query)
+    static string? Query(string? query, Socket socket)
     {
         if (query == null || query == "")
             return null;
 
-        using Socket _socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        _socket.Connect(new IPEndPoint(IPAddress.Loopback, Config.SERVER_PORT));
-        _socket.Send(Encoding.UTF8.GetBytes(query));
+        socket.Send(Encoding.UTF8.GetBytes(query));
         byte[] buffer = new byte[Server.RECV_BUFFER_SIZE];
-        _socket.Receive(buffer);
-        string response = Encoding.UTF8.GetString(buffer);
-        _socket.Shutdown(how: SocketShutdown.Both);
-        _socket.Close();
+        socket.Receive(buffer);
+        return Encoding.UTF8.GetString(buffer);
+    }
+
+    // Query the state of a running instance by being a client
+    static string? Query(string? query)
+    {
+        using Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        socket.Connect(new IPEndPoint(IPAddress.Loopback, Config.SERVER_PORT));
+        string? response = Query(query, socket);
+        socket.Shutdown(how: SocketShutdown.Both);
+        socket.Close();
         return response;
+    }
+
+    static void QueryShell()
+    {
+        string? input = null;
+        using Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        socket.Connect(new IPEndPoint(IPAddress.Loopback, Config.SERVER_PORT));
+        do
+        {
+            if (input != null && input != "")
+            {
+                Console.Write("\n");
+                Console.WriteLine(Query(input, socket));
+            }
+            Console.Write("> ");
+        } while ((input = Console.ReadLine()) != "exit");
+        socket.Shutdown(how: SocketShutdown.Both);
+        socket.Close();
     }
 
     static void WithConsole(Action func)
@@ -436,14 +478,13 @@ class Aviyal : IDisposable
         Console.WriteLine(
             @$"
 ,_______________________________,
-|  Aviyal Dynamic Tiling  |__|__|
-|______Window Manager_____|__|__|
-|Author:  Ajaykrishnan.R  |\/ \/|
-|/\/\/\/\/\/\/\/\/\/\/\/\/|/\_/\|
-|________C# .NET 10_______|++++++
-|////////////////////////////////
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
+|  Aviyal Dynamic Tiling  |==|==|
+|_____ Window Manager ____|**|**|
+|  Author:Ajaykrishnan.R  |==|==|
+|=========================|**|**|
+|_______ C# .NET 11 ______|__|__|
+|///////////////////////////////|
+`````````````````````````````````
 Aviyal is a window manager that dynamically tiles your windows, organizes them inside workspaces, allows navigation through keybindings, and more :)
 
 ver: {version}
@@ -455,11 +496,12 @@ USAGE: aviyal <options> <arguments>
 
 available options:
 
---help:     	prints this help text.
---debug:    	flag for running the program in debug mode. Only special windows are tiled.
---version:  	prints the version.
---changelog:	prints the changes in the current version.
---restore:  	restores windows from a previous state. Useful when crashed and windows are hidden.
+--help, -h      :   prints this help text.
+--debug, -d     :   flag for running the program in debug mode. Only special windows are tiled.
+--query, -q     :   execute a query string
+--version, -v   :   prints the version.
+--restore, -r   :   restores windows from a previous state. Useful when crashed and windows are hidden.
+--changelog     :   prints the changes in the current version.
 "
         );
     }
@@ -480,27 +522,31 @@ as an administrator or from an elevated prompt.
                     User32.MessageBox(0, message, "Message", 0);
                 Loop();
                 break;
-            case "--debug":
+            case "--debug" or "-d":
                 DEBUG = true;
                 WindowManager.DEBUG_WND_NAME = args.ToList().ElementAtOrDefault(1);
                 WithConsole(Loop);
                 break;
-            case "--version":
+            case "--version" or "-v":
                 WithConsole(() => Console.WriteLine($"Aviyal version: {version}"));
                 break;
             case "--changelog":
                 WithConsole(() => Console.WriteLine($"CHANGELOG [{version}]:\n {changelog}"));
                 break;
-            case "--help":
+            case "--help" or "-h":
                 WithConsole(PrintHelp);
                 break;
-            case "--restore":
+            case "--restore" or "-r":
                 WithConsole(() => Restore(args.ToList().ElementAtOrDefault(1)));
                 break;
-            case "--query":
+            case "--query" or "-q":
                 WithConsole(() =>
                 {
-                    Console.WriteLine(Query(args.ToList().ElementAtOrDefault(1)));
+                    string? arg = args.ToList().ElementAtOrDefault(1);
+                    if (arg != null)
+                        Console.WriteLine(Query(arg));
+                    else
+                        QueryShell();
                 });
                 break;
             default:
@@ -546,6 +592,7 @@ public enum COMMAND
     WINDOW_RESIZE_MODE_ON,
 
     TOGGLE_FOCUSED_WINDOW_MAXIMIZATION,
+    TOGGLE_FOCUSED_WINDOW_PROTECTION,
     MINIMIZE_FOCUSED_WINDOW,
 
     FOCUS_WORKSPACE_1,

@@ -927,3 +927,28 @@ public enum REDRAWWINDOW : uint
     FRAME = 0x0400,
     NOFRAME = 0x0800,
 }
+
+// https://learn.microsoft.com/en-us/windows/win32/winauto/event-constants
+public enum WINEVENT : uint
+{
+    OBJECT_CREATE = 0x8000,
+    OBJECT_DESTROY = 0x8001,
+    OBJECT_SHOW = 0x8002,
+    OBJECT_HIDE = 0x8003,
+    EVENT_SYSTEM_MOVESIZEEND = 0x000B,
+    EVENT_SYSTEM_MINIMIZESTART = 0x0016,
+    EVENT_SYSTEM_MINIMIZEEND = 0x0017,
+
+    // because windows doesnt have a maximize winevent
+    EVENT_OBJECT_LOCATIONCHANGE = 0x800B,
+    EVENT_SYSTEM_FOREGROUND = 0x0003,
+    EVENT_OBJECT_UNCLOAKED = 0x8018,
+}
+
+public enum WDA : uint
+{
+    NONE = 0x00000000, // Imposes no restrictions on where the window can be displayed.
+    MONITOR = 0x00000001, // The window content is displayed only on a monitor. Everywhere else, the window appears with no content.
+    EXCLUDEFROMCAPTURE = 0x00000011, // The window is displayed only on a monitor. Everywhere else, the window does not appear at all.
+    // One use for this affinity is for windows that show video recording controls, so that the controls are not included in the capture.
+}

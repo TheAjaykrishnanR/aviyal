@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
 
+#nullable enable
+
 public class Config : IJson<Config>
 {
     /* DEFAULT CONSTS */
@@ -67,6 +69,11 @@ public class Config : IJson<Config>
         {
             keys = [VK.LCONTROL, VK.LSHIFT, VK.M],
             command = COMMAND.TOGGLE_FOCUSED_WINDOW_MAXIMIZATION,
+        },
+        new()
+        {
+            keys = [VK.LCONTROL, VK.LMENU, VK.P],
+            command = COMMAND.TOGGLE_FOCUSED_WINDOW_PROTECTION,
         },
         new()
         {

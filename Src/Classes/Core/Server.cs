@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 public class Server : IDisposable
 {
     public const int RECV_BUFFER_SIZE = 4096;

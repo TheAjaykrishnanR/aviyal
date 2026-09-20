@@ -13,6 +13,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 public partial class Utils
 {
     public static List<string> GetStylesFromHwnd(nint hWnd)

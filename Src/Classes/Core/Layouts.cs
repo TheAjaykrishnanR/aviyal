@@ -5,6 +5,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#nullable enable
+
 public class Dwindle : ILayout
 {
     // rects with margin

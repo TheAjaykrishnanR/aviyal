@@ -7,14 +7,17 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Windows;
 
+#nullable enable
+
 public class ProgramState : IJson<ProgramState>
 {
-    public List<Window> windows = new();
+    public List<Window> windows = [];
     public int focusedWorkspaceIndex;
     public int workspaceCount;
     public string? keysHookThreadState;
     public string? mouseHookThreadState;
     public string? wndHookThreadState;
+    public long uptime;
 
     public string ToJson()
     {
@@ -45,6 +48,7 @@ public class ProgramState : IJson<ProgramState>
             ["keysHookThreadState"] = keysHookThreadState?.ToString(),
             ["mouseHookThreadState"] = mouseHookThreadState?.ToString(),
             ["wndHookThreadState"] = wndHookThreadState?.ToString(),
+            ["uptime"] = uptime.ToString(),
         };
         return j.ToString();
     }
@@ -57,7 +61,7 @@ public class ProgramState : IJson<ProgramState>
         _arr?.ToList()
             .ForEach(_wnd =>
             {
-                nint hWnd = (nint)Convert.ToInt32(_wnd?["hWnd"]?.ToString());
+                nint hWnd = Convert.ToInt32(_wnd?["hWnd"]?.ToString());
                 Window wnd = new(hWnd);
                 state.windows.Add(wnd);
             });

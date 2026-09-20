@@ -10,6 +10,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 public class Window : IWindow, IMoveable
 {
     public int workspace;
@@ -210,6 +212,16 @@ public class Window : IWindow, IMoveable
         {
             User32.GetWindowInfo(this.hWnd, out WINDOWINFO info);
             return info.cxWindowBorders;
+        }
+    }
+
+    // window's display affinity
+    public WDA affinity
+    {
+        get
+        {
+            User32.GetWindowDisplayAffinity(this.hWnd, out field);
+            return field;
         }
     }
 
@@ -1505,6 +1517,37 @@ public class WindowManager : IWindowManager
 
         // TODO: Implement actual resizing
         RunQueued(() => { });
+    }
+
+    // hides (toggles) a window from screen recorders
+    public void ToggleWindowProtection()
+    {
+        Window? wnd = GetAlreadyStoredWindow(
+            new(Utils.GetParentRoot(Utils.GetWindowUnderCursor()))
+        );
+        Logger.Log($"ToggleWindowProtection(), hWnd={wnd.hWnd}, pid={wnd.pid}");
+        if (!File.Exists(Paths.swdaDll))
+        {
+            Logger.Log(
+                $"ToggleWindowProtection(): {Paths.swdaDll} does not exist !",
+                logType: LogType.ERROR
+            );
+            return;
+        }
+        using Injector injector = Injector.New(Paths.swdaDll, wnd.pid);
+        if (!injector?.Inject() ?? false)
+        {
+            Logger.Log("ToggleWindowProtection() failed", logType: LogType.ERROR);
+            return;
+        }
+
+        injector?.CallInit();
+        injector?.CallSetArg(wnd.hWnd); // first argument is hWnd
+        WDA flag = wnd.affinity == WDA.NONE ? WDA.EXCLUDEFROMCAPTURE : WDA.NONE;
+        injector?.CallSetArg((nint)flag); // second argument is dwAffinity
+        injector?.CallMain();
+
+        injector.Unload();
     }
 
     /*

@@ -285,6 +285,9 @@ public class User32
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern int UnhookWinEvent(nint hhook);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int GetWindowDisplayAffinity(nint hWnd, out WDA dwAffinity);
 }
 
 public class Shell32
@@ -385,6 +388,52 @@ public class Kernel32
 
     [DllImport("kernel32.dll")]
     public static extern int QueryPerformanceCounter(out long timeStamp);
+
+    // modules
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern nint GetProcAddress(nint hModule, string procName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern nint LoadLibraryA(string moduleName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern nint FreeLibrary(nint dllBase);
+
+    // threads
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool GetExitCodeThread(nint hThread, out uint exitCode);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern nint CreateRemoteThread(
+        nint hProcess,
+        nint securityAttributes,
+        nuint dwStackSize,
+        nint localFn,
+        nint fnArgs,
+        uint dwCreationFlags,
+        out uint threadId
+    );
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern int WaitForSingleObject(nint hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern nint VirtualAllocEx(
+        nint hProcess,
+        nint lpAddress,
+        nuint dwSize,
+        uint allocationType,
+        uint protect
+    );
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern int WriteProcessMemory(
+        nint hProcess,
+        nint destination,
+        nint buffer,
+        nuint size,
+        out int bytesWritten
+    );
 }
 
 public class Advapi32
@@ -468,8 +517,17 @@ public class Psapi
     public static extern uint GetModuleFileNameEx(
         nint hProcess,
         nint hModule,
-        out StringBuilder moduleFileName,
+        StringBuilder moduleFileName,
         uint nSize
+    );
+
+    [DllImport("psapi.dll", SetLastError = true)]
+    public static extern int EnumProcessModulesEx(
+        nint hProcess,
+        [Out] nint ptrToModuleArray,
+        int moduleArrayLength,
+        [Out] nint sizeNeeded,
+        uint flags
     );
 }
 
