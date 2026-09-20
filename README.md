@@ -21,6 +21,9 @@ This project was **NOT** vibecoded.
 9. Qerry state using websocket and execute commands
 10. Launch apps using hotkeys
 11. Move windows without the titlebar
+12. Protect windows from screencapture *(optional)*
+
+> Protecting windows from screencapture is a feature that allows you to hide windows from any screen recording software such as obs, the builtinsnipping tool, etc. However to achieve this it requires us to call a win32 function `SetWindowDisplayAffinity()` from the context of the remote process of the target window to hide. This requires us to inject a dll into the window's host process, call our special function and then unload. So if you need this functionality please ensure you have the accompanying `swda.dll` alongside aviyal.
 
 ## TODO
 - [ ] scrolling workspaces
@@ -51,10 +54,11 @@ A quick summary of the values available for each key in the config is [here](htt
 - `SHIFT WINDOW WORKSPACE NUMX`: `LMENU (ALT), LSHIFT, NUMX`
 - `TOGGLE WINDOW FLOATING`: `LCONTROL, LSHIFT, Z`
 - `TOGGLE WINDOW STACKED`: `LCONTROL, LSHIFT, S`
+- `TOGGLE WINDOW PROTECTION`: `LCONTROL, LMENU, P` *(optional)*
 - `SWAP WINDOW RIGHT`: `LMENU (ALT), L`
 - `SWAP WINDOW LEFT`: `LMENU (ALT), H`
 - `DRAG WINDOW WITH MOUSE`: `LCONTROL, SPACE`
-- `RESTART APPLICATION`: `LCONTROL, LSHIFT, R` (hot reload for config)
+- `RESTART APPLICATION`: `LCONTROL, LSHIFT, R` *(hot reload for config)*
 - `REFRESH TILING`: `LCONTROL, LSHIFT, U`
 
 By default `9` workspaces are initialized.
