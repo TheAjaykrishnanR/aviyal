@@ -31,8 +31,27 @@ This project was **NOT** vibecoded.
 
 ## Usage
 
-Download the latest release from [releases](https://github.com/TheAjaykrishnanR/aviyal/releases) and run it. 
-For live debug output, run from a terminal (`cmd.exe` or `pwsh.exe`).
+Download the latest release from [releases](https://github.com/TheAjaykrishnanR/aviyal/releases) and run it.
+
+```
+Aviyal is a window manager that dynamically tiles your windows, organizes them inside workspaces, allows navigation through keybindings, and more :)
+
+ver: 0.2.8
+
+aviyal: https://github.com/TheAjaykrishnanR/aviyal
+dflat: https://github.com/TheAjaykrishnanR/dflat
+
+USAGE: aviyal <options> <arguments>
+
+available options:
+
+--help, -h      :   prints this help text.
+--debug, -d     :   flag for running the program in debug mode. Only special windows are tiled.
+--query, -q     :   execute a query string
+--version, -v   :   prints the version.
+--restore, -r   :   restores windows from a previous state. Useful when crashed and windows are hidden.
+--changelog     :   prints the changes in the current version.
+```
 
 ## Configuration
 
