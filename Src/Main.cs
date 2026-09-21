@@ -16,14 +16,11 @@ using System.Threading.Tasks;
 
 class Aviyal : IDisposable
 {
-    static string version = "0.2.8";
+    static string version = "0.2.9";
     static string changelog =
         @"
-- feature: aviyal query using client: aviyal --query 'get state'
-- feature: protect windows from screen recorders
-- feature: cmd line shortcuts
-- feature: get uptime
-- fix: socket server leak
+- fix: socket server no longer binds to all interfaces
+- fix: luanched process now execute in their original locations as working directory
 - version bump
 ";
 
@@ -268,11 +265,17 @@ class Aviyal : IDisposable
         if (args.Count == 0)
             return;
 
-        ProcessStartInfo psi = new();
-        psi.FileName = args[0];
+        string file = args[0];
+        string folder = new FileInfo(file).Directory?.FullName ?? Paths.home;
+        ProcessStartInfo psi = new()
+        {
+            FileName = file,
+            UseShellExecute = false,
+            WorkingDirectory = folder,
+        };
+
         //if (args.Count > 0) psi.Arguments = args[1];
-        Process process = new();
-        process.StartInfo = psi;
+        Process process = new() { StartInfo = psi };
 
         if (Environment.IsPrivilegedProcess == elevated)
         {
@@ -524,7 +527,8 @@ as an administrator or from an elevated prompt.
                 WithConsole(() =>
                 {
                     string? arg = args.ToList().ElementAtOrDefault(1);
-                    if (arg == null) {
+                    if (arg == null)
+                    {
                         Console.WriteLine($"No query string provided");
                         return;
                     }

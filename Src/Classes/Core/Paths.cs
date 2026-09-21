@@ -24,6 +24,10 @@ public class Paths
     // and not arbitrary windows of arbitrary processes
     public static string swdaDll = Path.Join(rootDir, "swda.dll");
 
+    public static string home =
+        Path.GetDirectoryName(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
+        ?? "";
+
     public static void CreateIfAbsent()
     {
         if (!Directory.Exists(rootDir))
