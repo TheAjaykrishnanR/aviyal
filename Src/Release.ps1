@@ -1,5 +1,5 @@
 mkdir -p ./bin/publish
 rm ./bin/publish/*
 ./Build.ps1 winexe
-mv ./bin/aviyal.exe ./bin/publish/aviyal.exe
-mv ./bin/swda.dll ./bin/publish/swda.dll
+cp ./bin/aviyal.exe ./bin/publish/aviyal.exe
+cp ./bin/swda.dll ./bin/publish/swda.dll

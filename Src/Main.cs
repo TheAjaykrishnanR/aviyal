@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static Logger;
 
 #nullable enable
 
@@ -104,10 +105,10 @@ class Aviyal : IDisposable
                     i++;
                 })
             );
-            Logger.Log($"Restored {i} windows...", LogType.INFO);
+            Log($"Restored {i} windows...", LogType.INFO);
 
             Exception ex = (Exception)e.ExceptionObject;
-            Logger.Log("AppDomain: Unhandled exception", ex: ex, logType: LogType.ERROR);
+            Log("AppDomain: Unhandled exception", ex: ex, logType: LogType.ERROR);
             errored = true;
         };
     }
@@ -162,7 +163,7 @@ class Aviyal : IDisposable
     public void HotkeyPressed(Keymap keymap)
     {
         if (DEBUG && keymap.command != COMMAND.WINDOW_MOVE_MODE_ON)
-            Logger.Log(
+            Log(
                 $"Hotekey Pressed: {keymap.command}, time: {Utils.FastTime_milli()}",
                 logType: LogType.EVENT
             );
@@ -253,11 +254,11 @@ class Aviyal : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log("Can't writing to state file", ex: ex, logType: LogType.ERROR);
+            Log("Can't writing to state file", ex: ex, logType: LogType.ERROR);
         }
-        Logger.Log($"message: {message}", file: false, logType: LogType.EVENT);
+        Log($"message: {message}", file: false, logType: LogType.EVENT);
         if (DEBUG)
-            Logger.Log(state.ToJson());
+            Log(state.ToJson());
     }
 
     public void Exec(List<string> args, bool elevated = false)
@@ -267,6 +268,7 @@ class Aviyal : IDisposable
 
         string file = args[0];
         string folder = new FileInfo(file).Directory?.FullName ?? Paths.home;
+        Log($"Executing {file} in {folder}");
         ProcessStartInfo psi = new()
         {
             FileName = file,
@@ -285,7 +287,7 @@ class Aviyal : IDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log("Unable to execute command", ex: ex, logType: LogType.ERROR);
+                Log("Unable to execute command", ex: ex, logType: LogType.ERROR);
             }
         }
         else if (elevated)
@@ -297,13 +299,13 @@ class Aviyal : IDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log("Unable to execute command", ex: ex, logType: LogType.ERROR);
+                Log("Unable to execute command", ex: ex, logType: LogType.ERROR);
             }
         }
         else
         {
             string cmdLine = string.Join(" ", args);
-            Utils.ExecuteUnelevated(cmdLine);
+            Utils.ExecuteUnelevated(cmdLine, folder);
         }
     }
 
@@ -322,7 +324,7 @@ class Aviyal : IDisposable
         if (reloadCount == 0)
         {
             File.Delete(Paths.logFile);
-            Logger.Log($"Starting aviyal, time: {startTime}");
+            Log($"Starting aviyal, time: {startTime}");
         }
 
         var psWithSameName = Process
@@ -330,7 +332,7 @@ class Aviyal : IDisposable
             .ToList();
         if (psWithSameName.Count > 1)
         {
-            Logger.Log("an instance is already running, exiting...");
+            Log("an instance is already running, exiting...");
             var opsWithSameName = psWithSameName
                 .Where(p => p.Id != Process.GetCurrentProcess().Id)
                 .ToList();
@@ -343,7 +345,13 @@ class Aviyal : IDisposable
             }
         }
 
-        Logger.Log($"Running aviyal instance, reload count: {reloadCount}");
+        Log($"Running aviyal instance, reload count: {reloadCount}");
+
+        // log the environment variables
+        var envVars = Environment.GetEnvironmentVariables();
+        Log($"ENV_VARS: {envVars.Count}");
+        foreach (var key in envVars.Keys)
+            Log($"[ENV_VAR] {key}={envVars[key]}");
 
         Paths.CreateIfAbsent();
 
@@ -358,19 +366,22 @@ class Aviyal : IDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log("Unable to parse json config file", ex: ex);
+                Log("Unable to parse json config file", ex: ex);
                 config = new();
             }
-            Logger.Log($"config being loaded:\n{config.ToJson()}", file: false);
+            Log($"config being loaded:\n{config.ToJson()}", file: false);
         }
         else
         {
             config = new();
-            Logger.Log("Default config: ", file: false);
+            Log("Default config: ", file: false);
             File.AppendAllText(Paths.configFile, config.ToJson());
         }
 
-        Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
+        if (Shcore.SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE) != 0)
+        {
+            Log("SetProcessDpiAwareness() failed", logType: LogType.ERROR);
+        }
 
         // collect windows to restore when reloaded (when reloaded all windows will be put to workspace 0)
         var windows = instance?.wm.windows;
@@ -412,14 +423,14 @@ class Aviyal : IDisposable
             restoreFile = Paths.stateFile;
         if (!File.Exists(restoreFile))
         {
-            Logger.Log($"State file: {restoreFile} not found!", logType: LogType.ERROR);
+            Log($"State file: {restoreFile} not found!", logType: LogType.ERROR);
             return;
         }
         ProgramState state = ProgramState.FromJson(File.ReadAllText(restoreFile));
-        Logger.Log($"Found {state.windows.Count} windows in {restoreFile}");
+        Log($"Found {state.windows.Count} windows in {restoreFile}");
         state.windows.ForEach(wnd =>
         {
-            Logger.Log($"Restoring {wnd.title}, hWnd: {wnd.hWnd}");
+            Log($"Restoring {wnd.title}, hWnd: {wnd.hWnd}");
             wnd.Move(0, 0);
             wnd.Show();
         });

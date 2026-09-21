@@ -344,15 +344,15 @@ public class Kernel32
     public static extern uint GetCurrentThreadId();
 
     [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
-    public static extern bool CreateProcess(
-        string lpApplicationName,
-        string lpCommandLine,
+    public static extern int CreateProcess(
+        string? lpApplicationName,
+        string? lpCommandLine,
         ref SECURITY_ATTRIBUTES lpProcessAttributes,
         ref SECURITY_ATTRIBUTES lpThreadAttributes,
         bool bInheritHandles,
         uint dwCreationFlags,
         nint lpEnvironment,
-        string lpCurrentDirectory,
+        string? lpCurrentDirectory,
         ref STARTUPINFOEX StartupInfoEx,
         out PROCESS_INFORMATION lpProcessInformation
     );

@@ -521,7 +521,7 @@ public partial class Utils
     /// https://devblogs.microsoft.com/oldnewthing/20190425-00/?p=102443
     /// https://stackoverflow.com/questions/69836929/access-violation-calling-createprocess-in-c-sharp
     /// </summary>
-    public static void ExecuteUnelevated(string cmdLine)
+    public static void ExecuteUnelevated(string cmdLine, string? workingDirectory = null)
     {
         nint procThreadAttrListSize = 0;
         Kernel32.InitializeProcThreadAttributeList(0, 1, 0, ref procThreadAttrListSize);
@@ -562,7 +562,7 @@ public partial class Utils
 
         const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
         const uint CREATE_NEW_CONSOLE = 0x00000010;
-        bool result = Kernel32.CreateProcess(
+        int result = Kernel32.CreateProcess(
             null,
             cmdLine,
             ref psa,
@@ -570,10 +570,18 @@ public partial class Utils
             false,
             EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE,
             0,
-            null,
+            workingDirectory,
             ref si,
             out PROCESS_INFORMATION pi
         );
+
+        if (result == 0)
+        {
+            Logger.Log(
+                $"CreateProcess() failed, win32: {Marshal.GetLastWin32Error()}",
+                logType: LogType.ERROR
+            );
+        }
 
         Marshal.FreeHGlobal(si.lpAttributeList);
         Marshal.FreeHGlobal(shellProcessPtr);
