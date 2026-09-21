@@ -19,8 +19,7 @@ class Aviyal : IDisposable
     static string version = "0.2.8";
     static string changelog =
         @"
-- feature: aviyal query using client: aviyal --query 'get state',
-  aviyal -q to enter query shell mode
+- feature: aviyal query using client: aviyal --query 'get state'
 - feature: protect windows from screen recorders
 - feature: cmd line shortcuts
 - feature: get uptime
@@ -445,24 +444,6 @@ class Aviyal : IDisposable
         return response;
     }
 
-    static void QueryShell()
-    {
-        string? input = null;
-        using Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        socket.Connect(new IPEndPoint(IPAddress.Loopback, Config.SERVER_PORT));
-        do
-        {
-            if (input != null && input != "")
-            {
-                Console.Write("\n");
-                Console.WriteLine(Query(input, socket));
-            }
-            Console.Write("> ");
-        } while ((input = Console.ReadLine()) != "exit");
-        socket.Shutdown(how: SocketShutdown.Both);
-        socket.Close();
-    }
-
     static void WithConsole(Action func)
     {
         Kernel32.AttachConsole(-1);
@@ -543,10 +524,11 @@ as an administrator or from an elevated prompt.
                 WithConsole(() =>
                 {
                     string? arg = args.ToList().ElementAtOrDefault(1);
-                    if (arg != null)
-                        Console.WriteLine(Query(arg));
-                    else
-                        QueryShell();
+                    if (arg == null) {
+                        Console.WriteLine($"No query string provided");
+                        return;
+                    }
+                    Console.WriteLine(Query(arg));
                 });
                 break;
             default:

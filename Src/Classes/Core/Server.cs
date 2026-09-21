@@ -25,7 +25,7 @@ public class Server : IDisposable
     public Server(Config config)
     {
         port = config.serverPort;
-        socket.Bind(new IPEndPoint(IPAddress.Any, port));
+        socket.Bind(new IPEndPoint(IPAddress.Loopback, port));
         socket.Listen(MAX_CLIENTS);
         Logger.Log($"Server: listening on {IPAddress.Any}:{port}");
         Task.Run(() =>
