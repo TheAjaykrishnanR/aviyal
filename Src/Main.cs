@@ -23,6 +23,7 @@ class Aviyal : IDisposable
         @"
 - fix: socket server no longer binds to all interfaces
 - fix: luanched process now execute in their original locations as working directory
+- feat: implemented ShellExecute COM api that doesn't crash applications like chrome upon launching unlike our previous ExecuteUnelevated
 - version bump
 ";
 
