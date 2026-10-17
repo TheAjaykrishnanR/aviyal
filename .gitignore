@@ -1,5 +1,9 @@
 bin/
 obj/
+Src/bin
+Src/obj
+Src/Classes/Com/bin
+Src/Classes/Com/obj
 *.exe
 *.dll
 *.obj
