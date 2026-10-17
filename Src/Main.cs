@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using static Logger;
+using Com;
 
 #nullable enable
 
@@ -305,7 +306,16 @@ class Aviyal : IDisposable
         else
         {
             string cmdLine = string.Join(" ", args);
-            Utils.ExecuteUnelevated(cmdLine, folder);
+            try 
+            {
+                // we prioritize launching applications through the active shell/explorer instance
+                ComFunctions.IShellDispatch2_ShellExecute(cmdLine, folder);
+            }
+            catch(Exception ex) 
+            {
+                Log("IShellDispatch2_ShellExecute failed", ex: ex, logType:LogType.ERROR);
+                Utils.ExecuteUnelevated(cmdLine, folder);
+            }
         }
     }
 

@@ -8,6 +8,11 @@ if($args[0] -eq "winexe") {
 	$target = "winexe" 
 }
 
+echo "Building com.dll"
+cd Classes\Com
+./build
+cd ../..
+
 echo "Building aviyal..."
 dflat Main.cs `
 	  Classes\Core\Interfaces\IAviyal.cs `
@@ -31,6 +36,7 @@ dflat Main.cs `
 	  Classes\Win32\Enums.cs `
 	  Classes\Win32\Functions.cs `
 	  Classes\Win32\Structs.cs `
+      /r:Classes\Com\bin\com.dll `
 	  /target:$target `
 	  /out:bin\aviyal.exe `
 
