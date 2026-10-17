@@ -29,14 +29,20 @@ dflat Main.cs `
 	  Classes\Core\State.cs `
 	  Classes\Core\Utils.cs `
 	  Classes\Core\Animation.cs `
+      <# Hooks #> `
 	  Classes\Hooks\Keys.cs `
 	  Classes\Hooks\Mouse.cs `
 	  Classes\Hooks\Windows.cs `
+      <# Win32 #> `
 	  Classes\Win32\Delegates.cs `
 	  Classes\Win32\Enums.cs `
 	  Classes\Win32\Functions.cs `
 	  Classes\Win32\Structs.cs `
+      <# Com #> `
       /r:Classes\Com\bin\com.dll `
+      <# WinRT #> `
+      /r:Libs\WinRT\Microsoft.Windows.SDK.NET.dll `
+      /r:Libs\WinRT\WinRT.Runtime.dll `
 	  /target:$target `
 	  /out:bin\aviyal.exe `
 

@@ -165,12 +165,11 @@ class Aviyal : IDisposable
     public void HotkeyPressed(Keymap keymap)
     {
         if (DEBUG && keymap.command != COMMAND.WINDOW_MOVE_MODE_ON)
-            Log(
-                $"Hotekey Pressed: {keymap.command}, time: {Utils.FastTime_milli()}",
-                logType: LogType.EVENT
-            );
+            Log($"Hotekey Pressed: {keymap.command}, time: {Utils.FastTime_milli()}", logType: LogType.EVENT);
         if (keymap.command == COMMAND.EXEC)
             Exec(keymap.arguments);
+        else if (keymap.command == COMMAND.URI)
+            ExecUri(keymap.arguments);
         else
             actions[keymap.command]?.Invoke();
     }
@@ -318,6 +317,11 @@ class Aviyal : IDisposable
                 Utils.ExecuteUnelevated(cmdLine, folder);
             }
         }
+    }
+
+    public void ExecUri(List<string> args) {
+        if(args.Count == 0) return;
+        Task.Run(async () => await Windows.System.Launcher.LaunchUriAsync(new Uri(args[0])));
     }
 
     /*
@@ -614,6 +618,7 @@ public enum COMMAND
     FOCUS_WORKSPACE_9,
 
     EXEC,
+    URI,
     RESTART,
     UPDATE,
     DEBUG_CONSOLE_CLEAR,
