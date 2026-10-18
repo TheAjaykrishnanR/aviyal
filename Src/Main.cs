@@ -263,6 +263,7 @@ class Aviyal : IDisposable
             Log(state.ToJson());
     }
 
+    // here the list of strings args are all arguments to the EXEC command
     public void Exec(List<string> args, bool elevated = false)
     {
         if (args.Count == 0)
@@ -306,15 +307,15 @@ class Aviyal : IDisposable
         }
         else
         {
-            string cmdLine = string.Join(" ", args);
             try 
             {
                 // we prioritize launching applications through the active shell/explorer instance
-                ComFunctions.IShellDispatch2_ShellExecute(cmdLine, folder);
+                ComFunctions.IShellDispatch2_ShellExecute(file, args[1..], folder);
             }
             catch(Exception ex) 
             {
                 Log("IShellDispatch2_ShellExecute failed", ex: ex, logType:LogType.ERROR);
+                string cmdLine = string.Join(" ", args);
                 Utils.ExecuteUnelevated(cmdLine, folder);
             }
         }

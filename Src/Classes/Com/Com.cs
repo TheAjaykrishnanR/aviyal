@@ -16,7 +16,7 @@ namespace Com;
 
 public class ComFunctions {
 
-    public static void IShellDispatch2_ShellExecute(string cmdLine, string? folder = null) {
+    public static void IShellDispatch2_ShellExecute(string file, List<string>? args = null, string? folder = null) {
 
         PInvoke.CoCreateInstance(typeof(ShellWindows).GUID, null, CLSCTX.CLSCTX_ALL, out IShellWindows shellWindows);
 
@@ -37,14 +37,11 @@ public class ComFunctions {
         var application = shellFolderView.get_Application();
         var shellDispatch = (IShellDispatch2)application;
 
-        List<string> words = cmdLine.Split(" ").ToList();
-        string file = words.First();
-        words.RemoveAt(0);
-        string? args = string.Join(" ", words);
+        string? argsString = string.Join(" ", args);
 
         shellDispatch.ShellExecute(
             new BSTR(Marshal.StringToBSTR(file)),
-            args == null ? ComVariant.Null : ComVariant.Create(args),
+            args == null ? ComVariant.Null : ComVariant.Create(argsString),
             folder == null ? ComVariant.Null : ComVariant.Create(folder),
             ComVariant.Null,
             ComVariant.Null
